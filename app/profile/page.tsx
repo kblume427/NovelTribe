@@ -59,6 +59,7 @@ export default function ProfilePage() {
   });
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [categoryOptions, setCategoryOptions] = useState(allGenres);
+  const [totalUsers, setTotalUsers] = useState<number | null>(null);
 
   useEffect(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -90,6 +91,12 @@ export default function ProfilePage() {
       }
 
       setEmail(user.email ?? "");
+      fetch("/api/admin/user-count")
+        .then((response) => (response.ok ? response.json() : null))
+        .then((payload) => {
+          if (typeof payload?.totalUsers === "number") setTotalUsers(payload.totalUsers);
+        })
+        .catch(() => undefined);
       setProfile((current) => ({
         full_name: current.full_name || user.user_metadata?.full_name || "",
         username: current.username || "",
@@ -382,6 +389,13 @@ export default function ProfilePage() {
                 <div className="mt-2 text-2xl font-bold text-white">{stats.favoriteGenre}</div>
               </div>
             </div>
+            {totalUsers !== null && (
+              <div className="mt-3 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-3">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-cyan-200">NovelTribe readers</div>
+                <div className="mt-2 text-2xl font-bold text-white">{totalUsers}</div>
+                <div className="mt-1 text-xs text-zinc-400">Total registered readers</div>
+              </div>
+            )}
           </aside>
 
           <section className="rounded-[30px] border border-white/10 bg-[#0f172a] p-6">

@@ -124,6 +124,7 @@ Rules:
 - Missing recommendation covers are enriched from Open Library using title/author lookup with in-process caching
 - Production Supabase auth cookies use explicit secure, lax, canonical-domain attributes for Safari persistence
 - Login page includes Apple/Safari guidance to keep magic-link requests and callbacks in the same browser context
+- Private admin-only total user count available through `/api/admin/user-count` for allowlisted usernames
 - Recommendation cards preserve the full cover image with `object-contain` instead of cropping it
 - Quick Add stores immutable Google Books cover URLs for library and Currently Reading display
 - Manual book entry looks up and previews an official Google Books cover when a title/author match is found
