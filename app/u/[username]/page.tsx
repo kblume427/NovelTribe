@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import FollowButton from "@/components/follow-button";
 
 interface PublicProfileProps {
   params: Promise<{
@@ -136,6 +137,7 @@ export default async function PublicProfilePage({ params }: PublicProfileProps) 
                 {profile.full_name || `@${profile.username}`}
               </h1>
               <p className="text-zinc-400 font-mono text-sm mt-0.5">@{profile.username}</p>
+              <div className="mt-4"><FollowButton username={profile.username} /></div>
 
               <div className="mt-4 flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs text-zinc-400">
                 <span className="flex items-center gap-1.5">

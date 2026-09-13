@@ -28,7 +28,7 @@ The current product is a functioning private beta. User libraries, profiles, rev
 - Main branch: `master`
 - Canonical production domain: `https://novel-tribe.com`
 - Hosting: Vercel, deployed from GitHub `master`
-- Latest pushed commit before this feature: `904c19c` (`Fix magic link login persistence`)
+- Latest pushed commit before this feature: `f90fe64` (`Add public profile privacy controls`)
 - The repository is kept clean and synchronized with `origin/master`.
 
 ### Environment Variables
@@ -125,6 +125,15 @@ Rules:
 - Reviews are private book fields for now
 - Public social feed, public reviews, and public libraries are intentionally not implemented
 
+### Social Phase 2: Follows
+
+- Follow/unfollow API at `/api/follows`
+- Follow button on opt-in public profiles
+- Private-profile and self-follow protections
+- User-scoped follows RLS policies
+- GA4 events for `user_followed` and `user_unfollowed`
+- Run the `follows` migration in Supabase before testing
+
 ### Growth, Analytics, And SEO
 
 - Homepage share section with native share sheet or copy fallback
@@ -150,7 +159,6 @@ The source of truth for schema and RLS is `supabase-schema.sql`. Run migrations 
 - `profiles.public_library boolean`
 - `profiles.public_ratings boolean`
 - `profiles.public_reviews boolean`
-- `profiles.is_public boolean`
 - `books.finished_at timestamp with time zone`
 - `books.isbn text`
 - `books.categories text[]`
@@ -176,6 +184,28 @@ add column if not exists public_ratings boolean default false;
 
 alter table profiles
 add column if not exists public_reviews boolean default false;
+
+create table if not exists follows (
+  follower_id uuid not null references auth.users(id) on delete cascade,
+  following_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamp with time zone default now(),
+  primary key (follower_id, following_id),
+  check (follower_id <> following_id)
+);
+
+alter table follows enable row level security;
+
+create policy "Users can view their own follows"
+on follows for select
+using (auth.uid() = follower_id);
+
+create policy "Users can create their own follows"
+on follows for insert
+with check (auth.uid() = follower_id);
+
+create policy "Users can delete their own follows"
+on follows for delete
+using (auth.uid() = follower_id);
 
 create policy "Anyone can view public profiles"
 on profiles for select
@@ -242,6 +272,7 @@ The SEO enhancements and initial handoff documentation were verified, committed,
 - **Custom Not Found page**: Added `app/not-found.tsx` to handle private/non-existent profiles and missing routes with quick return navigation.
 - **Public shelf privacy controls**: Added independent owner controls for showing the public library, ratings, and private reviews. Public book rows are protected by an RLS policy requiring both a public profile and an explicitly shared library.
 - **Public shelf rendering**: Public profiles can now show shared books, categories, statuses, finished counts, and only the ratings/reviews explicitly enabled by the owner.
+- **Following foundation**: Added opt-in follow/unfollow relationships for public profiles, protected by user-scoped RLS and exposed through `/api/follows`.
 
 ## Recommended Next To-Do List
 
@@ -297,6 +328,16 @@ Do not make private activity public without explicit privacy controls.
 - Spoiler handling
 - Reporting and moderation
 - Block/mute controls
+
+## Handoff Update Rule
+
+Every future code update must include a corresponding update to this document in the same change. Keep the following current:
+
+- Latest pushed commit and repository state
+- Completed features and recently shipped changes
+- Database migrations and environment requirements
+- Remaining work and known warnings
+- Verification results and deployment notes
 
 ## Development Workflow
 

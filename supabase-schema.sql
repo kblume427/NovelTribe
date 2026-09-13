@@ -48,6 +48,16 @@ create table if not exists reading_activity (
   created_at timestamp with time zone default now()
 );
 
+create table if not exists follows (
+  follower_id uuid not null references auth.users(id) on delete cascade,
+  following_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamp with time zone default now(),
+  primary key (follower_id, following_id),
+  check (follower_id <> following_id)
+);
+
+create index if not exists follows_following_id_idx on follows(following_id);
+
 create index if not exists reading_activity_user_id_idx on reading_activity(user_id, created_at desc);
 
 create index if not exists books_user_id_idx on books(user_id);
@@ -59,6 +69,7 @@ on conflict (id) do update set public = true;
 alter table profiles enable row level security;
 alter table books enable row level security;
 alter table reading_activity enable row level security;
+alter table follows enable row level security;
 
 create policy "Users can view their own profile"
 on profiles for select
@@ -107,6 +118,22 @@ using (auth.uid() = user_id);
 create policy "Users can insert their own reading activity"
 on reading_activity for insert
 with check (auth.uid() = user_id);
+
+drop policy if exists "Users can view their own follows" on follows;
+drop policy if exists "Users can create their own follows" on follows;
+drop policy if exists "Users can delete their own follows" on follows;
+
+create policy "Users can view their own follows"
+on follows for select
+using (auth.uid() = follower_id);
+
+create policy "Users can create their own follows"
+on follows for insert
+with check (auth.uid() = follower_id);
+
+create policy "Users can delete their own follows"
+on follows for delete
+using (auth.uid() = follower_id);
 
 drop policy if exists "Users can view their own avatars" on storage.objects;
 drop policy if exists "Users can upload their own avatars" on storage.objects;
