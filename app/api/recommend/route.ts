@@ -1,4 +1,9 @@
-import { buildHeuristicRecommendations, type BookRecord } from "@/lib/recommendations";
+import {
+  buildHeuristicRecommendations,
+  normalizeTitle,
+  type BookRecord,
+  type Recommendation,
+} from "@/lib/recommendations";
 import { openai } from "@/lib/server";
 
 export async function POST(request: Request) {
@@ -27,9 +32,15 @@ export async function POST(request: Request) {
 
       const raw = completion.choices[0]?.message?.content ?? "[]";
       const parsed = JSON.parse(raw);
+      const existingTitles = new Set(books.map((book) => normalizeTitle(book.title)));
+      const filteredRecommendations = (parsed as Recommendation[]).filter(
+        (recommendation) =>
+          typeof recommendation.title === "string" &&
+          !existingTitles.has(normalizeTitle(recommendation.title)),
+      );
 
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return Response.json({ recommendations: parsed });
+      if (filteredRecommendations.length > 0) {
+        return Response.json({ recommendations: filteredRecommendations });
       }
     } catch (error) {
       console.warn("OpenAI recommendation fetch failed, using local fallback", error);

@@ -36,6 +36,7 @@ export default function Home() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [form, setForm] = useState(defaultForm);
   const [editingBookId, setEditingBookId] = useState<string | number | null>(null);
+  const [bookError, setBookError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<GoogleBookResult[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -116,7 +117,10 @@ export default function Home() {
       rating: form.rating,
     };
 
-    if (editingBookId) {
+    setBookError(null);
+    let saveSucceeded = false;
+
+    if (editingBookId !== null) {
       const response = await fetch("/api/books", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -126,8 +130,16 @@ export default function Home() {
       if (response.ok) {
         const payload = await response.json();
         if (payload.book) {
-          setBooks((current) => current.map((book) => (book.id === editingBookId ? payload.book : book)));
+          setBooks((current) =>
+            current.map((book) => (String(book.id) === String(editingBookId) ? payload.book : book)),
+          );
+          saveSucceeded = true;
+        } else {
+          setBookError("The book could not be saved. Please try again.");
         }
+      } else {
+        const payload = await response.json().catch(() => null);
+        setBookError(payload?.error ?? "The book could not be saved. Please try again.");
       }
     } else {
       const response = await fetch("/api/books", {
@@ -143,11 +155,18 @@ export default function Home() {
         } else {
           setBooks((current) => [bookPayload, ...current]);
         }
+        saveSucceeded = true;
+      } else {
+        const payload = await response.json().catch(() => null);
+        setBookError(payload?.error ?? "The book could not be added. Please try again.");
+        return;
       }
     }
 
-    setForm(defaultForm);
-    setEditingBookId(null);
+    if (saveSucceeded) {
+      setForm(defaultForm);
+      setEditingBookId(null);
+    }
   };
 
   const handleEdit = (book: Book) => {
@@ -327,9 +346,9 @@ export default function Home() {
           <form onSubmit={handleSubmit} className="rounded-[28px] border border-white/10 bg-white/4 p-6">
             <div className="mb-6 flex items-center justify-between gap-3">
               <div className="text-xs uppercase tracking-[0.25em] text-violet-200">
-                {editingBookId ? "Edit book" : "Add a book"}
+                {editingBookId !== null ? "Edit book" : "Add a book"}
               </div>
-              {editingBookId && (
+              {editingBookId !== null && (
                 <button
                   type="button"
                   onClick={() => {
@@ -410,8 +429,9 @@ export default function Home() {
                 type="submit"
                 className="w-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-4 py-3 font-semibold text-white shadow-lg shadow-violet-500/30 transition hover:brightness-110"
               >
-                {editingBookId ? "Save changes" : "Save to my shelf"}
+                {editingBookId !== null ? "Save changes" : "Save to my shelf"}
               </button>
+              {bookError && <div className="text-sm text-red-200">{bookError}</div>}
             </div>
 
             <div className="mt-6 rounded-2xl border border-white/10 bg-[#0b1120] p-4">

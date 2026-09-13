@@ -61,6 +61,10 @@ export const catalog: BookRecord[] = [
   { id: 115, title: "The Lost City of Z", author: "David Grann", genre: "Adventure", status: "Read", rating: 5 },
 ];
 
+export function normalizeTitle(title: string) {
+  return title.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
 export function buildHeuristicRecommendations(
   books: BookRecord[],
   exploreGenre: string,
@@ -68,9 +72,10 @@ export function buildHeuristicRecommendations(
   const readGenres = new Set(
     books.filter((book) => book.status === "Read").map((book) => book.genre),
   );
+  const existingTitles = new Set(books.map((book) => normalizeTitle(book.title)));
 
   return catalog
-    .filter((book) => book.title !== "The Night Circus")
+    .filter((book) => !existingTitles.has(normalizeTitle(book.title)))
     .map((book) => {
       let score = 0;
       let reason = "Popular with readers like you";

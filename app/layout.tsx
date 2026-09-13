@@ -18,8 +18,8 @@ export const metadata: Metadata = {
     "NovelTribe is a community-driven reading platform for book discovery, personalized shelves, AI recommendations, and affiliate-safe commerce.",
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: "/icon.png",
-    apple: "/apple-icon.png",
+    icon: [{ url: "/icon.png", sizes: "1254x1254", type: "image/png" }],
+    apple: [{ url: "/apple-icon.png", sizes: "1254x1254", type: "image/png" }],
   },
 };
 
