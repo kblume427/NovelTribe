@@ -54,6 +54,7 @@ create table if not exists reading_activity (
   book_id uuid references books(id) on delete cascade,
   title text not null,
   author text not null,
+  cover_url text,
   event_type text not null check (event_type in ('started', 'finished', 'rated')),
   rating integer check (rating is null or (rating >= 1 and rating <= 5)),
   created_at timestamp with time zone default now()
@@ -81,6 +82,7 @@ create table if not exists notifications (
 create index if not exists follows_following_id_idx on follows(following_id);
 
 create index if not exists reading_activity_user_id_idx on reading_activity(user_id, created_at desc);
+alter table reading_activity add column if not exists cover_url text;
 
 create index if not exists books_user_id_idx on books(user_id);
 

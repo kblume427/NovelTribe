@@ -9,6 +9,7 @@ async function recordActivity(
   author: string,
   eventType: "started" | "finished" | "rated",
   rating?: number,
+  coverUrl?: string | null,
 ) {
   await supabase.from("reading_activity").insert({
     user_id: userId,
@@ -17,6 +18,7 @@ async function recordActivity(
     author,
     event_type: eventType,
     rating: rating ?? null,
+    cover_url: coverUrl ?? null,
   });
 }
 
@@ -77,10 +79,10 @@ export async function POST(request: Request) {
 
   if (!error && data) {
     if (data.status === "Currently Reading" || data.status === "Read") {
-      await recordActivity(supabase, user.id, data.id, data.title, data.author, data.status === "Read" ? "finished" : "started");
+      await recordActivity(supabase, user.id, data.id, data.title, data.author, data.status === "Read" ? "finished" : "started", undefined, data.cover_url);
     }
     if (data.rating > 0) {
-      await recordActivity(supabase, user.id, data.id, data.title, data.author, "rated", data.rating);
+      await recordActivity(supabase, user.id, data.id, data.title, data.author, "rated", data.rating, data.cover_url);
     }
     return Response.json({ ok: true, book: data });
   }
@@ -143,13 +145,13 @@ export async function PATCH(request: Request) {
 
   if (!error && data) {
     if (existingBook.status !== data.status && data.status === "Currently Reading") {
-      await recordActivity(supabase, user.id, data.id, data.title, data.author, "started");
+      await recordActivity(supabase, user.id, data.id, data.title, data.author, "started", undefined, data.cover_url);
     }
     if (existingBook.status !== data.status && data.status === "Read") {
-      await recordActivity(supabase, user.id, data.id, data.title, data.author, "finished");
+      await recordActivity(supabase, user.id, data.id, data.title, data.author, "finished", undefined, data.cover_url);
     }
     if (Number(existingBook.rating ?? 0) !== Number(data.rating ?? 0) && data.rating > 0) {
-      await recordActivity(supabase, user.id, data.id, data.title, data.author, "rated", data.rating);
+      await recordActivity(supabase, user.id, data.id, data.title, data.author, "rated", data.rating, data.cover_url);
     }
     return Response.json({ ok: true, book: data });
   }

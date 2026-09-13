@@ -6,6 +6,7 @@ type Activity = {
   id: string;
   title: string;
   author: string;
+  cover_url: string | null;
   event_type: "started" | "finished" | "rated";
   rating: number | null;
   created_at: string;
@@ -34,6 +35,9 @@ export default function ActivityFeed() {
         <div className="max-h-96 space-y-3 overflow-y-auto pr-1">
           {activity.map((item) => (
             <article key={item.id} className="rounded-2xl border border-white/10 bg-[#121a2b] p-4">
+              <div className="flex items-start gap-3">
+                {item.cover_url ? <img src={item.cover_url} alt="" className="h-16 w-12 shrink-0 rounded-lg bg-[#0b1120] object-contain" /> : <div className="h-16 w-12 shrink-0 rounded-lg bg-gradient-to-br from-violet-500 to-cyan-500" />}
+                <div className="min-w-0 flex-1">
               <div className="text-sm text-zinc-300">
                 {item.event_type === "started" && "Started reading"}
                 {item.event_type === "finished" && "Finished reading"}
@@ -44,6 +48,8 @@ export default function ActivityFeed() {
               <time className="mt-2 block text-xs text-zinc-500" dateTime={item.created_at}>
                 {new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(item.created_at))}
               </time>
+                </div>
+              </div>
             </article>
           ))}
         </div>
