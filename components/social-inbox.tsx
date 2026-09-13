@@ -29,17 +29,17 @@ export default function SocialInbox() {
   };
 
   return (
-    <section className="mt-8 rounded-[30px] border border-white/10 bg-white/5 p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div><div className="text-xs uppercase tracking-[0.24em] text-cyan-200">Your community</div><h2 className="mt-2 text-2xl font-bold text-white">Connections and notifications</h2></div>
+    <section className="mb-8 rounded-[24px] border border-white/10 bg-[#151922] p-5 shadow-lg shadow-black/10 sm:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div><div className="text-[11px] uppercase tracking-[0.24em] text-cyan-200">Your community</div><h2 className="mt-1 text-xl font-bold text-white sm:text-2xl">Connections and notifications</h2></div>
         {unread > 0 && <button type="button" onClick={() => void markAllRead()} className="text-sm text-cyan-200 hover:text-white">Mark all read ({unread})</button>}
       </div>
-      <div className="mt-5 grid gap-6 lg:grid-cols-2">
+      <div className="mt-5 grid gap-5 lg:grid-cols-2">
         <div>
           <div className="flex gap-2"><button type="button" onClick={() => setTab("followers")} className={`rounded-full px-3 py-1.5 text-sm ${tab === "followers" ? "bg-cyan-500/20 text-cyan-100" : "bg-white/5 text-zinc-400"}`}>Followers</button><button type="button" onClick={() => setTab("following")} className={`rounded-full px-3 py-1.5 text-sm ${tab === "following" ? "bg-cyan-500/20 text-cyan-100" : "bg-white/5 text-zinc-400"}`}>Following</button></div>
-          <div className="mt-3 space-y-2">{profiles.length === 0 ? <p className="text-sm text-zinc-500">No {tab} yet.</p> : profiles.map((profile) => <a key={profile.username} href={`/u/${encodeURIComponent(profile.username)}`} className="block rounded-xl border border-white/10 bg-[#0b1120] p-3 text-sm text-white hover:border-cyan-400/40">{profile.full_name || `@${profile.username}`} <span className="text-zinc-500">@{profile.username}</span></a>)}</div>
+          <div className="mt-3 space-y-2">{profiles.length === 0 ? <p className="rounded-xl border border-dashed border-white/10 p-4 text-sm text-zinc-500">No {tab} yet.</p> : profiles.map((profile) => <a key={profile.username} href={`/u/${encodeURIComponent(profile.username)}`} className="block rounded-xl border border-white/10 bg-[#0b1120] p-3 text-sm text-white hover:border-cyan-400/40">{profile.full_name || `@${profile.username}`} <span className="text-zinc-500">@{profile.username}</span></a>)}</div>
         </div>
-        <div><div className="text-sm font-semibold text-white">Notifications</div><div className="mt-3 space-y-2">{notifications.length === 0 ? <p className="text-sm text-zinc-500">No notifications yet.</p> : notifications.map((item) => <div key={item.id} className={`rounded-xl border p-3 text-sm ${item.read_at ? "border-white/10 bg-[#0b1120] text-zinc-400" : "border-cyan-400/30 bg-cyan-500/10 text-cyan-50"}`}>{item.message}<div className="mt-1 text-xs text-zinc-500">{new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(item.created_at))}</div></div>)}</div></div>
+        <div><div className="text-sm font-semibold text-white">Notifications</div><div className="mt-3 max-h-48 space-y-2 overflow-y-auto">{notifications.length === 0 ? <p className="rounded-xl border border-dashed border-white/10 p-4 text-sm text-zinc-500">No notifications yet.</p> : notifications.map((item) => <div key={item.id} className={`rounded-xl border p-3 text-sm ${item.read_at ? "border-white/10 bg-[#0b1120] text-zinc-400" : "border-cyan-400/30 bg-cyan-500/10 text-cyan-50"}`}>{item.message}<div className="mt-1 text-xs text-zinc-500">{new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(item.created_at))}</div></div>)}</div></div>
       </div>
     </section>
   );

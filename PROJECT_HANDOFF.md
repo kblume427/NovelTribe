@@ -132,6 +132,7 @@ Rules:
 - Recommended public readers section on `/recommendations`, excluding the current user and existing follows
 - Private Followers/Following lists on the profile page
 - In-app follow notifications with unread state and mark-all-read
+- Profile social inbox kept below the navigation header with responsive mobile layout
 - Private-profile and self-follow protections
 - User-scoped follows RLS policies
 - GA4 events for `user_followed` and `user_unfollowed`

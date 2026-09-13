@@ -305,7 +305,6 @@ export default function ProfilePage() {
               <div className="text-sm font-semibold tracking-[0.22em] text-violet-200 uppercase">NovelTribe</div>
             </div>
 
-            <SocialInbox />
           </div>
 
           <div className="flex items-center gap-3">
@@ -325,6 +324,8 @@ export default function ProfilePage() {
             </button>
           </div>
         </header>
+
+        <SocialInbox />
 
         <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
           <aside className="rounded-[30px] border border-white/10 bg-white/5 p-6">
