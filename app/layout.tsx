@@ -59,12 +59,40 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://novel-tribe.com/#website",
+        url: "https://novel-tribe.com",
+        name: "NovelTribe",
+        description: "Track your reading and discover your next obsession.",
+      },
+      {
+        "@type": "SoftwareApplication",
+        name: "NovelTribe",
+        applicationCategory: "LifestyleApplication",
+        operatingSystem: "Web",
+        url: "https://novel-tribe.com",
+        offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+      },
+      {
+        "@type": "Organization",
+        name: "NovelTribe",
+        url: "https://novel-tribe.com",
+        logo: "https://novel-tribe.com/icon.png",
+      },
+    ],
+  };
+
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-[#09090b] text-white">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
         {children}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-213KRMC0KT"

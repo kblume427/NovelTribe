@@ -1,0 +1,282 @@
+# NovelTribe Project Handoff
+
+## Purpose
+
+NovelTribe is a free, private-first reading tracker for people who want to organize their books, record reading progress, discover their next reads, and eventually participate in a reading community.
+
+The product is funded through clearly disclosed Amazon affiliate links attached to book recommendations. Growth matters: the site should make it easy for readers to discover the product and share the canonical site URL, `https://novel-tribe.com`.
+
+The current product is a functioning private beta. User libraries, profiles, reviews, activity, and recommendations are private to the signed-in user unless a future social feature explicitly introduces controlled public visibility.
+
+## Current Stack
+
+- Next.js `16.3.5`, App Router
+- React `19.2.8`
+- TypeScript `5`
+- Tailwind CSS v4 through PostCSS
+- Supabase Auth, PostgreSQL, Storage, and Row-Level Security
+- OpenAI recommendations when `OPENAI_API_KEY` is available
+- Google Books search/import and category metadata
+- Open Library recommendation fallback
+- Vercel hosting connected to GitHub
+- Google Analytics 4 measurement ID `G-213KRMC0KT`
+- Amazon Associate links using `NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG`
+
+## Repository And Deployment
+
+- GitHub repository: `https://github.com/kblume427/NovelTribe.git`
+- Main branch: `master`
+- Canonical production domain: `https://novel-tribe.com`
+- Hosting: Vercel, deployed from GitHub `master`
+- Latest pushed commit at handoff: `b807d06` (`Add SEO metadata and sitemap`)
+- The repository is normally kept clean after each requested commit/push.
+
+### Environment Variables
+
+Required in local development and Vercel as appropriate:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+OPENAI_API_KEY=...
+GOOGLE_BOOKS_API_KEY=...
+NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG=...
+```
+
+Rules:
+
+- Never commit secrets.
+- Never put private keys in `NEXT_PUBLIC_*` variables.
+- The Google Books key previously exposed in chat must be revoked; use a newly generated, restricted key.
+- Restrict the Google key to the Books API and the correct Google Cloud project.
+- Vercel environment variable changes require a redeploy.
+- Google Books previously returned HTTP 429 with quota value `0`; verify that the Vercel key belongs to the same Google Cloud project where Books API is enabled and quota is configured.
+
+## Main Routes
+
+- `/` - private reading tracker, add/edit/delete library, Google Books quick import, library search/sort, sharing section
+- `/login` - Supabase magic-link login
+- `/profile` - private profile, avatar upload, preferred categories, private activity timeline
+- `/reading` - dedicated Currently Reading view
+- `/recommendations` - recommendation page with `For You` and category filters
+- `/about` - public crawlable product description
+- `/auth/callback` - Supabase magic-link callback
+- `/api/books` - authenticated user-scoped book CRUD
+- `/api/books/search` - Google Books proxy with ISBN normalization
+- `/api/recommend` - OpenAI, Google Books, Open Library, and local fallback recommendation engine
+- `/robots.txt` and `/sitemap.xml` - generated SEO routes
+- `/opengraph-image` - generated 1200x630 social preview image
+
+## Completed Product Features
+
+### Accounts And Persistence
+
+- Supabase magic-link authentication
+- Auth callback and middleware session refresh
+- Per-user book storage protected by RLS
+- User-scoped API reads and writes
+- Profile records with name, username, avatar, and preferred categories
+
+### Library
+
+- Add, edit, and delete books
+- Statuses: `Read`, `Currently Reading`, `Want to Read`
+- Ratings from 1 to 5
+- Completion timestamp `finished_at`
+- ISBN persistence and display
+- Short private reviews, limited to 1,000 characters
+- Multiple categories stored in `books.categories` while retaining a primary `genre`
+- Search by title, author, ISBN, category, and review text
+- Sort by newest added, title, rating, and recently finished
+- Mobile layout fixes for navigation, quick import, and edit/save flows
+
+### Google Books And Metadata
+
+- Quick import through a server-side proxy
+- ISBN-10 and ISBN-13 detection, including hyphens, spaces, `ISBN` prefixes, and ISBN-10 `X`
+- Preserves all Google Books categories instead of silently defaulting to Fantasy
+- Imported categories become available to the user as separate filters
+- New imports use the Google category list as the book's category array
+
+### Recommendations
+
+- Dedicated `/recommendations` page
+- `For You` mode and exact category filters
+- Existing user titles excluded from results
+- Case/punctuation-tolerant title matching
+- Category-neutral For You results with diversified categories
+- Profile category preferences included in scoring
+- Read-category frequency included in scoring
+- 4-5 star read-category counts receive extra weight
+- OpenAI provider when configured
+- Google Books fallback
+- Open Library fallback with no additional key
+- Local curated fallback catalog
+- Provider timeouts and five-minute in-memory category cache
+- Provider source returned as `openai`, `google_books_open_library`, or `local_fallback`
+
+### Private Activity And Reviews
+
+- Append-only private activity events for started, finished, and rated actions
+- Latest 12 activity events shown on profile
+- RLS limits activity reads/inserts to the signed-in user
+- Reviews are private book fields for now
+- Public social feed, public reviews, and public libraries are intentionally not implemented
+
+### Growth, Analytics, And SEO
+
+- Homepage share section with native share sheet or copy fallback
+- Shares use canonical URL `https://novel-tribe.com`
+- GA4 page tracking with measurement ID `G-213KRMC0KT`
+- Product events for sign-in, book lifecycle, import, ratings, reviews, avatars, recommendations, provider source, sharing, currently-reading views, and affiliate clicks
+- No email addresses or review text sent to Analytics
+- Amazon affiliate links with disclosure
+- Canonical URL metadata
+- Page titles, descriptions, keywords, Open Graph, and Twitter metadata
+- JSON-LD for WebSite, SoftwareApplication, and Organization
+- Generated robots and sitemap routes
+- Login/profile excluded from indexing
+- Public About page
+- Generated social preview image
+
+## Database And Supabase Setup
+
+The source of truth for schema and RLS is `supabase-schema.sql`. Run migrations in Supabase SQL Editor before testing new features. Important current columns/tables include:
+
+- `profiles.preferred_categories text[]`
+- `books.finished_at timestamp with time zone`
+- `books.isbn text`
+- `books.categories text[]`
+- `books.review text`
+- `reading_activity`
+- `storage.buckets.avatars`
+- User-scoped profile, book, activity, and avatar Storage policies
+
+For an existing production database, the safest incremental migrations are:
+
+```sql
+alter table profiles
+add column if not exists preferred_categories text[] default '{}';
+
+alter table books
+add column if not exists finished_at timestamp with time zone;
+
+alter table books
+add column if not exists isbn text;
+
+alter table books
+add column if not exists categories text[] default '{}';
+
+alter table books
+add column if not exists review text;
+```
+
+The activity table and avatar policies are also present in `supabase-schema.sql`. If a full schema rerun stops on an already-existing policy, run the relevant migration block separately. Avatar uploads require the `avatars` bucket plus the `storage.objects` policies.
+
+## Work In Progress At Handoff
+
+The latest pushed commit is `b807d06`. The following SEO improvements exist locally but have not yet been committed/pushed at the time this document was created:
+
+- Structured data in `app/layout.tsx`
+- Stricter `robots.ts` disallow rules
+- `/about`
+- Page layouts for `/recommendations` and `/reading`
+- Generated `app/opengraph-image.tsx`
+- Sitemap entry for `/about`
+
+Run `git status --short` before making a release decision. Build validation passed after these local SEO changes.
+
+## Recommended Next To-Do List
+
+### Immediate Release Hygiene
+
+- Commit and push the pending SEO improvements.
+- Redeploy Vercel from the resulting commit.
+- Run all current Supabase migrations in production.
+- Verify the new public routes and metadata on `https://novel-tribe.com`.
+- Revoke any previously exposed Google API key and verify the replacement key in Vercel.
+- Confirm Google Books quota and Books API project alignment.
+- Confirm GA4 Realtime events after deployment.
+
+### Product Reliability
+
+- Add a visible `Refresh suggestions` action.
+- Add a last-updated/provider indicator on the recommendations page.
+- Add retry messaging when all external providers fail.
+- Move recommendation caching to a durable/shared cache if traffic grows beyond one Vercel instance.
+- Add automated tests for title deduplication, category filtering, diversity, and provider fallback behavior.
+- Consider rate limiting the recommendation API.
+
+### Reading Workflow
+
+- Reading goals and progress tracking
+- Monthly/yearly reading totals
+- Favorite category and author insights
+- Completion streaks
+- Rating trends
+- Duplicate-book merge tools
+- Better cover image handling
+- Metadata correction/reporting
+
+### Growth
+
+- Add a public, crawlable "How it works" page
+- Add category landing pages only when there is enough useful content
+- Submit sitemap to Google Search Console
+- Verify canonical-domain redirects for `www` and Vercel preview URLs
+- Improve social preview testing after deployment
+- Track conversion funnels in GA4: sign-in, first book, first finish, share, affiliate click
+- Add email signup only after privacy/consent requirements are defined
+
+### Social Phase, Later
+
+Do not make private activity public without explicit privacy controls.
+
+- Public profile opt-in
+- Public library opt-in
+- Public/private activity controls
+- Following users
+- Community feed
+- Likes/reactions
+- Public reviews
+- Spoiler handling
+- Reporting and moderation
+- Block/mute controls
+
+## Development Workflow
+
+From the project directory:
+
+```powershell
+npm install
+npm run dev
+npm run build
+npm run lint
+```
+
+Before committing:
+
+1. Run `git diff --check`.
+2. Run `npm run build`.
+3. Inspect `git status --short`.
+4. Commit only related changes.
+5. Push `master` when requested.
+6. Confirm `git status --short` is clean and `git branch -vv` matches `origin/master`.
+
+Known warning:
+
+- Next.js 16 reports that the `middleware` file convention is deprecated and suggests migrating to `proxy`. This is currently a warning, not a build failure. Treat migration as a focused future maintenance task.
+
+## Guidance For Future AI Assistants
+
+- Preserve user-scoped Supabase access and RLS.
+- Do not expose emails, review text, or private profile data to Analytics.
+- Do not make profile/library/activity public without explicit privacy design.
+- Prefer existing local abstractions and the current App Router structure.
+- Keep recommendation providers resilient; Google Books may quota-limit even when configured quotas look sufficient.
+- Keep `For You` category-neutral and diversified. Named category filters should remain exact.
+- Preserve Google Books categories individually in `categories[]`.
+- Use the canonical sharing URL `https://novel-tribe.com`.
+- Do not commit secrets, generated `.next` output, or unrelated user changes.
+- Build before claiming a change is complete.
