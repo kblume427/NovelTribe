@@ -54,6 +54,16 @@ create policy "Users can delete their own books"
 on books for delete
 using (auth.uid() = user_id);
 
+drop policy if exists "Users can view their own avatars" on storage.objects;
+drop policy if exists "Users can upload their own avatars" on storage.objects;
+drop policy if exists "Users can update their own avatars" on storage.objects;
+drop policy if exists "Users can delete their own avatars" on storage.objects;
+
+create policy "Users can view their own avatars"
+on storage.objects for select
+to authenticated
+using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid()::text));
+
 create policy "Users can upload their own avatars"
 on storage.objects for insert
 to authenticated
