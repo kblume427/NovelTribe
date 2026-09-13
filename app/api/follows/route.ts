@@ -53,6 +53,10 @@ export async function POST(request: Request) {
 
   const { error } = await supabase.from("follows").insert({ follower_id: user.id, following_id: target.id });
   if (error && error.code !== "23505") return Response.json({ error: error.message }, { status: 500 });
+  if (!error) {
+    const { data: actor } = await supabase.from("profiles").select("username").eq("id", user.id).maybeSingle();
+    await supabase.from("notifications").insert({ recipient_id: target.id, actor_id: user.id, actor_username: actor?.username ?? "A reader", type: "follow", message: `${actor?.username ? `@${actor.username}` : "A reader"} started following you.` });
+  }
   return Response.json({ following: true });
 }
 

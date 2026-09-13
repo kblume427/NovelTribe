@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { allGenres } from "@/lib/recommendations";
 import { trackEvent } from "@/lib/analytics";
 import { createSupabaseClient } from "@/lib/supabase/client";
+import SocialInbox from "@/components/social-inbox";
 
 type ProfileState = {
   full_name: string;
@@ -303,6 +304,8 @@ export default function ProfilePage() {
             <div>
               <div className="text-sm font-semibold tracking-[0.22em] text-violet-200 uppercase">NovelTribe</div>
             </div>
+
+            <SocialInbox />
           </div>
 
           <div className="flex items-center gap-3">

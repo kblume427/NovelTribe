@@ -56,6 +56,17 @@ create table if not exists follows (
   check (follower_id <> following_id)
 );
 
+create table if not exists notifications (
+  id uuid primary key default gen_random_uuid(),
+  recipient_id uuid not null references auth.users(id) on delete cascade,
+  actor_id uuid references auth.users(id) on delete set null,
+  actor_username text,
+  type text not null check (type in ('follow')),
+  message text not null,
+  read_at timestamp with time zone,
+  created_at timestamp with time zone default now()
+);
+
 create index if not exists follows_following_id_idx on follows(following_id);
 
 create index if not exists reading_activity_user_id_idx on reading_activity(user_id, created_at desc);
@@ -70,6 +81,7 @@ alter table profiles enable row level security;
 alter table books enable row level security;
 alter table reading_activity enable row level security;
 alter table follows enable row level security;
+alter table notifications enable row level security;
 
 create policy "Users can view their own profile"
 on profiles for select
@@ -134,6 +146,23 @@ with check (auth.uid() = follower_id);
 create policy "Users can delete their own follows"
 on follows for delete
 using (auth.uid() = follower_id);
+
+drop policy if exists "Users can view their own notifications" on notifications;
+drop policy if exists "Actors can create notifications" on notifications;
+drop policy if exists "Users can update their own notifications" on notifications;
+
+create policy "Users can view their own notifications"
+on notifications for select
+using (auth.uid() = recipient_id);
+
+create policy "Actors can create notifications"
+on notifications for insert
+with check (auth.uid() = actor_id);
+
+create policy "Users can update their own notifications"
+on notifications for update
+using (auth.uid() = recipient_id)
+with check (auth.uid() = recipient_id);
 
 drop policy if exists "Users can view their own avatars" on storage.objects;
 drop policy if exists "Users can upload their own avatars" on storage.objects;
