@@ -23,7 +23,7 @@ export default function ShareNovelTribe() {
     const shareData = {
       title: "NovelTribe",
       text: "Track your reading and discover your next obsession with NovelTribe.",
-      url: window.location.origin,
+      url: "https://novel-tribe.com",
     };
 
     if (navigator.share) {
