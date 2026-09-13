@@ -81,6 +81,10 @@ export function buildHeuristicRecommendations(
   const readGenres = new Set(
     books.filter((book) => book.status === "Read").flatMap(getBookCategories),
   );
+  const readCategoryCounts = new Map<string, number>();
+  books.filter((book) => book.status === "Read").flatMap(getBookCategories).forEach((category) => {
+    readCategoryCounts.set(category, (readCategoryCounts.get(category) ?? 0) + 1);
+  });
   const existingTitles = new Set(books.map((book) => normalizeTitle(book.title)));
 
   return catalog
@@ -94,7 +98,7 @@ export function buildHeuristicRecommendations(
       let reason = "Popular with readers like you";
 
       if (readGenres.has(book.genre)) {
-        score += 4;
+        score += (readCategoryCounts.get(book.genre) ?? 0) * 4;
         reason = `You already enjoy ${book.genre.toLowerCase()} picks`;
       }
 

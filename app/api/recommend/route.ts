@@ -42,7 +42,7 @@ async function getGoogleBookRecommendations(books: BookRecord[], category: strin
         id: item.id,
         title,
         author: item.volumeInfo?.authors?.join(", ") ?? "Unknown author",
-        genre: item.volumeInfo?.categories?.find((value) => matchesCategory(value, category)) ?? category,
+        genre: category,
         status: "Want to Read" as const,
         rating: 0,
         score: 5,
@@ -96,13 +96,22 @@ export async function POST(request: Request) {
             ? readCategories.some((category) => matchesCategory(recommendation.genre, category))
             : matchesCategory(recommendation.genre, exploreGenre)),
       );
+      const dominantCategory = readCategories[0];
+      const dominantRecommendations = dominantCategory
+        ? filteredRecommendations.filter((recommendation) => matchesCategory(recommendation.genre, dominantCategory))
+        : [];
 
       if (exploreGenre !== "For You" && filteredRecommendations.length > 0) {
-        return Response.json({ recommendations: filteredRecommendations });
+        return Response.json({
+          recommendations: filteredRecommendations.map((recommendation) => ({
+            ...recommendation,
+            genre: exploreGenre,
+          })),
+        });
       }
 
-      if (exploreGenre === "For You" && filteredRecommendations.length >= 3) {
-        return Response.json({ recommendations: filteredRecommendations });
+      if (exploreGenre === "For You" && dominantRecommendations.length > 0) {
+        return Response.json({ recommendations: dominantRecommendations });
       }
     } catch (error) {
       console.warn("OpenAI recommendation fetch failed, using local fallback", error);
