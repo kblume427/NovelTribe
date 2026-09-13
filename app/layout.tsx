@@ -17,6 +17,10 @@ export const metadata: Metadata = {
   description:
     "NovelTribe is a community-driven reading platform for book discovery, personalized shelves, AI recommendations, and affiliate-safe commerce.",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/icon.png",
+    apple: "/apple-icon.png",
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
