@@ -48,7 +48,7 @@ async function getGoogleBookRecommendations(books: BookRecord[], category: strin
 
   const payload = await response.json();
   const recommendations = (payload.items ?? [])
-    .map((item: { id: string; volumeInfo?: { title?: string; authors?: string[]; categories?: string[] } }) => {
+    .map((item: { id: string; volumeInfo?: { title?: string; authors?: string[]; categories?: string[]; imageLinks?: { thumbnail?: string; smallThumbnail?: string } } }) => {
       const title = item.volumeInfo?.title ?? "Untitled";
       return {
         id: item.id,
@@ -59,6 +59,7 @@ async function getGoogleBookRecommendations(books: BookRecord[], category: strin
         rating: 0,
         score: 5,
         reason: `A ${category.toLowerCase()} title from Google Books`,
+        cover_url: item.volumeInfo?.imageLinks?.thumbnail ?? item.volumeInfo?.imageLinks?.smallThumbnail ?? null,
       };
     })
     .filter((book: Recommendation) => book.title !== "Untitled");
@@ -86,7 +87,7 @@ async function getOpenLibraryRecommendations(books: BookRecord[], category: stri
 
   const payload = await response.json();
   const recommendations = (payload.docs ?? [])
-    .map((item: { key?: string; title?: string; author_name?: string[] }) => ({
+    .map((item: { key?: string; title?: string; author_name?: string[]; cover_i?: number }) => ({
       id: item.key ?? item.title ?? crypto.randomUUID(),
       title: item.title ?? "Untitled",
       author: item.author_name?.join(", ") ?? "Unknown author",
@@ -95,6 +96,7 @@ async function getOpenLibraryRecommendations(books: BookRecord[], category: stri
       rating: 0,
       score: 4,
       reason: `A ${category.toLowerCase()} title from Open Library`,
+      cover_url: item.cover_i ? `https://covers.openlibrary.org/b/id/${item.cover_i}-M.jpg` : null,
     }))
     .filter((book: Recommendation) => book.title !== "Untitled");
 

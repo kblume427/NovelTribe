@@ -271,7 +271,11 @@ export default function RecommendationsPage() {
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {recommendations.map((book) => (
               <article key={`${book.id}-${book.title}`} className="rounded-[26px] border border-white/10 bg-[#121a2b] p-4">
-                <div className="mb-4 h-40 rounded-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-500" />
+                {book.cover_url ? (
+                  <img src={book.cover_url} alt="" className="mb-4 h-40 w-full rounded-2xl object-cover" />
+                ) : (
+                  <div className="mb-4 h-40 rounded-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-500" />
+                )}
                 <div className="text-[10px] uppercase tracking-[0.2em] text-violet-200">{book.genre}</div>
                 {book.socialProof && <div className="mt-2 inline-flex rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-[10px] font-medium text-amber-100">{book.socialProof}</div>}
                 <h2 className="mt-3 text-xl font-semibold text-white">{book.title}</h2>

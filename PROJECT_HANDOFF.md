@@ -119,6 +119,7 @@ Rules:
 - Refresh suggestions rotates provider result windows, varies AI generation, and rotates local fallback ordering
 - For You incorporates high-rated categories from followed users who make their library and ratings public
 - Matching recommendation cards identify the followed-reader high-rating signal
+- Recommendation cards show Google Books or Open Library cover art when available, with a visual fallback otherwise
 
 ### Private Activity And Reviews
 

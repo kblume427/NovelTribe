@@ -18,6 +18,7 @@ export type Recommendation = BookRecord & {
   score: number;
   reason: string;
   socialProof?: string;
+  cover_url?: string | null;
 };
 
 export const starterBooks: BookRecord[] = [
