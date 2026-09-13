@@ -16,11 +16,13 @@ create table if not exists books (
   rating integer not null default 0 check (rating >= 0 and rating <= 5),
   finished_at timestamp with time zone,
   isbn text,
+  categories text[] default '{}',
   created_at timestamp with time zone default now()
 );
 
 alter table books add column if not exists finished_at timestamp with time zone;
 alter table books add column if not exists isbn text;
+alter table books add column if not exists categories text[] default '{}';
 
 create index if not exists books_user_id_idx on books(user_id);
 

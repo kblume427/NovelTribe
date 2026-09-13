@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
-import { allGenres, starterBooks, type BookRecord, type Recommendation } from "@/lib/recommendations";
+import { allGenres, getBookCategories, starterBooks, type BookRecord, type Recommendation } from "@/lib/recommendations";
 
 type BookStatus = "Read" | "Currently Reading" | "Want to Read";
 
@@ -89,11 +89,11 @@ export default function Home() {
   }, [books, exploreGenre]);
 
   const readGenres = useMemo(
-    () => Array.from(new Set(books.filter((book) => book.status === "Read").map((book) => book.genre))),
+    () => Array.from(new Set(books.filter((book) => book.status === "Read").flatMap(getBookCategories))),
     [books],
   );
   const availableGenres = useMemo(
-    () => Array.from(new Set([...allGenres, ...books.map((book) => book.genre).filter(Boolean)])),
+    () => Array.from(new Set([...allGenres, ...books.flatMap(getBookCategories).filter(Boolean)])),
     [books],
   );
   const recommendationFilters = ["For You", ...availableGenres];
@@ -249,7 +249,8 @@ export default function Home() {
   };
 
   const handleImportFromGoogle = async (result: GoogleBookResult) => {
-    const importedGenre = result.categories?.filter(Boolean).join(" / ") || form.genre || "Fantasy";
+    const importedCategories = result.categories?.filter(Boolean) ?? [];
+    const importedGenre = importedCategories[0] || form.genre || "Fantasy";
 
     const importedBook: Book = {
       id: Date.now(),
@@ -259,6 +260,7 @@ export default function Home() {
       status: "Want to Read",
       rating: 0,
       isbn: result.isbn ?? null,
+      categories: importedCategories.length > 0 ? importedCategories : [importedGenre],
     };
 
     setBooks((current) => [importedBook, ...current]);
@@ -534,7 +536,14 @@ export default function Home() {
                 <div key={book.id} className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.25)]">
                   <div>
                     <div className="font-semibold text-white">{book.title}</div>
-                    <div className="mt-1 text-sm text-zinc-400">{book.author} · {book.genre}</div>
+                    <div className="mt-1 text-sm text-zinc-400">{book.author}</div>
+                    <div className="mt-1 flex flex-wrap gap-1.5">
+                      {getBookCategories(book).map((category) => (
+                        <span key={category} className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2 py-0.5 text-[10px] text-cyan-100">
+                          {category}
+                        </span>
+                      ))}
+                    </div>
                     {book.isbn && <div className="mt-1 text-xs text-zinc-500">ISBN {book.isbn}</div>}
                     {book.status === "Read" && book.finished_at && (
                       <div className="mt-1 text-xs text-emerald-200">

@@ -9,6 +9,7 @@ export type BookRecord = {
   rating: number;
   finished_at?: string | null;
   isbn?: string | null;
+  categories?: string[] | null;
 };
 
 export type Recommendation = BookRecord & {
@@ -69,12 +70,16 @@ export function normalizeTitle(title: string) {
   return title.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+export function getBookCategories(book: BookRecord) {
+  return book.categories?.length ? book.categories : [book.genre];
+}
+
 export function buildHeuristicRecommendations(
   books: BookRecord[],
   exploreGenre: string,
 ): Recommendation[] {
   const readGenres = new Set(
-    books.filter((book) => book.status === "Read").map((book) => book.genre),
+    books.filter((book) => book.status === "Read").flatMap(getBookCategories),
   );
   const existingTitles = new Set(books.map((book) => normalizeTitle(book.title)));
 
@@ -82,7 +87,7 @@ export function buildHeuristicRecommendations(
     .filter(
       (book) =>
         !existingTitles.has(normalizeTitle(book.title)) &&
-        (exploreGenre === "For You" || book.genre === exploreGenre),
+        (exploreGenre === "For You" || getBookCategories(book).includes(exploreGenre)),
     )
     .map((book) => {
       let score = 0;
