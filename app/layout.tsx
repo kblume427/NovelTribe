@@ -14,9 +14,43 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NovelTribe",
+  metadataBase: new URL("https://novel-tribe.com"),
+  title: {
+    default: "NovelTribe | Track Your Reading",
+    template: "%s | NovelTribe",
+  },
   description:
-    "NovelTribe is a community-driven reading platform for book discovery, personalized shelves, AI recommendations, and affiliate-safe commerce.",
+    "Track the books you read, discover your next favorite, and get personalized recommendations from NovelTribe.",
+  keywords: [
+    "book tracker",
+    "reading tracker",
+    "book recommendations",
+    "reading list",
+    "book discovery",
+    "reading community",
+  ],
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    url: "https://novel-tribe.com",
+    siteName: "NovelTribe",
+    title: "NovelTribe | Track Your Reading",
+    description: "Track your reading and discover your next obsession.",
+    images: [{ url: "/icon.png", width: 1254, height: 1254, alt: "NovelTribe" }],
+  },
+  twitter: {
+    card: "summary",
+    title: "NovelTribe | Track Your Reading",
+    description: "Track your reading and discover your next obsession.",
+    images: ["/icon.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true },
+  },
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [{ url: "/icon.png", sizes: "1254x1254", type: "image/png" }],
