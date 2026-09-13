@@ -5,9 +5,11 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/";
+  const canonicalOrigin =
+    process.env.NODE_ENV === "production" ? "https://novel-tribe.com" : origin;
 
   if (code) {
-    const response = NextResponse.redirect(`${origin}${next}`);
+    const response = NextResponse.redirect(`${canonicalOrigin}${next}`);
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -33,5 +35,5 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth`);
+  return NextResponse.redirect(`${canonicalOrigin}/login?error=auth`);
 }

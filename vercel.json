@@ -1,0 +1,26 @@
+{
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "novel-tribe.vercel.app"
+        }
+      ],
+      "destination": "https://novel-tribe.com/$1",
+      "permanent": true
+    },
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.novel-tribe.com"
+        }
+      ],
+      "destination": "https://novel-tribe.com/$1",
+      "permanent": true
+    }
+  ]
+}
