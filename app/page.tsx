@@ -487,11 +487,11 @@ export default function Home() {
               {searchResults.length > 0 && (
                 <div className="mt-4 space-y-3">
                   {searchResults.map((result) => (
-                    <div key={result.id} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
+                    <div key={result.id} className="flex min-w-0 flex-col gap-3 overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-3 sm:flex-row sm:items-center">
                       {result.thumbnail ? (
-                        <img src={result.thumbnail} alt={result.title} className="h-16 w-12 rounded-lg object-cover" />
+                        <img src={result.thumbnail} alt={result.title} className="h-16 w-12 shrink-0 rounded-lg object-cover" />
                       ) : (
-                        <div className="flex h-16 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500/30 to-cyan-500/30 text-[10px] uppercase tracking-[0.2em] text-violet-100">
+                        <div className="flex h-16 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500/30 to-cyan-500/30 text-[10px] uppercase tracking-[0.2em] text-violet-100">
                           Book
                         </div>
                       )}
@@ -500,7 +500,7 @@ export default function Home() {
                         <div className="truncate font-medium text-white">{result.title}</div>
                         <div className="truncate text-sm text-zinc-400">{result.author}</div>
                         {result.categories?.length ? (
-                          <div className="mt-1 text-[10px] uppercase tracking-[0.2em] text-cyan-200">
+                          <div className="mt-1 break-words text-[10px] uppercase tracking-[0.2em] text-cyan-200">
                             {result.categories.join(" / ")}
                           </div>
                         ) : null}
@@ -509,7 +509,7 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={() => void handleImportFromGoogle(result)}
-                        className="rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2.5 py-1.5 text-[10px] uppercase tracking-[0.2em] text-cyan-100 transition hover:bg-cyan-500/20"
+                        className="self-start rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2.5 py-1.5 text-[10px] uppercase tracking-[0.2em] text-cyan-100 transition hover:bg-cyan-500/20 sm:self-auto"
                       >
                         Add
                       </button>
