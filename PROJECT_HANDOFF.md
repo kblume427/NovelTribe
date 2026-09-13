@@ -133,6 +133,7 @@ Rules:
 - Private Followers/Following lists on the profile page
 - In-app follow notifications with unread state and mark-all-read
 - Profile social inbox kept below the navigation header with responsive mobile layout
+- Followers and Following lists use a compact scrollable panel sized for roughly 10 visible rows
 - Private-profile and self-follow protections
 - User-scoped follows RLS policies
 - GA4 events for `user_followed` and `user_unfollowed`
