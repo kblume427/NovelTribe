@@ -117,6 +117,8 @@ Rules:
 - Provider timeouts and five-minute in-memory category cache
 - Provider source returned as `openai`, `google_books_open_library`, or `local_fallback`
 - Refresh suggestions rotates provider result windows, varies AI generation, and rotates local fallback ordering
+- For You incorporates high-rated categories from followed users who make their library and ratings public
+- Matching recommendation cards identify the followed-reader high-rating signal
 
 ### Private Activity And Reviews
 
@@ -135,6 +137,7 @@ Rules:
 - In-app follow notifications with unread state and mark-all-read
 - Profile social inbox kept below the navigation header with responsive mobile layout
 - Followers and Following lists use a compact scrollable panel sized for roughly 10 visible rows
+- Privacy-controlled activity feed on `/recommendations` for followed users who enable public activity
 - Private-profile and self-follow protections
 - User-scoped follows RLS policies
 - GA4 events for `user_followed` and `user_unfollowed`

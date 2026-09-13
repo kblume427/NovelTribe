@@ -7,6 +7,7 @@ import { allGenres, getBookCategories, starterBooks, type BookRecord, type Recom
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics";
 import RecommendedReaders from "@/components/recommended-readers";
+import ActivityFeed from "@/components/activity-feed";
 
 type RecommendationResponse = {
   recommendations?: Recommendation[];
@@ -272,6 +273,7 @@ export default function RecommendationsPage() {
               <article key={`${book.id}-${book.title}`} className="rounded-[26px] border border-white/10 bg-[#121a2b] p-4">
                 <div className="mb-4 h-40 rounded-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-500" />
                 <div className="text-[10px] uppercase tracking-[0.2em] text-violet-200">{book.genre}</div>
+                {book.socialProof && <div className="mt-2 inline-flex rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-[10px] font-medium text-amber-100">{book.socialProof}</div>}
                 <h2 className="mt-3 text-xl font-semibold text-white">{book.title}</h2>
                 <p className="mt-1 text-sm text-zinc-400">{book.author}</p>
                 <p className="mt-3 text-sm leading-6 text-zinc-300">{book.reason}</p>
@@ -285,6 +287,7 @@ export default function RecommendationsPage() {
         </section>
 
         <RecommendedReaders />
+        <ActivityFeed />
       </div>
     </main>
   );

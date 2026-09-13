@@ -8,6 +8,7 @@ create table if not exists profiles (
   public_library boolean default false,
   public_ratings boolean default false,
   public_reviews boolean default false,
+  public_activity boolean default false,
   created_at timestamp with time zone default now()
 );
 
@@ -16,6 +17,7 @@ alter table profiles add column if not exists is_public boolean default false;
 alter table profiles add column if not exists public_library boolean default false;
 alter table profiles add column if not exists public_ratings boolean default false;
 alter table profiles add column if not exists public_reviews boolean default false;
+alter table profiles add column if not exists public_activity boolean default false;
 
 create table if not exists books (
   id uuid primary key default gen_random_uuid(),
@@ -130,6 +132,20 @@ using (auth.uid() = user_id);
 create policy "Users can insert their own reading activity"
 on reading_activity for insert
 with check (auth.uid() = user_id);
+
+drop policy if exists "Followers can view shared reading activity" on reading_activity;
+create policy "Followers can view shared reading activity"
+on reading_activity for select
+using (
+  exists (
+    select 1 from follows
+    join profiles on profiles.id = reading_activity.user_id
+    where follows.follower_id = auth.uid()
+      and follows.following_id = reading_activity.user_id
+      and profiles.is_public = true
+      and profiles.public_activity = true
+  )
+);
 
 drop policy if exists "Users can view their own follows" on follows;
 drop policy if exists "Users can create their own follows" on follows;

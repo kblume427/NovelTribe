@@ -18,6 +18,7 @@ type ProfileState = {
   public_library: boolean;
   public_ratings: boolean;
   public_reviews: boolean;
+  public_activity: boolean;
 };
 
 type ActivityItem = {
@@ -45,6 +46,7 @@ export default function ProfilePage() {
     public_library: false,
     public_ratings: false,
     public_reviews: false,
+    public_activity: false,
   });
   const [copiedLink, setCopiedLink] = useState(false);
   const [email, setEmail] = useState("");
@@ -97,11 +99,12 @@ export default function ProfilePage() {
         public_library: current.public_library ?? false,
         public_ratings: current.public_ratings ?? false,
         public_reviews: current.public_reviews ?? false,
+        public_activity: current.public_activity ?? false,
       }));
 
       const { data: profileRow } = await supabase
         .from("profiles")
-        .select("full_name, username, avatar_url, preferred_categories, is_public, public_library, public_ratings, public_reviews")
+        .select("full_name, username, avatar_url, preferred_categories, is_public, public_library, public_ratings, public_reviews, public_activity")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -117,6 +120,7 @@ export default function ProfilePage() {
           public_library: Boolean(profileRow.public_library),
           public_ratings: Boolean(profileRow.public_ratings),
           public_reviews: Boolean(profileRow.public_reviews),
+          public_activity: Boolean(profileRow.public_activity),
         });
       }
 
@@ -267,6 +271,7 @@ export default function ProfilePage() {
           public_library: profile.public_library,
           public_ratings: profile.public_ratings,
           public_reviews: profile.public_reviews,
+          public_activity: profile.public_activity,
         },
         { onConflict: "id" },
       )
@@ -474,6 +479,7 @@ export default function ProfilePage() {
                     ["public_library", "Show my library", "Let visitors see books on your public profile."],
                     ["public_ratings", "Show my ratings", "Include star ratings with public books."],
                     ["public_reviews", "Show my reviews", "Include your short reviews with public books."],
+                    ["public_activity", "Show my activity", "Let people you follow see when you start, finish, or rate books."],
                   ] as const).map(([field, label, description]) => (
                     <label key={field} className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 px-3 py-3 text-sm text-zinc-200 hover:border-violet-400/40">
                       <input
