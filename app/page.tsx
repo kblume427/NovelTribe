@@ -19,6 +19,7 @@ type GoogleBookResult = {
   author: string;
   category?: string;
   thumbnail?: string;
+  isbn?: string;
 };
 
 const defaultForm = {
@@ -228,6 +229,11 @@ export default function Home() {
         author: item.volumeInfo?.authors?.join(", ") ?? "Unknown author",
         category: item.volumeInfo?.categories?.[0],
         thumbnail: item.volumeInfo?.imageLinks?.thumbnail,
+        isbn: item.volumeInfo?.industryIdentifiers?.find(
+          (identifier: { type: string; identifier: string }) => identifier.type === "ISBN_13",
+        )?.identifier ?? item.volumeInfo?.industryIdentifiers?.find(
+          (identifier: { type: string; identifier: string }) => identifier.type === "ISBN_10",
+        )?.identifier,
       }));
 
       setSearchResults(mapped);
@@ -251,6 +257,7 @@ export default function Home() {
       genre: normalizedGenre,
       status: "Want to Read",
       rating: 0,
+      isbn: result.isbn ?? null,
     };
 
     setBooks((current) => [importedBook, ...current]);
@@ -523,6 +530,7 @@ export default function Home() {
                   <div>
                     <div className="font-semibold text-white">{book.title}</div>
                     <div className="mt-1 text-sm text-zinc-400">{book.author} · {book.genre}</div>
+                    {book.isbn && <div className="mt-1 text-xs text-zinc-500">ISBN {book.isbn}</div>}
                     {book.status === "Read" && book.finished_at && (
                       <div className="mt-1 text-xs text-emerald-200">
                         Finished {new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(book.finished_at))}

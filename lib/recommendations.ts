@@ -8,6 +8,7 @@ export type BookRecord = {
   status: BookStatus;
   rating: number;
   finished_at?: string | null;
+  isbn?: string | null;
 };
 
 export type Recommendation = BookRecord & {
@@ -29,6 +30,7 @@ export const allGenres = [
   "Science Fiction",
   "Mystery",
   "Thriller",
+  "Suspense",
   "Romance",
   "Dark Romance",
   "Romantasy",
@@ -50,6 +52,8 @@ export const catalog: BookRecord[] = [
   { id: 108, title: "The Left Hand of Darkness", author: "Ursula K. Le Guin", genre: "Science Fiction", status: "Read", rating: 5 },
   { id: 109, title: "The Night Circus", author: "Erin Morgenstern", genre: "Fantasy", status: "Read", rating: 5 },
   { id: 110, title: "The Silent Patient", author: "Alex Michaelides", genre: "Thriller", status: "Read", rating: 4 },
+  { id: 120, title: "The Last Thing He Told Me", author: "Laura Dave", genre: "Suspense", status: "Read", rating: 4 },
+  { id: 121, title: "The Couple Next Door", author: "Shari Lapena", genre: "Suspense", status: "Read", rating: 4 },
   { id: 111, title: "The Seven Husbands of Evelyn Hugo", author: "Taylor Jenkins Reid", genre: "Romance", status: "Read", rating: 5 },
   { id: 116, title: "Haunting Adeline", author: "H.D. Carlton", genre: "Dark Romance", status: "Read", rating: 4 },
   { id: 117, title: "The Ritual", author: "Shantel Tessier", genre: "Dark Romance", status: "Read", rating: 4 },
