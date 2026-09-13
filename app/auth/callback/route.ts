@@ -4,12 +4,13 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  const requestedNext = searchParams.get("next") ?? "/";
+  const next = requestedNext.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : "/";
   const canonicalOrigin =
     process.env.NODE_ENV === "production" ? "https://novel-tribe.com" : origin;
 
   if (code) {
-    const response = NextResponse.redirect(`${canonicalOrigin}${next}`);
+    const response = NextResponse.redirect(`${canonicalOrigin}${next}`, { status: 303 });
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
