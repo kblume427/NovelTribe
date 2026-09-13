@@ -28,7 +28,7 @@ The current product is a functioning private beta. User libraries, profiles, rev
 - Main branch: `master`
 - Canonical production domain: `https://novel-tribe.com`
 - Hosting: Vercel, deployed from GitHub `master`
-- Latest pushed commit: `ee35c55` (`Update PROJECT_HANDOFF.md with recent SEO releases and commit history`)
+- Latest pushed commit: `f3588e7` (`Add recommendations refresh action, provider badge, timestamp, and retry UX`)
 - The repository is kept clean and synchronized with `origin/master`.
 
 ### Environment Variables
@@ -62,6 +62,7 @@ Rules:
 - `/recommendations` - recommendation page with `For You` and category filters
 - `/about` - public crawlable product description
 - `/auth/callback` - Supabase magic-link callback
+- `/u/[username]` - opt-in public reader card with favorite genres, reading history teaser, dynamic SEO/OG, and join CTA
 - `/api/books` - authenticated user-scoped book CRUD
 - `/api/books/search` - Google Books proxy with ISBN normalization
 - `/api/recommend` - OpenAI, Google Books, Open Library, and local fallback recommendation engine
@@ -145,6 +146,7 @@ Rules:
 The source of truth for schema and RLS is `supabase-schema.sql`. Run migrations in Supabase SQL Editor before testing new features. Important current columns/tables include:
 
 - `profiles.preferred_categories text[]`
+- `profiles.is_public boolean`
 - `books.finished_at timestamp with time zone`
 - `books.isbn text`
 - `books.categories text[]`
@@ -158,6 +160,13 @@ For an existing production database, the safest incremental migrations are:
 ```sql
 alter table profiles
 add column if not exists preferred_categories text[] default '{}';
+
+alter table profiles
+add column if not exists is_public boolean default false;
+
+create policy "Anyone can view public profiles"
+on profiles for select
+using (is_public = true);
 
 alter table books
 add column if not exists finished_at timestamp with time zone;
@@ -194,6 +203,14 @@ The SEO enhancements and initial handoff documentation were verified, committed,
 - **Error retry UX**: Added graceful error and empty-state messaging with a dedicated "Try Again" / "Try refreshing" trigger.
 - **API cache bypass support**: Updated `/api/recommend` route to accept `{ refresh: boolean }`, allowing Google Books and Open Library fetch requests to bypass in-memory caching when requested.
 - **Analytics enhancement**: Included `refreshed` flag in `recommendations_viewed` and `recommendation_source_used` analytics events.
+
+### Social Phase 1: Public Profile Opt-in & Reader Page (`/u/[username]`)
+
+- **Opt-in privacy model**: Added `is_public` boolean column to `profiles` (default: `false`) and created RLS policy `"Anyone can view public profiles"` allowing public access only when `is_public = true`.
+- **Profile controls (`/profile`)**: Added "Make Profile Public" toggle with username prerequisite check, dynamic link preview (`novel-tribe.com/u/[username]`), one-click "Copy link" button, and direct preview link to their public page.
+- **Public Reader Profile (`/u/[username]`)**: Implemented dynamic public reader profile page showing avatar, display name, username, join year, verified reader badge, favorite categories/genres, and viral "Join NovelTribe" signup CTA.
+- **Dynamic SEO & OpenGraph**: Added rich metadata generation for `/u/[username]` including canonical URLs, OpenGraph profile cards, and Twitter summary cards.
+- **Custom Not Found page**: Added `app/not-found.tsx` to handle private/non-existent profiles and missing routes with quick return navigation.
 
 ## Recommended Next To-Do List
 

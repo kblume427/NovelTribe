@@ -13,6 +13,7 @@ type ProfileState = {
   username: string;
   avatar_url: string;
   preferred_categories: string[];
+  is_public: boolean;
 };
 
 type ActivityItem = {
@@ -36,7 +37,9 @@ export default function ProfilePage() {
     username: "",
     avatar_url: "",
     preferred_categories: [],
+    is_public: false,
   });
+  const [copiedLink, setCopiedLink] = useState(false);
   const [email, setEmail] = useState("");
   const [supabaseReady, setSupabaseReady] = useState(false);
   const [stats, setStats] = useState({
@@ -83,11 +86,12 @@ export default function ProfilePage() {
         username: current.username || "",
         avatar_url: current.avatar_url || user.user_metadata?.avatar_url || "",
         preferred_categories: current.preferred_categories || [],
+        is_public: current.is_public ?? false,
       }));
 
       const { data: profileRow } = await supabase
         .from("profiles")
-        .select("full_name, username, avatar_url, preferred_categories")
+        .select("full_name, username, avatar_url, preferred_categories, is_public")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -99,6 +103,7 @@ export default function ProfilePage() {
           username: profileRow.username ?? "",
           avatar_url: profileRow.avatar_url ?? "",
           preferred_categories: profileRow.preferred_categories ?? [],
+          is_public: Boolean(profileRow.is_public),
         });
       }
 
@@ -245,6 +250,7 @@ export default function ProfilePage() {
           username: profile.username.trim(),
           avatar_url: profile.avatar_url.trim(),
           preferred_categories: profile.preferred_categories,
+          is_public: profile.is_public,
         },
         { onConflict: "id" },
       )
@@ -253,6 +259,7 @@ export default function ProfilePage() {
     if (error) {
       setStatus(error.message);
     } else {
+      trackEvent("profile_updated", { is_public: profile.is_public ? 1 : 0 });
       setStatus("Profile saved.");
     }
 
@@ -379,6 +386,66 @@ export default function ProfilePage() {
                   placeholder="bookishreader"
                 />
               </label>
+
+              <div className="rounded-2xl border border-white/10 bg-[#0b1120] p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <label htmlFor="is_public_toggle" className="text-sm font-semibold text-white cursor-pointer">
+                      Make Profile Public
+                    </label>
+                    <p className="mt-1 text-xs leading-5 text-zinc-400">
+                      When enabled, other readers can view your profile, preferred genres, and stats at{" "}
+                      <span className="text-violet-300">novel-tribe.com/u/{profile.username || "yourname"}</span>.
+                      Your library remains private unless explicitly shared.
+                    </p>
+                  </div>
+                  <input
+                    id="is_public_toggle"
+                    type="checkbox"
+                    checked={profile.is_public}
+                    onChange={(e) => {
+                      if (e.target.checked && !profile.username.trim()) {
+                        setStatus("Please set a username before making your profile public.");
+                        return;
+                      }
+                      setProfile((current) => ({ ...current, is_public: e.target.checked }));
+                    }}
+                    className="h-5 w-5 mt-1 cursor-pointer accent-violet-500 rounded"
+                  />
+                </div>
+
+                {profile.username && (
+                  <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/5 pt-3 text-xs">
+                    <span className="text-zinc-400 truncate">
+                      Link: <span className="text-white font-mono">/u/{profile.username}</span>
+                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const url = `${window.location.origin}/u/${encodeURIComponent(profile.username)}`;
+                          navigator.clipboard.writeText(url);
+                          setCopiedLink(true);
+                          setTimeout(() => setCopiedLink(false), 2000);
+                        }}
+                        className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-zinc-300 hover:bg-white/10 hover:text-white"
+                      >
+                        {copiedLink ? "Copied!" : "Copy link"}
+                      </button>
+                      {profile.is_public && (
+                        <a
+                          href={`/u/${encodeURIComponent(profile.username)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="rounded-full bg-violet-500/20 px-2.5 py-1 text-violet-200 hover:bg-violet-500/30"
+                        >
+                          View public card →
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <fieldset>
                 <legend className="mb-2 block text-sm text-zinc-300">Categories you enjoy</legend>

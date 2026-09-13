@@ -4,10 +4,12 @@ create table if not exists profiles (
   username text unique,
   avatar_url text,
   preferred_categories text[] default '{}',
+  is_public boolean default false,
   created_at timestamp with time zone default now()
 );
 
 alter table profiles add column if not exists preferred_categories text[] default '{}';
+alter table profiles add column if not exists is_public boolean default false;
 
 create table if not exists books (
   id uuid primary key default gen_random_uuid(),
@@ -55,6 +57,10 @@ alter table reading_activity enable row level security;
 create policy "Users can view their own profile"
 on profiles for select
 using (auth.uid() = id);
+
+create policy "Anyone can view public profiles"
+on profiles for select
+using (is_public = true);
 
 create policy "Users can update their own profile"
 on profiles for update
