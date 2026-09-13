@@ -1,69 +1,352 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+
+import { allGenres, starterBooks, type BookRecord, type Recommendation } from "@/lib/recommendations";
+
+type BookStatus = "Read" | "Currently Reading" | "Want to Read";
+
+type Book = BookRecord;
+
+type RecommendationResponse = {
+  recommendations?: Recommendation[];
+};
+
+const defaultForm = {
+  title: "",
+  author: "",
+  genre: "Fantasy",
+  status: "Read" as BookStatus,
+  rating: 5,
+};
 
 export default function Home() {
+  const [books, setBooks] = useState<Book[]>(starterBooks);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [form, setForm] = useState(defaultForm);
+  const [exploreGenre, setExploreGenre] = useState("Adventure");
+
+  useEffect(() => {
+    fetch("/api/books")
+      .then((response) => response.json())
+      .then((payload) => {
+        if (Array.isArray(payload.books) && payload.books.length > 0) {
+          setBooks(payload.books);
+        }
+      })
+      .catch(() => {
+        setBooks(starterBooks);
+      });
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/recommend", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ books, exploreGenre }),
+    })
+      .then((response) => response.json())
+      .then((payload: RecommendationResponse) => {
+        if (Array.isArray(payload.recommendations) && payload.recommendations.length > 0) {
+          setRecommendations(payload.recommendations);
+        }
+      })
+      .catch(() => {
+        setRecommendations([]);
+      });
+  }, [books, exploreGenre]);
+
+  const readGenres = useMemo(
+    () => Array.from(new Set(books.filter((book) => book.status === "Read").map((book) => book.genre))),
+    [books],
+  );
+
+  const totalBooks = books.length;
+  const finishedBooks = books.filter((book) => book.status === "Read").length;
+  const avgRating =
+    books.filter((book) => book.rating > 0).reduce((sum, book) => sum + book.rating, 0) /
+    Math.max(books.filter((book) => book.rating > 0).length, 1);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const trimmedTitle = form.title.trim();
+    const trimmedAuthor = form.author.trim();
+
+    if (!trimmedTitle || !trimmedAuthor) {
+      return;
+    }
+
+    const bookPayload: Book = {
+      id: Date.now(),
+      title: trimmedTitle,
+      author: trimmedAuthor,
+      genre: form.genre,
+      status: form.status,
+      rating: form.rating,
+    };
+
+    setBooks((current) => [bookPayload, ...current]);
+
+    await fetch("/api/books", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(bookPayload),
+    });
+
+    setForm(defaultForm);
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main className="min-h-screen bg-[#09090b] text-white">
+      <div className="mx-auto max-w-7xl px-6 pb-20 pt-6 lg:px-8">
+        <header className="mb-10 flex flex-col gap-4 rounded-full border border-white/10 bg-white/4 px-4 py-3 backdrop-blur-sm md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-500 text-lg font-bold text-white shadow-lg shadow-violet-500/30">
+              N
+            </div>
+            <div>
+              <div className="text-sm font-semibold tracking-[0.22em] text-violet-200 uppercase">NovelTribe</div>
+            </div>
+          </div>
+
+          <nav className="flex items-center gap-5 text-sm text-zinc-300">
+            <a href="#tracker" className="transition hover:text-white">Tracker</a>
+            <a href="#recommendations" className="transition hover:text-white">Recommendations</a>
+            <a href="#genres" className="transition hover:text-white">Genres</a>
+          </nav>
+        </header>
+
+        <section className="mb-10 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-violet-500/10 via-[#111827] to-cyan-500/10 p-6 shadow-2xl shadow-violet-500/10">
+            <div className="mb-4 inline-flex rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.25em] text-violet-100">
+              Reading profile
+            </div>
+            <h1 className="max-w-xl text-4xl font-black tracking-tight text-white sm:text-5xl">
+              Track the books you read and discover your next obsession.
+            </h1>
+            <p className="mt-4 max-w-xl text-base leading-7 text-zinc-300">
+              Log the books you’ve finished, keep tabs on your current reads, and let NovelTribe suggest titles based on the genres and stories you already love.
+            </p>
+
+            <div className="mt-8 grid gap-4 sm:grid-cols-3">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Books tracked</div>
+                <div className="mt-3 text-3xl font-bold text-white">{totalBooks}</div>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Finished</div>
+                <div className="mt-3 text-3xl font-bold text-white">{finishedBooks}</div>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Avg rating</div>
+                <div className="mt-3 text-3xl font-bold text-white">{avgRating.toFixed(1)}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-[28px] border border-white/10 bg-[#111827] p-6">
+            <div className="mb-5 text-xs uppercase tracking-[0.24em] text-cyan-200">Currently reading</div>
+            <div className="space-y-4">
+              {books.filter((book) => book.status !== "Read").slice(0, 3).map((book) => (
+                <div key={book.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-3">
+                  <div>
+                    <div className="font-semibold text-white">{book.title}</div>
+                    <div className="text-sm text-zinc-400">{book.author}</div>
+                  </div>
+                  <span className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-cyan-100">
+                    {book.status}
+                  </span>
+                </div>
+              ))}
+              {books.filter((book) => book.status !== "Read").length === 0 && (
+                <div className="rounded-2xl border border-dashed border-white/10 bg-white/3 p-4 text-sm text-zinc-400">
+                  Add a book to start building your reading rhythm.
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section id="tracker" className="grid gap-8 pb-16 lg:grid-cols-[0.8fr_1.2fr]">
+          <form onSubmit={handleSubmit} className="rounded-[28px] border border-white/10 bg-white/4 p-6">
+            <div className="mb-6 text-xs uppercase tracking-[0.25em] text-violet-200">Add a book</div>
+            <div className="space-y-4">
+              <label className="block">
+                <span className="mb-2 block text-sm text-zinc-300">Title</span>
+                <input
+                  value={form.title}
+                  onChange={(e) => setForm((current) => ({ ...current, title: e.target.value }))}
+                  className="w-full rounded-2xl border border-white/10 bg-[#0b1120] px-3 py-3 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/60"
+                  placeholder="The Left Hand of Darkness"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm text-zinc-300">Author</span>
+                <input
+                  value={form.author}
+                  onChange={(e) => setForm((current) => ({ ...current, author: e.target.value }))}
+                  className="w-full rounded-2xl border border-white/10 bg-[#0b1120] px-3 py-3 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/60"
+                  placeholder="Ursula K. Le Guin"
+                />
+              </label>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block">
+                  <span className="mb-2 block text-sm text-zinc-300">Genre</span>
+                  <select
+                    value={form.genre}
+                    onChange={(e) => setForm((current) => ({ ...current, genre: e.target.value }))}
+                    className="w-full rounded-2xl border border-white/10 bg-[#0b1120] px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-violet-500/60"
+                  >
+                    {allGenres.map((genre) => (
+                      <option key={genre} value={genre}>
+                        {genre}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className="mb-2 block text-sm text-zinc-300">Status</span>
+                  <select
+                    value={form.status}
+                    onChange={(e) => setForm((current) => ({ ...current, status: e.target.value as BookStatus }))}
+                    className="w-full rounded-2xl border border-white/10 bg-[#0b1120] px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-violet-500/60"
+                  >
+                    <option value="Read">Read</option>
+                    <option value="Currently Reading">Currently Reading</option>
+                    <option value="Want to Read">Want to Read</option>
+                  </select>
+                </label>
+              </div>
+
+              <label className="block">
+                <span className="mb-2 block text-sm text-zinc-300">Rating</span>
+                <input
+                  type="range"
+                  min={1}
+                  max={5}
+                  value={form.rating}
+                  onChange={(e) => setForm((current) => ({ ...current, rating: Number(e.target.value) }))}
+                  className="w-full accent-violet-500"
+                />
+                <div className="mt-2 text-sm text-violet-200">{form.rating} / 5</div>
+              </label>
+
+              <button
+                type="submit"
+                className="w-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-4 py-3 font-semibold text-white shadow-lg shadow-violet-500/30 transition hover:brightness-110"
+              >
+                Save to my shelf
+              </button>
+            </div>
+          </form>
+
+          <div className="rounded-[28px] border border-white/10 bg-[#0f172a] p-6">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <div className="text-xs uppercase tracking-[0.25em] text-emerald-200">Your library</div>
+                <h2 className="mt-2 text-2xl font-bold text-white">Recent reads</h2>
+              </div>
+              <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-zinc-300">
+                {readGenres.length} genres tracked
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {books.map((book) => (
+                <div key={book.id} className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div>
+                    <div className="font-semibold text-white">{book.title}</div>
+                    <div className="mt-1 text-sm text-zinc-400">{book.author} · {book.genre}</div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="rounded-full border border-violet-400/30 bg-violet-500/10 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-violet-100">
+                      {book.status}
+                    </span>
+                    <span className="text-sm font-medium text-amber-300">{book.rating}/5</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="genres" className="pb-16">
+          <div className="mb-5 text-xs uppercase tracking-[0.25em] text-cyan-200">Explore outside your usual reads</div>
+          <div className="flex flex-wrap gap-3">
+            {allGenres.map((genre) => (
+              <button
+                key={genre}
+                type="button"
+                onClick={() => setExploreGenre(genre)}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                  exploreGenre === genre
+                    ? "bg-gradient-to-r from-cyan-500 to-violet-500 text-white shadow-lg shadow-cyan-500/20"
+                    : "border border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10"
+                }`}
+              >
+                {genre}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section id="recommendations" className="rounded-[32px] border border-white/10 bg-white/4 p-6 md:p-8">
+          <div className="mb-7 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <div className="text-xs uppercase tracking-[0.25em] text-emerald-200">Recommendation engine</div>
+              <h2 className="mt-3 text-3xl font-bold text-white">Suggestions built from your current taste</h2>
+            </div>
+            <p className="text-sm text-zinc-300">Currently exploring: <span className="font-semibold text-white">{exploreGenre}</span></p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            {(recommendations.length > 0 ? recommendations : []).map((book) => (
+              <article key={`${book.id}-${book.title}`} className="rounded-[26px] border border-white/10 bg-[#121a2b] p-4">
+                <div className="mb-4 h-40 rounded-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-500" />
+                <div className="text-[10px] uppercase tracking-[0.2em] text-violet-200">{book.genre}</div>
+                <h3 className="mt-3 text-xl font-semibold text-white">{book.title}</h3>
+                <p className="mt-1 text-sm text-zinc-400">{book.author}</p>
+                <p className="mt-3 text-sm leading-6 text-zinc-300">{book.reason}</p>
+
+                <div className="mt-5 flex items-center justify-between gap-3">
+                  <a
+                    href={`https://www.amazon.com/s?k=${encodeURIComponent(`${book.title} ${book.author}`)}&tag=noveltribe-20`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-900"
+                  >
+                    Buy on Amazon
+                  </a>
+                  <span className="text-xs text-zinc-500">#ad</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-16 rounded-[32px] border border-amber-500/20 bg-amber-500/5 p-6 md:p-8">
+          <div className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
+            <div>
+              <div className="text-xs uppercase tracking-[0.25em] text-amber-200">Affiliate disclosure</div>
+              <h2 className="mt-3 text-3xl font-bold text-white">Clear, compliant, and community-first.</h2>
+              <p className="mt-4 text-zinc-300">
+                Links generated from recommended titles include the required disclosure language and make it easy for readers to support the platform while still keeping the reading experience front and center.
+              </p>
+            </div>
+
+            <div className="rounded-3xl border border-amber-500/30 bg-black/20 p-5">
+              <div className="text-xs uppercase tracking-[0.2em] text-amber-100">Required disclosure</div>
+              <p className="mt-4 text-base text-zinc-200">
+                “As an Amazon Associate I earn from qualifying purchases.”
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
   );
 }

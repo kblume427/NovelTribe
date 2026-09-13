@@ -1,0 +1,10 @@
+{
+  "name": "NovelTribe",
+  "short_name": "NovelTribe",
+  "description": "Track your reads, explore new genres, and discover books tailored to your tastes.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#8b5cf6",
+  "icons": []
+}
