@@ -29,6 +29,8 @@ const defaultForm = {
   rating: 5,
 };
 
+const recommendationFilters = ["For You", ...allGenres];
+
 export default function Home() {
   const amazonAssociateTag = process.env.NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG ?? "noveltribe-20";
 
@@ -41,7 +43,7 @@ export default function Home() {
   const [searchResults, setSearchResults] = useState<GoogleBookResult[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
-  const [exploreGenre, setExploreGenre] = useState("Adventure");
+  const [exploreGenre, setExploreGenre] = useState("For You");
 
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -556,9 +558,9 @@ export default function Home() {
         </section>
 
         <section id="genres" className="pb-16">
-          <div className="mb-5 text-xs uppercase tracking-[0.25em] text-cyan-200">Explore outside your usual reads</div>
+          <div className="mb-5 text-xs uppercase tracking-[0.25em] text-cyan-200">Recommendation filters</div>
           <div className="flex flex-wrap gap-3">
-            {allGenres.map((genre) => (
+            {recommendationFilters.map((genre) => (
               <button
                 key={genre}
                 type="button"
@@ -581,7 +583,7 @@ export default function Home() {
               <div className="text-xs uppercase tracking-[0.25em] text-emerald-200">Recommendation engine</div>
               <h2 className="mt-3 text-3xl font-bold text-white">Suggestions built from your current taste</h2>
             </div>
-            <p className="text-sm text-zinc-300">Currently exploring: <span className="font-semibold text-white">{exploreGenre}</span></p>
+            <p className="text-sm text-zinc-300">Showing: <span className="font-semibold text-white">{exploreGenre}</span></p>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">

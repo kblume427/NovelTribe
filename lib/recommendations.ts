@@ -75,7 +75,11 @@ export function buildHeuristicRecommendations(
   const existingTitles = new Set(books.map((book) => normalizeTitle(book.title)));
 
   return catalog
-    .filter((book) => !existingTitles.has(normalizeTitle(book.title)))
+    .filter(
+      (book) =>
+        !existingTitles.has(normalizeTitle(book.title)) &&
+        (exploreGenre === "For You" || book.genre === exploreGenre),
+    )
     .map((book) => {
       let score = 0;
       let reason = "Popular with readers like you";
@@ -85,9 +89,9 @@ export function buildHeuristicRecommendations(
         reason = `You already enjoy ${book.genre.toLowerCase()} picks`;
       }
 
-      if (book.genre === exploreGenre) {
+      if (exploreGenre !== "For You" && book.genre === exploreGenre) {
         score += 3;
-        reason = `A strong ${exploreGenre.toLowerCase()} pick for your adventurous streak`;
+        reason = `A strong ${exploreGenre.toLowerCase()} pick for your next read`;
       }
 
       if (book.rating >= 4) {

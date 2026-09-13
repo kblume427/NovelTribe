@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   };
 
   const books = body.books ?? [];
-  const exploreGenre = body.exploreGenre ?? "Adventure";
+  const exploreGenre = body.exploreGenre ?? "For You";
 
   if (openai) {
     try {
@@ -21,8 +21,10 @@ export async function POST(request: Request) {
         "You are building a reading recommendation engine for a book tracker.",
         "Return JSON only with an array of 4 objects. Each object should include title, author, genre, score, and reason.",
         `The user has read these books: ${JSON.stringify(books)}`,
-        `The user wants to explore the genre: ${exploreGenre}`,
-        "Priority should be books that match their tastes and also expand them into the chosen genre.",
+        `The user selected recommendation mode: ${exploreGenre}`,
+        exploreGenre === "For You"
+          ? "Recommend across genres based on the user's reading history and preferences."
+          : `Return only books in the exact ${exploreGenre} genre.`,
       ].join(" ");
 
       const completion = await openai.chat.completions.create({
@@ -36,7 +38,8 @@ export async function POST(request: Request) {
       const filteredRecommendations = (parsed as Recommendation[]).filter(
         (recommendation) =>
           typeof recommendation.title === "string" &&
-          !existingTitles.has(normalizeTitle(recommendation.title)),
+          !existingTitles.has(normalizeTitle(recommendation.title)) &&
+          (exploreGenre === "For You" || recommendation.genre === exploreGenre),
       );
 
       if (filteredRecommendations.length > 0) {
