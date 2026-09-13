@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { allGenres, getBookCategories, starterBooks, type BookRecord, type Recommendation } from "@/lib/recommendations";
 import { createSupabaseClient } from "@/lib/supabase/client";
@@ -12,6 +12,31 @@ type RecommendationResponse = {
   source?: string;
 };
 
+function formatSourceLabel(source?: string | null): { label: string; badgeClass: string } {
+  switch (source) {
+    case "openai":
+      return {
+        label: "Curated by AI",
+        badgeClass: "border-purple-500/30 bg-purple-500/10 text-purple-200",
+      };
+    case "google_books_open_library":
+      return {
+        label: "Google Books & Open Library",
+        badgeClass: "border-cyan-500/30 bg-cyan-500/10 text-cyan-200",
+      };
+    case "local_fallback":
+      return {
+        label: "Curated Catalog",
+        badgeClass: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
+      };
+    default:
+      return {
+        label: "Personalized Catalog",
+        badgeClass: "border-white/10 bg-white/5 text-zinc-300",
+      };
+  }
+}
+
 export default function RecommendationsPage() {
   const amazonAssociateTag = process.env.NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG ?? "noveltribe-20";
   const [books, setBooks] = useState<BookRecord[]>(starterBooks);
@@ -20,6 +45,9 @@ export default function RecommendationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [preferredCategories, setPreferredCategories] = useState<string[]>([]);
+  const [source, setSource] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     fetch("/api/books")
@@ -44,39 +72,63 @@ export default function RecommendationsPage() {
       });
   }, []);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    setError(null);
-    setRecommendations([]);
+  const fetchRecommendations = useCallback(
+    async (bypassCache = false) => {
+      if (bypassCache) {
+        setIsRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      setError(null);
 
-    fetch("/api/recommend", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ books, exploreGenre, preferredCategories }),
-      signal: controller.signal,
-    })
-      .then(async (response) => {
-        const payload = await response.json();
-        if (!response.ok) throw new Error(payload.error ?? "Recommendations are unavailable.");
-        return payload as RecommendationResponse;
-      })
-      .then((payload) => {
+      try {
+        const response = await fetch("/api/recommend", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            books,
+            exploreGenre,
+            preferredCategories,
+            refresh: bypassCache,
+          }),
+        });
+
+        const payload = (await response.json()) as RecommendationResponse & { error?: string };
+        if (!response.ok) {
+          throw new Error(payload.error ?? "Recommendations are unavailable right now.");
+        }
+
         if (Array.isArray(payload.recommendations)) {
           setRecommendations(payload.recommendations);
-          trackEvent("recommendations_viewed", { mode: exploreGenre, count: payload.recommendations.length });
-          if (payload.source) trackEvent("recommendation_source_used", { source: payload.source, mode: exploreGenre });
+          setSource(payload.source ?? null);
+          setLastUpdated(new Date());
+          trackEvent("recommendations_viewed", {
+            mode: exploreGenre,
+            count: payload.recommendations.length,
+            refreshed: bypassCache ? 1 : 0,
+          });
+          if (payload.source) {
+            trackEvent("recommendation_source_used", {
+              source: payload.source,
+              mode: exploreGenre,
+              refreshed: bypassCache ? 1 : 0,
+            });
+          }
         }
-      })
-      .catch((requestError: Error) => {
-        if (!controller.signal.aborted) setError(requestError.message);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
+      } catch (requestError: unknown) {
+        const message = requestError instanceof Error ? requestError.message : "Failed to load recommendations.";
+        setError(message);
+      } finally {
+        setLoading(false);
+        setIsRefreshing(false);
+      }
+    },
+    [books, exploreGenre, preferredCategories],
+  );
 
-    return () => controller.abort();
-  }, [books, exploreGenre, preferredCategories]);
+  useEffect(() => {
+    fetchRecommendations(false);
+  }, [fetchRecommendations]);
 
   const availableGenres = useMemo(
     () => Array.from(new Set([...allGenres, ...books.flatMap(getBookCategories).filter(Boolean)])),
@@ -104,13 +156,59 @@ export default function RecommendationsPage() {
         </header>
 
         <section className="rounded-[32px] border border-white/10 bg-white/4 p-6 md:p-8">
-          <div className="mb-7 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div className="mb-7 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <div className="text-xs uppercase tracking-[0.25em] text-emerald-200">Recommendation engine</div>
               <h1 className="mt-3 text-3xl font-bold text-white md:text-4xl">Suggestions built from your taste</h1>
-              <p className="mt-3 max-w-2xl text-zinc-300">Explore a personalized shelf of next reads, or narrow the results to one category.</p>
+              <p className="mt-3 max-w-2xl text-zinc-300">
+                Explore a personalized shelf of next reads, or narrow the results to one category.
+              </p>
             </div>
-            <p className="text-sm text-zinc-300">Showing: <span className="font-semibold text-white">{exploreGenre}</span></p>
+            <div className="flex flex-col items-start gap-2.5 sm:flex-row sm:items-center md:flex-col md:items-end">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm text-zinc-300">
+                  Showing: <span className="font-semibold text-white">{exploreGenre}</span>
+                </span>
+                {source && (
+                  <span
+                    className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+                      formatSourceLabel(source).badgeClass
+                    }`}
+                  >
+                    {formatSourceLabel(source).label}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                {lastUpdated && (
+                  <span className="text-xs text-zinc-400">
+                    Updated {lastUpdated.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => fetchRecommendations(true)}
+                  disabled={loading || isRefreshing}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-200 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Bypass cache and generate fresh suggestions"
+                >
+                  <svg
+                    className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                    />
+                  </svg>
+                  <span>{isRefreshing ? "Refreshing..." : "Refresh suggestions"}</span>
+                </button>
+              </div>
+            </div>
           </div>
 
           <div id="genres" className="mb-8 flex flex-wrap gap-3">
@@ -134,9 +232,37 @@ export default function RecommendationsPage() {
           </div>
 
           {loading && <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-zinc-300">Finding your next reads...</div>}
-          {!loading && error && <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-6 text-amber-100">{error}</div>}
+          {!loading && error && (
+            <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-6 text-amber-100">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="font-medium">Unable to load recommendations</div>
+                  <div className="mt-1 text-sm text-amber-200/90">{error}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => fetchRecommendations(true)}
+                  disabled={isRefreshing}
+                  className="rounded-full bg-amber-400 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-black transition hover:bg-amber-300 disabled:opacity-50"
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
+          )}
           {!loading && !error && recommendations.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-zinc-300">No recommendations found for this category yet.</div>
+            <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-zinc-300">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <span>No recommendations found for this category yet.</span>
+                <button
+                  type="button"
+                  onClick={() => fetchRecommendations(true)}
+                  className="text-xs font-medium text-violet-300 underline hover:text-violet-200"
+                >
+                  Try refreshing
+                </button>
+              </div>
+            </div>
           )}
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

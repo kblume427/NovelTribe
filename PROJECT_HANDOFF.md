@@ -28,7 +28,7 @@ The current product is a functioning private beta. User libraries, profiles, rev
 - Main branch: `master`
 - Canonical production domain: `https://novel-tribe.com`
 - Hosting: Vercel, deployed from GitHub `master`
-- Latest pushed commit: `c1028b5` (`Add SEO enhancements, About page, OpenGraph image, and project handoff`)
+- Latest pushed commit: `ee35c55` (`Update PROJECT_HANDOFF.md with recent SEO releases and commit history`)
 - The repository is kept clean and synchronized with `origin/master`.
 
 ### Environment Variables
@@ -176,7 +176,7 @@ The activity table and avatar policies are also present in `supabase-schema.sql`
 
 ## Recently Completed & Shipped Changes
 
-The SEO enhancements and initial handoff documentation were verified, committed, and pushed to `master` in commit `c1028b5`:
+The SEO enhancements and initial handoff documentation were verified, committed, and pushed to `master` in commits `c1028b5` and `ee35c55`:
 
 - Structured data (JSON-LD for WebSite, SoftwareApplication, and Organization) added in `app/layout.tsx`
 - Crawl disallow rules updated in `app/robots.ts` for `/api/`, `/auth/`, `/login`, and `/profile`
@@ -186,22 +186,29 @@ The SEO enhancements and initial handoff documentation were verified, committed,
 - Generated social preview image added via `app/opengraph-image.tsx`
 - Project handoff documentation created and committed to the repository
 
+### Recommendations Reliability & UX Polish
+
+- **Refresh suggestions action**: Added a button on `/recommendations` allowing readers to bypass cached recommendations and fetch fresh suggestions on demand.
+- **Provider & source badge**: Displayed provider source badge (`Curated by AI`, `Google Books & Open Library`, or `Curated Catalog`) so users can see how recommendations were generated.
+- **Last-updated timestamp**: Added a human-readable timestamp showing when the current shelf was last fetched.
+- **Error retry UX**: Added graceful error and empty-state messaging with a dedicated "Try Again" / "Try refreshing" trigger.
+- **API cache bypass support**: Updated `/api/recommend` route to accept `{ refresh: boolean }`, allowing Google Books and Open Library fetch requests to bypass in-memory caching when requested.
+- **Analytics enhancement**: Included `refreshed` flag in `recommendations_viewed` and `recommendation_source_used` analytics events.
+
 ## Recommended Next To-Do List
 
 ### Immediate Release & Production Verification
 
-- Verify Vercel deployment triggered by `c1028b5`.
+- Verify Vercel deployment of the latest commit.
 - Run all current Supabase migrations in production if not already completed.
 - Verify the new public routes (`/about`, `/robots.txt`, `/sitemap.xml`, `/opengraph-image`) and metadata on `https://novel-tribe.com`.
+- Verify the new "Refresh suggestions" button and provider indicator on `/recommendations`.
 - Revoke any previously exposed Google API key and verify the replacement key in Vercel.
 - Confirm Google Books quota and Books API project alignment.
 - Confirm GA4 Realtime events after deployment.
 
 ### Product Reliability
 
-- Add a visible `Refresh suggestions` action.
-- Add a last-updated/provider indicator on the recommendations page.
-- Add retry messaging when all external providers fail.
 - Move recommendation caching to a durable/shared cache if traffic grows beyond one Vercel instance.
 - Add automated tests for title deduplication, category filtering, diversity, and provider fallback behavior.
 - Consider rate limiting the recommendation API.
