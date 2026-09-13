@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
 import { allGenres, starterBooks, type BookRecord, type Recommendation } from "@/lib/recommendations";
@@ -239,8 +240,8 @@ export default function Home() {
       <div className="mx-auto max-w-7xl px-6 pb-20 pt-6 lg:px-8">
         <header className="mb-10 flex flex-col gap-4 rounded-full border border-white/10 bg-white/5 px-4 py-3 shadow-[0_0_0_1px_rgba(255,255,255,0.03)] backdrop-blur-sm md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-500 text-lg font-bold text-white shadow-lg shadow-violet-500/30">
-              N
+            <div className="relative h-11 w-11 overflow-hidden rounded-full shadow-lg shadow-violet-500/30">
+              <Image src="/icon.png" alt="NovelTribe" fill sizes="44px" className="object-cover" />
             </div>
             <div>
               <div className="text-sm font-semibold tracking-[0.22em] text-violet-200 uppercase">NovelTribe</div>
