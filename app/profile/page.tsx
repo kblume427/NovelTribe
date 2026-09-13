@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { allGenres } from "@/lib/recommendations";
+import { trackEvent } from "@/lib/analytics";
 import { createSupabaseClient } from "@/lib/supabase/client";
 
 type ProfileState = {
@@ -208,6 +209,7 @@ export default function ProfilePage() {
 
     const { data } = supabase.storage.from("avatars").getPublicUrl(filePath);
     setProfile((current) => ({ ...current, avatar_url: `${data.publicUrl}?v=${Date.now()}` }));
+    trackEvent("avatar_uploaded", { file_type: file.type });
     setStatus("Avatar uploaded. Save your profile to keep it.");
     setUploadingAvatar(false);
   };

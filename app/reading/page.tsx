@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 
 import { getBookCategories, starterBooks, type BookRecord } from "@/lib/recommendations";
+import { trackEvent } from "@/lib/analytics";
 
 export default function CurrentlyReadingPage() {
   const [books, setBooks] = useState<BookRecord[]>(starterBooks.filter((book) => book.status === "Currently Reading"));
@@ -14,7 +15,9 @@ export default function CurrentlyReadingPage() {
       .then((response) => response.json())
       .then((payload) => {
         if (Array.isArray(payload.books)) {
-          setBooks(payload.books.filter((book: BookRecord) => book.status === "Currently Reading"));
+          const currentBooks = payload.books.filter((book: BookRecord) => book.status === "Currently Reading");
+          setBooks(currentBooks);
+          trackEvent("currently_reading_viewed", { count: currentBooks.length });
         }
       })
       .finally(() => setLoading(false));

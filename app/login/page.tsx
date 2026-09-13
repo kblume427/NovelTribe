@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { createSupabaseClient } from "@/lib/supabase/client";
+import { trackEvent } from "@/lib/analytics";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -13,6 +14,7 @@ export default function LoginPage() {
     event.preventDefault();
     setLoading(true);
     setStatus(null);
+    trackEvent("sign_in_started", { method: "magic_link" });
 
     const supabase = createSupabaseClient();
     const { error } = await supabase.auth.signInWithOtp({
@@ -26,6 +28,7 @@ export default function LoginPage() {
       setStatus(error.message);
     } else {
       setStatus("Check your email for a magic sign-in link.");
+      trackEvent("sign_in_completed", { method: "magic_link" });
     }
 
     setLoading(false);

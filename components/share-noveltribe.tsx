@@ -1,18 +1,13 @@
 "use client";
 
 import { useState } from "react";
-
-declare global {
-  interface Window {
-    gtag?: (...args: unknown[]) => void;
-  }
-}
+import { trackEvent } from "@/lib/analytics";
 
 export default function ShareNovelTribe() {
   const [copied, setCopied] = useState(false);
 
   const trackShare = (method: string) => {
-    window.gtag?.("event", "share", {
+    trackEvent("share_completed", {
       method,
       content_type: "website",
       item_id: "noveltribe-home",
@@ -20,20 +15,27 @@ export default function ShareNovelTribe() {
   };
 
   const handleShare = async () => {
+    const supportsNativeShare = typeof navigator.share === "function";
+    trackEvent("share_clicked", { method: supportsNativeShare ? "native" : "copy" });
     const shareData = {
       title: "NovelTribe",
       text: "Track your reading and discover your next obsession with NovelTribe.",
       url: "https://novel-tribe.com",
     };
 
-    if (navigator.share) {
-      await navigator.share(shareData).catch(() => undefined);
-      trackShare("native");
+    if (supportsNativeShare) {
+      try {
+        await navigator.share(shareData);
+        trackShare("native");
+      } catch {
+        return;
+      }
       return;
     }
 
     await navigator.clipboard.writeText(shareData.url);
     setCopied(true);
+    trackEvent("share_link_copied", { method: "copy" });
     trackShare("copy");
     window.setTimeout(() => setCopied(false), 2200);
   };

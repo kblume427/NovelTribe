@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
 import ShareNovelTribe from "@/components/share-noveltribe";
+import { trackEvent } from "@/lib/analytics";
 import { allGenres, getBookCategories, starterBooks, type BookRecord } from "@/lib/recommendations";
 
 type BookStatus = "Read" | "Currently Reading" | "Want to Read";
@@ -137,6 +138,10 @@ export default function Home() {
             current.map((book) => (String(book.id) === String(editingBookId) ? payload.book : book)),
           );
           saveSucceeded = true;
+          trackEvent("book_status_changed", { status: bookPayload.status, category: bookPayload.genre });
+          if (bookPayload.status === "Read") trackEvent("book_finished", { category: bookPayload.genre });
+          if (bookPayload.rating > 0) trackEvent("book_rated", { rating: bookPayload.rating, category: bookPayload.genre });
+          if (bookPayload.review) trackEvent("review_saved", { category: bookPayload.genre });
         } else {
           setBookError("The book could not be saved. Please try again.");
         }
@@ -159,6 +164,7 @@ export default function Home() {
           setBooks((current) => [bookPayload, ...current]);
         }
         saveSucceeded = true;
+        trackEvent("book_added", { method: "manual", status: bookPayload.status, category: bookPayload.genre });
       } else {
         const payload = await response.json().catch(() => null);
         setBookError(payload?.error ?? "The book could not be added. Please try again.");
@@ -276,6 +282,7 @@ export default function Home() {
       const payload = await response.json();
       if (payload.book) {
         setBooks((current) => current.map((book) => (book.id === importedBook.id ? payload.book : book)));
+        trackEvent("book_imported", { source: "google_books", category: importedBook.genre });
       }
     }
   };

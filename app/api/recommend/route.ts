@@ -175,11 +175,12 @@ export async function POST(request: Request) {
             ...recommendation,
             genre: exploreGenre,
           })),
+          source: "openai",
         });
       }
 
       if (exploreGenre === "For You" && filteredRecommendations.length > 0) {
-        return Response.json({ recommendations: diversifyRecommendations(filteredRecommendations) });
+        return Response.json({ recommendations: diversifyRecommendations(filteredRecommendations), source: "openai" });
       }
     } catch (error) {
       console.warn("OpenAI recommendation fetch failed, using local fallback", error);
@@ -189,7 +190,7 @@ export async function POST(request: Request) {
   if (exploreGenre !== "For You") {
     const externalRecommendations = await getExternalRecommendations(books, exploreGenre);
     if (externalRecommendations.length > 0) {
-      return Response.json({ recommendations: externalRecommendations.slice(0, 8) });
+      return Response.json({ recommendations: externalRecommendations.slice(0, 8), source: "google_books_open_library" });
     }
   }
 
@@ -203,11 +204,12 @@ export async function POST(request: Request) {
       .slice(0, 12);
 
     if (googleRecommendations.length > 0) {
-      return Response.json({ recommendations: diversifyRecommendations(googleRecommendations) });
+      return Response.json({ recommendations: diversifyRecommendations(googleRecommendations), source: "google_books_open_library" });
     }
   }
 
   return Response.json({
     recommendations: buildHeuristicRecommendations(books, exploreGenre, preferredCategories),
+    source: "local_fallback",
   });
 }

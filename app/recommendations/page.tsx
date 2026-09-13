@@ -5,9 +5,11 @@ import { useEffect, useMemo, useState } from "react";
 
 import { allGenres, getBookCategories, starterBooks, type BookRecord, type Recommendation } from "@/lib/recommendations";
 import { createSupabaseClient } from "@/lib/supabase/client";
+import { trackEvent } from "@/lib/analytics";
 
 type RecommendationResponse = {
   recommendations?: Recommendation[];
+  source?: string;
 };
 
 export default function RecommendationsPage() {
@@ -60,7 +62,11 @@ export default function RecommendationsPage() {
         return payload as RecommendationResponse;
       })
       .then((payload) => {
-        if (Array.isArray(payload.recommendations)) setRecommendations(payload.recommendations);
+        if (Array.isArray(payload.recommendations)) {
+          setRecommendations(payload.recommendations);
+          trackEvent("recommendations_viewed", { mode: exploreGenre, count: payload.recommendations.length });
+          if (payload.source) trackEvent("recommendation_source_used", { source: payload.source, mode: exploreGenre });
+        }
       })
       .catch((requestError: Error) => {
         if (!controller.signal.aborted) setError(requestError.message);
@@ -112,7 +118,10 @@ export default function RecommendationsPage() {
               <button
                 key={genre}
                 type="button"
-                onClick={() => setExploreGenre(genre)}
+                onClick={() => {
+                  setExploreGenre(genre);
+                  trackEvent("recommendation_filter_selected", { category: genre });
+                }}
                 className={`rounded-full px-4 py-2 text-sm font-medium transition ${
                   exploreGenre === genre
                     ? "bg-gradient-to-r from-cyan-500 to-violet-500 text-white shadow-lg shadow-cyan-500/20"
@@ -139,7 +148,7 @@ export default function RecommendationsPage() {
                 <p className="mt-1 text-sm text-zinc-400">{book.author}</p>
                 <p className="mt-3 text-sm leading-6 text-zinc-300">{book.reason}</p>
                 <div className="mt-5 flex items-center justify-between gap-3">
-                  <a href={`https://www.amazon.com/s?k=${encodeURIComponent(`${book.title} ${book.author}`)}&tag=${encodeURIComponent(amazonAssociateTag)}`} target="_blank" rel="sponsored noopener noreferrer" className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-900">Buy on Amazon</a>
+                  <a href={`https://www.amazon.com/s?k=${encodeURIComponent(`${book.title} ${book.author}`)}&tag=${encodeURIComponent(amazonAssociateTag)}`} onClick={() => { trackEvent("recommendation_clicked", { category: book.genre }); trackEvent("affiliate_link_clicked", { category: book.genre, source: "recommendation" }); }} target="_blank" rel="sponsored noopener noreferrer" className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-900">Buy on Amazon</a>
                   <span className="text-xs text-zinc-500">#ad</span>
                 </div>
               </article>
