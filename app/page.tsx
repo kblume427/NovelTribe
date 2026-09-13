@@ -38,12 +38,14 @@ export default function Home() {
   const [editingBookId, setEditingBookId] = useState<string | number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<GoogleBookResult[]>([]);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [exploreGenre, setExploreGenre] = useState("Adventure");
 
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
+      setSearchError(null);
       return;
     }
 
@@ -182,12 +184,17 @@ export default function Home() {
     }
 
     setIsSearching(true);
+    setSearchError(null);
 
     try {
-      const response = await fetch(
-        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=6&printType=books`,
-      );
+      const response = await fetch(`/api/books/search?q=${encodeURIComponent(query)}`);
       const payload = await response.json();
+
+      if (!response.ok) {
+        setSearchResults([]);
+        setSearchError(payload.error ?? "Google Books search is unavailable.");
+        return;
+      }
 
       if (!payload.items) {
         setSearchResults([]);
@@ -205,6 +212,7 @@ export default function Home() {
       setSearchResults(mapped);
     } catch {
       setSearchResults([]);
+      setSearchError("Google Books search is unavailable. Please try again later.");
     } finally {
       setIsSearching(false);
     }
@@ -227,6 +235,7 @@ export default function Home() {
     setBooks((current) => [importedBook, ...current]);
     setSearchQuery("");
     setSearchResults([]);
+    setSearchError(null);
 
     await fetch("/api/books", {
       method: "POST",
@@ -424,7 +433,13 @@ export default function Home() {
                 className="w-full rounded-2xl border border-white/10 bg-[#101827] px-3 py-2.5 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/60"
               />
 
-              {searchQuery.trim() && !isSearching && searchResults.length === 0 && (
+              {searchQuery.trim() && !isSearching && searchError && (
+                <div className="mt-4 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-sm text-amber-100">
+                  {searchError}
+                </div>
+              )}
+
+              {searchQuery.trim() && !isSearching && !searchError && searchResults.length === 0 && (
                 <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-white/3 p-3 text-sm text-zinc-400">
                   No matching titles found. Try a different search.
                 </div>
