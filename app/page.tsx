@@ -45,6 +45,8 @@ export default function Home() {
   const [useManualCover, setUseManualCover] = useState(false);
   const [communityApprovedCover, setCommunityApprovedCover] = useState(false);
   const [isFindingManualCover, setIsFindingManualCover] = useState(false);
+  const [coverCandidates, setCoverCandidates] = useState<Array<{ book: Book; coverUrl: string }>>([]);
+  const [isFindingMissingCovers, setIsFindingMissingCovers] = useState(false);
 
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -151,6 +153,40 @@ export default function Home() {
   const avgRating =
     books.filter((book) => book.rating > 0).reduce((sum, book) => sum + book.rating, 0) /
     Math.max(books.filter((book) => book.rating > 0).length, 1);
+  const missingCoverBooks = books.filter((book) => !book.cover_url);
+
+  const findMissingCovers = async () => {
+    setIsFindingMissingCovers(true);
+    const candidates: Array<{ book: Book; coverUrl: string }> = [];
+    for (const book of missingCoverBooks) {
+      const query = book.isbn || `${book.title} ${book.author}`;
+      try {
+        const response = await fetch(`/api/books/search?q=${encodeURIComponent(query)}`);
+        const payload = await response.json();
+        const coverUrl = payload.items?.find((item: { volumeInfo?: { imageLinks?: { thumbnail?: string; smallThumbnail?: string } } }) =>
+          item.volumeInfo?.imageLinks?.thumbnail || item.volumeInfo?.imageLinks?.smallThumbnail,
+        )?.volumeInfo?.imageLinks?.thumbnail;
+        if (coverUrl) candidates.push({ book, coverUrl });
+      } catch {
+        // Keep processing the remaining books when one lookup fails.
+      }
+    }
+    setCoverCandidates(candidates);
+    setIsFindingMissingCovers(false);
+  };
+
+  const approveMissingCover = async (candidate: { book: Book; coverUrl: string }) => {
+    const response = await fetch("/api/books", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...candidate.book, cover_url: candidate.coverUrl }),
+    });
+    if (response.ok) {
+      const payload = await response.json();
+      if (payload.book) setBooks((current) => current.map((book) => String(book.id) === String(candidate.book.id) ? payload.book : book));
+      setCoverCandidates((current) => current.filter((item) => item.book.id !== candidate.book.id));
+    }
+  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -640,8 +676,13 @@ export default function Home() {
                   <option value="finished">Recently finished</option>
                 </select>
               </div>
-              <div className="text-sm text-zinc-400">{visibleBooks.length} books · {readGenres.length} genres tracked</div>
+              <div className="flex flex-wrap items-center gap-3 text-sm text-zinc-400">
+                <span>{visibleBooks.length} books · {readGenres.length} genres tracked</span>
+                {missingCoverBooks.length > 0 && <button type="button" onClick={() => void findMissingCovers()} disabled={isFindingMissingCovers} className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-xs font-medium text-cyan-100 hover:bg-cyan-500/20 disabled:opacity-60">{isFindingMissingCovers ? "Finding covers..." : `Find ${missingCoverBooks.length} missing cover${missingCoverBooks.length === 1 ? "" : "s"}`}</button>}
+              </div>
             </div>
+
+            {coverCandidates.length > 0 && <div className="mb-5 space-y-3 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-4"><div className="text-sm font-semibold text-white">Review cover matches</div>{coverCandidates.map((candidate) => <div key={candidate.book.id} className="flex flex-col gap-3 rounded-xl border border-white/10 bg-[#0b1120] p-3 sm:flex-row sm:items-center"><img src={candidate.coverUrl} alt="" className="h-20 w-14 rounded-lg bg-[#111827] object-contain" /><div className="min-w-0 flex-1"><div className="font-medium text-white">{candidate.book.title}</div><div className="text-sm text-zinc-400">{candidate.book.author}</div></div><button type="button" onClick={() => void approveMissingCover(candidate)} className="rounded-full bg-cyan-500/20 px-3 py-2 text-xs font-medium text-cyan-100 hover:bg-cyan-500/30">Use cover</button></div>)}</div>}
 
             <div className="space-y-4">
               {visibleBooks.map((book) => (

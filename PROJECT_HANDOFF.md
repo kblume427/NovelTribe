@@ -126,6 +126,7 @@ Rules:
 - Quick Add stores immutable Google Books cover URLs for library and Currently Reading display
 - Manual book entry looks up and previews an official Google Books cover when a title/author match is found
 - Manual cover previews require explicit Use/Skip approval; approved covers are shared by ISBN through `cover_approvals`
+- Library offers a conditional Find missing covers workflow with per-book approval
 
 ### Private Activity And Reviews
 

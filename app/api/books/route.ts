@@ -128,7 +128,7 @@ export async function PATCH(request: Request) {
       isbn: payload.isbn ?? existingBook.isbn ?? null,
       categories: payload.categories ?? existingBook.categories ?? [payload.genre],
       review: payload.review?.trim().slice(0, 1000) || null,
-      cover_url: existingBook.cover_url ?? null,
+      cover_url: payload.cover_url ?? existingBook.cover_url ?? null,
       finished_at:
         payload.status === "Read"
           ? existingBook.status === "Read" && existingBook.finished_at
