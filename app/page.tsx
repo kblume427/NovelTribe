@@ -17,7 +17,7 @@ type GoogleBookResult = {
   id: string;
   title: string;
   author: string;
-  category?: string;
+  categories?: string[];
   thumbnail?: string;
   isbn?: string;
 };
@@ -29,8 +29,6 @@ const defaultForm = {
   status: "Read" as BookStatus,
   rating: 5,
 };
-
-const recommendationFilters = ["For You", ...allGenres];
 
 export default function Home() {
   const amazonAssociateTag = process.env.NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG ?? "noveltribe-20";
@@ -94,6 +92,11 @@ export default function Home() {
     () => Array.from(new Set(books.filter((book) => book.status === "Read").map((book) => book.genre))),
     [books],
   );
+  const availableGenres = useMemo(
+    () => Array.from(new Set([...allGenres, ...books.map((book) => book.genre).filter(Boolean)])),
+    [books],
+  );
+  const recommendationFilters = ["For You", ...availableGenres];
 
   const totalBooks = books.length;
   const finishedBooks = books.filter((book) => book.status === "Read").length;
@@ -227,7 +230,7 @@ export default function Home() {
         id: item.id,
         title: item.volumeInfo?.title ?? "Untitled",
         author: item.volumeInfo?.authors?.join(", ") ?? "Unknown author",
-        category: item.volumeInfo?.categories?.[0],
+        categories: item.volumeInfo?.categories,
         thumbnail: item.volumeInfo?.imageLinks?.thumbnail,
         isbn: item.volumeInfo?.industryIdentifiers?.find(
           (identifier: { type: string; identifier: string }) => identifier.type === "ISBN_13",
@@ -246,15 +249,13 @@ export default function Home() {
   };
 
   const handleImportFromGoogle = async (result: GoogleBookResult) => {
-    const normalizedGenre = allGenres.includes(result.category ?? "")
-      ? result.category!
-      : form.genre || "Fantasy";
+    const importedGenre = result.categories?.filter(Boolean).join(" / ") || form.genre || "Fantasy";
 
     const importedBook: Book = {
       id: Date.now(),
       title: result.title,
       author: result.author,
-      genre: normalizedGenre,
+      genre: importedGenre,
       status: "Want to Read",
       rating: 0,
       isbn: result.isbn ?? null,
@@ -399,7 +400,7 @@ export default function Home() {
                     onChange={(e) => setForm((current) => ({ ...current, genre: e.target.value }))}
                     className="w-full rounded-2xl border border-white/10 bg-[#0b1120] px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-violet-500/60"
                   >
-                    {allGenres.map((genre) => (
+                    {availableGenres.map((genre) => (
                       <option key={genre} value={genre}>
                         {genre}
                       </option>
@@ -496,7 +497,11 @@ export default function Home() {
                       <div className="min-w-0 flex-1">
                         <div className="truncate font-medium text-white">{result.title}</div>
                         <div className="truncate text-sm text-zinc-400">{result.author}</div>
-                        {result.category && <div className="mt-1 text-[10px] uppercase tracking-[0.2em] text-cyan-200">{result.category}</div>}
+                        {result.categories?.length ? (
+                          <div className="mt-1 text-[10px] uppercase tracking-[0.2em] text-cyan-200">
+                            {result.categories.join(" / ")}
+                          </div>
+                        ) : null}
                       </div>
 
                       <button
