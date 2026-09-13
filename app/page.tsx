@@ -40,6 +40,11 @@ export default function Home() {
   const [isSearching, setIsSearching] = useState(false);
   const [libraryQuery, setLibraryQuery] = useState("");
   const [librarySort, setLibrarySort] = useState("newest");
+  const [manualCoverUrl, setManualCoverUrl] = useState<string | null>(null);
+  const [manualCoverIsbn, setManualCoverIsbn] = useState<string | null>(null);
+  const [useManualCover, setUseManualCover] = useState(false);
+  const [communityApprovedCover, setCommunityApprovedCover] = useState(false);
+  const [isFindingManualCover, setIsFindingManualCover] = useState(false);
 
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -54,6 +59,52 @@ export default function Home() {
 
     return () => window.clearTimeout(timeout);
   }, [searchQuery]);
+
+  useEffect(() => {
+    const title = form.title.trim();
+    const author = form.author.trim();
+    if (!title || !author || editingBookId !== null) {
+      setManualCoverUrl(null);
+      setManualCoverIsbn(null);
+      setUseManualCover(false);
+      setCommunityApprovedCover(false);
+      return;
+    }
+
+    const timeout = window.setTimeout(async () => {
+      setIsFindingManualCover(true);
+      try {
+        const response = await fetch(`/api/books/search?q=${encodeURIComponent(`${title} ${author}`)}`);
+        const payload = await response.json();
+        const match = payload.items?.find((item: { volumeInfo?: { title?: string; imageLinks?: { thumbnail?: string; smallThumbnail?: string }; industryIdentifiers?: { type: string; identifier: string }[] } }) =>
+          item.volumeInfo?.imageLinks?.thumbnail || item.volumeInfo?.imageLinks?.smallThumbnail,
+        );
+        const coverUrl = match?.volumeInfo?.imageLinks?.thumbnail ?? match?.volumeInfo?.imageLinks?.smallThumbnail ?? null;
+        const isbn = match?.volumeInfo?.industryIdentifiers?.find((identifier: { type: string; identifier: string }) => identifier.type === "ISBN_13")?.identifier
+          ?? match?.volumeInfo?.industryIdentifiers?.find((identifier: { type: string; identifier: string }) => identifier.type === "ISBN_10")?.identifier
+          ?? null;
+        setManualCoverUrl(coverUrl);
+        setManualCoverIsbn(isbn);
+        setUseManualCover(false);
+        setCommunityApprovedCover(false);
+        if (isbn) {
+          const approvalResponse = await fetch(`/api/covers/approval?isbn=${encodeURIComponent(isbn)}`);
+          const approval = await approvalResponse.json();
+          if (approval.approved && approval.cover_url) {
+            setManualCoverUrl(approval.cover_url);
+            setUseManualCover(true);
+            setCommunityApprovedCover(true);
+          }
+        }
+      } catch {
+        setManualCoverUrl(null);
+      } finally {
+        setIsFindingManualCover(false);
+      }
+    }, 650);
+
+    return () => window.clearTimeout(timeout);
+  }, [form.title, form.author, editingBookId]);
 
   useEffect(() => {
     fetch("/api/books")
@@ -119,6 +170,7 @@ export default function Home() {
       status: form.status,
       rating: form.rating,
       review: editingBookId !== null ? books.find((book) => String(book.id) === String(editingBookId))?.review ?? null : null,
+      cover_url: editingBookId !== null ? books.find((book) => String(book.id) === String(editingBookId))?.cover_url ?? null : useManualCover ? manualCoverUrl : null,
     };
 
     setBookError(null);
@@ -264,6 +316,7 @@ export default function Home() {
       status: "Want to Read",
       rating: 0,
       isbn: result.isbn ?? null,
+      cover_url: result.thumbnail ?? null,
       categories: importedCategories.length > 0 ? importedCategories : [importedGenre],
     };
 
@@ -345,6 +398,7 @@ export default function Home() {
                   <div>
                     <div className="font-semibold text-white">{book.title}</div>
                     <div className="text-sm text-zinc-400">{book.author}</div>
+                    {book.cover_url && <img src={book.cover_url} alt="" className="mt-3 h-24 w-16 rounded-lg bg-[#0b1120] object-contain" />}
                   </div>
                   <span className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-cyan-100">
                     {book.status}
@@ -456,6 +510,27 @@ export default function Home() {
                   />
                   <div className="mt-2 text-xs text-zinc-500">{(form.review ?? "").length}/1000 characters</div>
                 </label>
+              )}
+
+              {editingBookId === null && (isFindingManualCover || manualCoverUrl) && (
+                <div className="flex flex-col gap-3 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-3 sm:flex-row sm:items-center">
+                  {manualCoverUrl ? <img src={manualCoverUrl} alt="Google Books cover preview" className="h-20 w-14 rounded-lg bg-[#0b1120] object-contain" /> : <div className="h-20 w-14 animate-pulse rounded-lg bg-white/10" />}
+                  <div className="min-w-0 flex-1 text-sm text-zinc-300">
+                    <div>{isFindingManualCover ? "Looking for the official cover..." : communityApprovedCover ? "Community-approved cover" : "Official Google Books cover found"}</div>
+                    {!isFindingManualCover && manualCoverUrl && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {!communityApprovedCover && <button type="button" onClick={async () => {
+                          setUseManualCover(true);
+                          if (manualCoverIsbn) {
+                            await fetch("/api/covers/approval", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isbn: manualCoverIsbn, cover_url: manualCoverUrl }) });
+                            setCommunityApprovedCover(true);
+                          }
+                        }} className="rounded-full bg-cyan-500/20 px-3 py-1.5 text-xs font-medium text-cyan-100 hover:bg-cyan-500/30">Use this cover</button>}
+                        {!communityApprovedCover && <button type="button" onClick={() => setUseManualCover(false)} className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/10">Skip cover</button>}
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
 
               <button

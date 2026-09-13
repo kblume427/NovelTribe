@@ -31,6 +31,14 @@ create table if not exists books (
   isbn text,
   categories text[] default '{}',
   review text check (review is null or char_length(review) <= 1000),
+  cover_url text,
+  created_at timestamp with time zone default now()
+);
+
+create table if not exists cover_approvals (
+  isbn text primary key,
+  cover_url text not null,
+  approved_by uuid not null references auth.users(id) on delete cascade,
   created_at timestamp with time zone default now()
 );
 
@@ -38,6 +46,7 @@ alter table books add column if not exists finished_at timestamp with time zone;
 alter table books add column if not exists isbn text;
 alter table books add column if not exists categories text[] default '{}';
 alter table books add column if not exists review text;
+alter table books add column if not exists cover_url text;
 
 create table if not exists reading_activity (
   id uuid primary key default gen_random_uuid(),
@@ -82,6 +91,7 @@ on conflict (id) do update set public = true;
 alter table profiles enable row level security;
 alter table books enable row level security;
 alter table reading_activity enable row level security;
+alter table cover_approvals enable row level security;
 alter table follows enable row level security;
 alter table notifications enable row level security;
 
@@ -162,6 +172,19 @@ with check (auth.uid() = follower_id);
 create policy "Users can delete their own follows"
 on follows for delete
 using (auth.uid() = follower_id);
+
+drop policy if exists "Authenticated users can view cover approvals" on cover_approvals;
+drop policy if exists "Authenticated users can create cover approvals" on cover_approvals;
+
+create policy "Authenticated users can view cover approvals"
+on cover_approvals for select
+to authenticated
+using (true);
+
+create policy "Authenticated users can create cover approvals"
+on cover_approvals for insert
+to authenticated
+with check (auth.uid() = approved_by);
 
 drop policy if exists "Users can view their own notifications" on notifications;
 drop policy if exists "Actors can create notifications" on notifications;

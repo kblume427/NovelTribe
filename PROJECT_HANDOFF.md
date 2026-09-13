@@ -120,6 +120,12 @@ Rules:
 - For You incorporates high-rated categories from followed users who make their library and ratings public
 - Matching recommendation cards identify the followed-reader high-rating signal
 - Recommendation cards show Google Books or Open Library cover art when available, with a visual fallback otherwise
+- External category recommendations require matching source metadata to avoid mislabeled or unrelated cards
+- Missing recommendation covers are enriched from Open Library using title/author lookup with in-process caching
+- Recommendation cards preserve the full cover image with `object-contain` instead of cropping it
+- Quick Add stores immutable Google Books cover URLs for library and Currently Reading display
+- Manual book entry looks up and previews an official Google Books cover when a title/author match is found
+- Manual cover previews require explicit Use/Skip approval; approved covers are shared by ISBN through `cover_approvals`
 
 ### Private Activity And Reviews
 
