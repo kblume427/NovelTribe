@@ -423,7 +423,7 @@ export default function ProfilePage() {
                       <button
                         type="button"
                         onClick={() => {
-                          const url = `${window.location.origin}/u/${encodeURIComponent(profile.username)}`;
+                          const url = `https://novel-tribe.com/u/${encodeURIComponent(profile.username)}`;
                           navigator.clipboard.writeText(url);
                           setCopiedLink(true);
                           setTimeout(() => setCopiedLink(false), 2000);
