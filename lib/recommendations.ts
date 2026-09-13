@@ -11,6 +11,7 @@ export type BookRecord = {
   isbn?: string | null;
   categories?: string[] | null;
   review?: string | null;
+  created_at?: string;
 };
 
 export type Recommendation = BookRecord & {

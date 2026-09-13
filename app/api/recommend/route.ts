@@ -8,6 +8,9 @@ import {
 } from "@/lib/recommendations";
 import { openai } from "@/lib/server";
 
+const categoryCache = new Map<string, { expiresAt: number; recommendations: Recommendation[] }>();
+const CATEGORY_CACHE_TTL = 5 * 60 * 1000;
+
 function matchesCategory(value: unknown, category: string) {
   if (typeof value !== "string") {
     return false;
@@ -19,6 +22,14 @@ function matchesCategory(value: unknown, category: string) {
 }
 
 async function getGoogleBookRecommendations(books: BookRecord[], category: string) {
+  const cacheKey = `google:${category.toLowerCase()}`;
+  const cached = categoryCache.get(cacheKey);
+  const existingTitles = new Set(books.map((book) => normalizeTitle(book.title)));
+
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.recommendations.filter((book: Recommendation) => !existingTitles.has(normalizeTitle(book.title)));
+  }
+
   const url = new URL("https://www.googleapis.com/books/v1/volumes");
   url.searchParams.set("q", `subject:${category}`);
   url.searchParams.set("maxResults", "12");
@@ -28,15 +39,13 @@ async function getGoogleBookRecommendations(books: BookRecord[], category: strin
     url.searchParams.set("key", process.env.GOOGLE_BOOKS_API_KEY);
   }
 
-  const response = await fetch(url, { cache: "no-store" });
+  const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(8000) });
   if (!response.ok) {
     return [];
   }
 
   const payload = await response.json();
-  const existingTitles = new Set(books.map((book) => normalizeTitle(book.title)));
-
-  return (payload.items ?? [])
+  const recommendations = (payload.items ?? [])
     .map((item: { id: string; volumeInfo?: { title?: string; authors?: string[]; categories?: string[] } }) => {
       const title = item.volumeInfo?.title ?? "Untitled";
       return {
@@ -50,7 +59,59 @@ async function getGoogleBookRecommendations(books: BookRecord[], category: strin
         reason: `A ${category.toLowerCase()} title from Google Books`,
       };
     })
-    .filter((book: Recommendation) => !existingTitles.has(normalizeTitle(book.title)));
+    .filter((book: Recommendation) => book.title !== "Untitled");
+
+  categoryCache.set(cacheKey, { expiresAt: Date.now() + CATEGORY_CACHE_TTL, recommendations });
+  return recommendations.filter((book: Recommendation) => !existingTitles.has(normalizeTitle(book.title)));
+}
+
+async function getOpenLibraryRecommendations(books: BookRecord[], category: string) {
+  const cached = categoryCache.get(`open-library:${category.toLowerCase()}`);
+  const existingTitles = new Set(books.map((book) => normalizeTitle(book.title)));
+
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.recommendations.filter((book: Recommendation) => !existingTitles.has(normalizeTitle(book.title)));
+  }
+
+  const url = new URL("https://openlibrary.org/search.json");
+  url.searchParams.set("subject", category);
+  url.searchParams.set("limit", "12");
+  url.searchParams.set("fields", "key,title,author_name,subject");
+
+  const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(8000) });
+  if (!response.ok) return [];
+
+  const payload = await response.json();
+  const recommendations = (payload.docs ?? [])
+    .map((item: { key?: string; title?: string; author_name?: string[] }) => ({
+      id: item.key ?? item.title ?? crypto.randomUUID(),
+      title: item.title ?? "Untitled",
+      author: item.author_name?.join(", ") ?? "Unknown author",
+      genre: category,
+      status: "Want to Read" as const,
+      rating: 0,
+      score: 4,
+      reason: `A ${category.toLowerCase()} title from Open Library`,
+    }))
+    .filter((book: Recommendation) => book.title !== "Untitled");
+
+  categoryCache.set(`open-library:${category.toLowerCase()}`, {
+    expiresAt: Date.now() + CATEGORY_CACHE_TTL,
+    recommendations,
+  });
+
+  return recommendations.filter((book: Recommendation) => !existingTitles.has(normalizeTitle(book.title)));
+}
+
+async function getExternalRecommendations(books: BookRecord[], category: string) {
+  const [googleRecommendations, openLibraryRecommendations] = await Promise.all([
+    getGoogleBookRecommendations(books, category).catch(() => []),
+    getOpenLibraryRecommendations(books, category).catch(() => []),
+  ]);
+  const combined = [...googleRecommendations, ...openLibraryRecommendations];
+  return combined.filter(
+    (book, index) => combined.findIndex((candidate) => normalizeTitle(candidate.title) === normalizeTitle(book.title)) === index,
+  );
 }
 
 export async function POST(request: Request) {
@@ -105,7 +166,7 @@ export async function POST(request: Request) {
         (recommendation) =>
           typeof recommendation.title === "string" &&
           !existingTitles.has(normalizeTitle(recommendation.title)) &&
-          exploreGenre === "For You" || matchesCategory(recommendation.genre, exploreGenre),
+          (exploreGenre === "For You" || matchesCategory(recommendation.genre, exploreGenre)),
       );
 
       if (exploreGenre !== "For You" && filteredRecommendations.length > 0) {
@@ -126,15 +187,15 @@ export async function POST(request: Request) {
   }
 
   if (exploreGenre !== "For You") {
-    const googleRecommendations = await getGoogleBookRecommendations(books, exploreGenre).catch(() => []);
-    if (googleRecommendations.length > 0) {
-      return Response.json({ recommendations: googleRecommendations });
+    const externalRecommendations = await getExternalRecommendations(books, exploreGenre);
+    if (externalRecommendations.length > 0) {
+      return Response.json({ recommendations: externalRecommendations.slice(0, 8) });
     }
   }
 
   if (readCategories.length > 0) {
     const categoryRecommendations = await Promise.all(
-      readCategories.slice(0, 3).map((category) => getGoogleBookRecommendations(books, category).catch(() => [])),
+      readCategories.slice(0, 5).map((category) => getExternalRecommendations(books, category)),
     );
     const googleRecommendations = categoryRecommendations
       .flat()
