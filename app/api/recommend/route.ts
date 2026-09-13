@@ -1,5 +1,6 @@
 import {
   buildHeuristicRecommendations,
+  getBookCategories,
   normalizeTitle,
   type BookRecord,
   type Recommendation,
@@ -59,6 +60,13 @@ export async function POST(request: Request) {
 
   const books = body.books ?? [];
   const exploreGenre = body.exploreGenre ?? "For You";
+  const readCategoryCounts = new Map<string, number>();
+  books.filter((book) => book.status === "Read").flatMap(getBookCategories).forEach((category) => {
+    readCategoryCounts.set(category, (readCategoryCounts.get(category) ?? 0) + 1);
+  });
+  const readCategories = [...readCategoryCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([category]) => category);
 
   if (openai) {
     try {
@@ -84,10 +92,16 @@ export async function POST(request: Request) {
         (recommendation) =>
           typeof recommendation.title === "string" &&
           !existingTitles.has(normalizeTitle(recommendation.title)) &&
-          (exploreGenre === "For You" || matchesCategory(recommendation.genre, exploreGenre)),
+          (exploreGenre === "For You"
+            ? readCategories.some((category) => matchesCategory(recommendation.genre, category))
+            : matchesCategory(recommendation.genre, exploreGenre)),
       );
 
-      if (filteredRecommendations.length > 0) {
+      if (exploreGenre !== "For You" && filteredRecommendations.length > 0) {
+        return Response.json({ recommendations: filteredRecommendations });
+      }
+
+      if (exploreGenre === "For You" && filteredRecommendations.length >= 3) {
         return Response.json({ recommendations: filteredRecommendations });
       }
     } catch (error) {
@@ -97,6 +111,20 @@ export async function POST(request: Request) {
 
   if (exploreGenre !== "For You") {
     const googleRecommendations = await getGoogleBookRecommendations(books, exploreGenre).catch(() => []);
+    if (googleRecommendations.length > 0) {
+      return Response.json({ recommendations: googleRecommendations });
+    }
+  }
+
+  if (readCategories.length > 0) {
+    const categoryRecommendations = await Promise.all(
+      readCategories.slice(0, 3).map((category) => getGoogleBookRecommendations(books, category).catch(() => [])),
+    );
+    const googleRecommendations = categoryRecommendations
+      .flat()
+      .filter((book, index, allBooks) => allBooks.findIndex((candidate) => normalizeTitle(candidate.title) === normalizeTitle(book.title)) === index)
+      .slice(0, 4);
+
     if (googleRecommendations.length > 0) {
       return Response.json({ recommendations: googleRecommendations });
     }
