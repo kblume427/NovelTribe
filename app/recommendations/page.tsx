@@ -90,6 +90,7 @@ export default function RecommendationsPage() {
           </div>
           <nav className="flex w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-zinc-300 md:w-auto md:flex-nowrap md:gap-5">
             <a href="/" className="rounded-full px-2 py-1 whitespace-nowrap transition hover:bg-white/5 hover:text-white">Tracker</a>
+            <a href="/reading" className="rounded-full px-2 py-1 whitespace-nowrap transition hover:bg-white/5 hover:text-white">Reading</a>
             <a href="/recommendations" className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2 py-1 whitespace-nowrap text-violet-100">Recommendations</a>
             <a href="/#genres" className="rounded-full px-2 py-1 whitespace-nowrap transition hover:bg-white/5 hover:text-white">Genres</a>
             <a href="/profile" className="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 whitespace-nowrap text-violet-100 transition hover:bg-violet-500/15 hover:text-white">Profile</a>

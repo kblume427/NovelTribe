@@ -37,6 +37,8 @@ export default function Home() {
   const [searchResults, setSearchResults] = useState<GoogleBookResult[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [libraryQuery, setLibraryQuery] = useState("");
+  const [librarySort, setLibrarySort] = useState("newest");
 
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -73,7 +75,24 @@ export default function Home() {
     () => Array.from(new Set([...allGenres, ...books.flatMap(getBookCategories).filter(Boolean)])),
     [books],
   );
-  const recommendationFilters = ["For You", ...availableGenres];
+  const visibleBooks = useMemo(() => {
+    const query = libraryQuery.trim().toLowerCase();
+    const filtered = books.filter((book) => {
+      if (!query) return true;
+      return [book.title, book.author, book.isbn, book.review, ...getBookCategories(book)]
+        .filter(Boolean)
+        .some((value) => value!.toLowerCase().includes(query));
+    });
+
+    return [...filtered].sort((first, second) => {
+      if (librarySort === "title") return first.title.localeCompare(second.title);
+      if (librarySort === "rating") return second.rating - first.rating || first.title.localeCompare(second.title);
+      if (librarySort === "finished") {
+        return (second.finished_at ?? "").localeCompare(first.finished_at ?? "");
+      }
+      return (second.created_at ?? "").localeCompare(first.created_at ?? "");
+    });
+  }, [books, libraryQuery, librarySort]);
 
   const totalBooks = books.length;
   const finishedBooks = books.filter((book) => book.status === "Read").length;
@@ -276,6 +295,7 @@ export default function Home() {
 
           <nav className="flex w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-zinc-300 md:w-auto md:flex-nowrap md:gap-5">
             <a href="#tracker" className="rounded-full px-2 py-1 whitespace-nowrap transition hover:bg-white/5 hover:text-white">Tracker</a>
+            <a href="/reading" className="rounded-full px-2 py-1 whitespace-nowrap transition hover:bg-white/5 hover:text-white">Reading</a>
             <a href="/recommendations" className="rounded-full px-2 py-1 whitespace-nowrap transition hover:bg-white/5 hover:text-white">Recommendations</a>
             <a href="/recommendations#genres" className="rounded-full px-2 py-1 whitespace-nowrap transition hover:bg-white/5 hover:text-white">Genres</a>
             <a href="/profile" className="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 whitespace-nowrap text-violet-100 transition hover:bg-violet-500/15 hover:text-white">Profile</a>
@@ -515,18 +535,34 @@ export default function Home() {
           </form>
 
           <div className="rounded-[28px] border border-white/10 bg-[#0f172a] p-6">
-            <div className="mb-6 flex items-center justify-between">
+            <div className="mb-6 flex flex-col gap-4">
               <div>
                 <div className="text-xs uppercase tracking-[0.25em] text-emerald-200">Your library</div>
                 <h2 className="mt-2 text-2xl font-bold text-white">Recent reads</h2>
               </div>
-              <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-zinc-300">
-                {readGenres.length} genres tracked
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <input
+                  value={libraryQuery}
+                  onChange={(event) => setLibraryQuery(event.target.value)}
+                  placeholder="Search your library..."
+                  className="min-w-0 flex-1 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/60"
+                />
+                <select
+                  value={librarySort}
+                  onChange={(event) => setLibrarySort(event.target.value)}
+                  className="rounded-full border border-white/10 bg-[#0b1120] px-4 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/60"
+                >
+                  <option value="newest">Newest added</option>
+                  <option value="title">Title A-Z</option>
+                  <option value="rating">Highest rated</option>
+                  <option value="finished">Recently finished</option>
+                </select>
               </div>
+              <div className="text-sm text-zinc-400">{visibleBooks.length} books · {readGenres.length} genres tracked</div>
             </div>
 
             <div className="space-y-4">
-              {books.map((book) => (
+              {visibleBooks.map((book) => (
                 <div key={book.id} className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.25)]">
                   <div>
                     <div className="font-semibold text-white">{book.title}</div>
@@ -570,6 +606,11 @@ export default function Home() {
                   </div>
                 </div>
               ))}
+              {visibleBooks.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-5 text-sm text-zinc-400">
+                  No books match that search.
+                </div>
+              )}
             </div>
           </div>
         </section>
