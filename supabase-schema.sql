@@ -3,8 +3,11 @@ create table if not exists profiles (
   full_name text,
   username text unique,
   avatar_url text,
+  preferred_categories text[] default '{}',
   created_at timestamp with time zone default now()
 );
+
+alter table profiles add column if not exists preferred_categories text[] default '{}';
 
 create table if not exists books (
   id uuid primary key default gen_random_uuid(),

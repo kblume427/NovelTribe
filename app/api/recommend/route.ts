@@ -1,5 +1,6 @@
 import {
   buildHeuristicRecommendations,
+  diversifyRecommendations,
   getBookCategories,
   normalizeTitle,
   type BookRecord,
@@ -56,17 +57,28 @@ export async function POST(request: Request) {
   const body = (await request.json()) as {
     books?: BookRecord[];
     exploreGenre?: string;
+    preferredCategories?: string[];
   };
 
   const books = body.books ?? [];
   const exploreGenre = body.exploreGenre ?? "For You";
+  const preferredCategories = body.preferredCategories ?? [];
   const readCategoryCounts = new Map<string, number>();
+  const highRatedCategoryCounts = new Map<string, number>();
   books.filter((book) => book.status === "Read").flatMap(getBookCategories).forEach((category) => {
     readCategoryCounts.set(category, (readCategoryCounts.get(category) ?? 0) + 1);
   });
-  const readCategories = [...readCategoryCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .map(([category]) => category);
+  books.filter((book) => book.status === "Read" && book.rating >= 4).flatMap(getBookCategories).forEach((category) => {
+    highRatedCategoryCounts.set(category, (highRatedCategoryCounts.get(category) ?? 0) + 1);
+  });
+  const readCategories = [...new Set([...readCategoryCounts.keys(), ...preferredCategories])]
+    .sort((a, b) => {
+      const score = (category: string) =>
+        (readCategoryCounts.get(category) ?? 0) +
+        (highRatedCategoryCounts.get(category) ?? 0) * 2 +
+        (preferredCategories.includes(category) ? 3 : 0);
+      return score(b) - score(a);
+    });
 
   if (openai) {
     try {
@@ -75,6 +87,7 @@ export async function POST(request: Request) {
         "Return JSON only with an array of up to 8 objects. Each object should include title, author, genre, score, and reason.",
         `The user has read these books: ${JSON.stringify(books)}`,
         `The user selected recommendation mode: ${exploreGenre}`,
+        `The user's preferred categories are: ${JSON.stringify(preferredCategories)}`,
         exploreGenre === "For You"
           ? "Recommend across genres based on the user's reading history and preferences."
           : `Return only books in the exact ${exploreGenre} genre.`,
@@ -92,14 +105,8 @@ export async function POST(request: Request) {
         (recommendation) =>
           typeof recommendation.title === "string" &&
           !existingTitles.has(normalizeTitle(recommendation.title)) &&
-          (exploreGenre === "For You"
-            ? readCategories.some((category) => matchesCategory(recommendation.genre, category))
-            : matchesCategory(recommendation.genre, exploreGenre)),
+          exploreGenre === "For You" || matchesCategory(recommendation.genre, exploreGenre),
       );
-      const dominantCategory = readCategories[0];
-      const dominantRecommendations = dominantCategory
-        ? filteredRecommendations.filter((recommendation) => matchesCategory(recommendation.genre, dominantCategory))
-        : [];
 
       if (exploreGenre !== "For You" && filteredRecommendations.length > 0) {
         return Response.json({
@@ -110,8 +117,8 @@ export async function POST(request: Request) {
         });
       }
 
-      if (exploreGenre === "For You" && dominantRecommendations.length > 0) {
-        return Response.json({ recommendations: dominantRecommendations });
+      if (exploreGenre === "For You" && filteredRecommendations.length > 0) {
+        return Response.json({ recommendations: diversifyRecommendations(filteredRecommendations) });
       }
     } catch (error) {
       console.warn("OpenAI recommendation fetch failed, using local fallback", error);
@@ -132,14 +139,14 @@ export async function POST(request: Request) {
     const googleRecommendations = categoryRecommendations
       .flat()
       .filter((book, index, allBooks) => allBooks.findIndex((candidate) => normalizeTitle(candidate.title) === normalizeTitle(book.title)) === index)
-      .slice(0, 8);
+      .slice(0, 12);
 
     if (googleRecommendations.length > 0) {
-      return Response.json({ recommendations: googleRecommendations });
+      return Response.json({ recommendations: diversifyRecommendations(googleRecommendations) });
     }
   }
 
   return Response.json({
-    recommendations: buildHeuristicRecommendations(books, exploreGenre),
+    recommendations: buildHeuristicRecommendations(books, exploreGenre, preferredCategories),
   });
 }

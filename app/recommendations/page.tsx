@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
 import { allGenres, getBookCategories, starterBooks, type BookRecord, type Recommendation } from "@/lib/recommendations";
+import { createSupabaseClient } from "@/lib/supabase/client";
 
 type RecommendationResponse = {
   recommendations?: Recommendation[];
@@ -16,6 +17,7 @@ export default function RecommendationsPage() {
   const [exploreGenre, setExploreGenre] = useState("For You");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [preferredCategories, setPreferredCategories] = useState<string[]>([]);
 
   useEffect(() => {
     fetch("/api/books")
@@ -29,6 +31,18 @@ export default function RecommendationsPage() {
   }, []);
 
   useEffect(() => {
+    createSupabaseClient()
+      .from("profiles")
+      .select("preferred_categories")
+      .maybeSingle()
+      .then(({ data }) => {
+        if (Array.isArray(data?.preferred_categories)) {
+          setPreferredCategories(data.preferred_categories);
+        }
+      });
+  }, []);
+
+  useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
     setError(null);
@@ -37,7 +51,7 @@ export default function RecommendationsPage() {
     fetch("/api/recommend", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ books, exploreGenre }),
+      body: JSON.stringify({ books, exploreGenre, preferredCategories }),
       signal: controller.signal,
     })
       .then(async (response) => {
@@ -56,7 +70,7 @@ export default function RecommendationsPage() {
       });
 
     return () => controller.abort();
-  }, [books, exploreGenre]);
+  }, [books, exploreGenre, preferredCategories]);
 
   const availableGenres = useMemo(
     () => Array.from(new Set([...allGenres, ...books.flatMap(getBookCategories).filter(Boolean)])),

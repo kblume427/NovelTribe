@@ -75,20 +75,45 @@ export function getBookCategories(book: BookRecord) {
   return book.categories?.length ? book.categories : [book.genre];
 }
 
+export function diversifyRecommendations(recommendations: Recommendation[], limit = 8) {
+  const grouped = new Map<string, Recommendation[]>();
+  recommendations.forEach((recommendation) => {
+    const category = recommendation.genre || "Other";
+    grouped.set(category, [...(grouped.get(category) ?? []), recommendation]);
+  });
+
+  const result: Recommendation[] = [];
+  while (result.length < limit && grouped.size > 0) {
+    for (const [category, items] of grouped) {
+      const next = items.shift();
+      if (next) result.push(next);
+      if (items.length === 0) grouped.delete(category);
+      if (result.length === limit) break;
+    }
+  }
+
+  return result;
+}
+
 export function buildHeuristicRecommendations(
   books: BookRecord[],
   exploreGenre: string,
+  preferredCategories: string[] = [],
 ): Recommendation[] {
   const readGenres = new Set(
     books.filter((book) => book.status === "Read").flatMap(getBookCategories),
   );
   const readCategoryCounts = new Map<string, number>();
+  const highRatedCategoryCounts = new Map<string, number>();
   books.filter((book) => book.status === "Read").flatMap(getBookCategories).forEach((category) => {
     readCategoryCounts.set(category, (readCategoryCounts.get(category) ?? 0) + 1);
   });
+  books.filter((book) => book.status === "Read" && book.rating >= 4).flatMap(getBookCategories).forEach((category) => {
+    highRatedCategoryCounts.set(category, (highRatedCategoryCounts.get(category) ?? 0) + 1);
+  });
   const existingTitles = new Set(books.map((book) => normalizeTitle(book.title)));
 
-  return catalog
+  const recommendations = catalog
     .filter(
       (book) =>
         !existingTitles.has(normalizeTitle(book.title)) &&
@@ -99,8 +124,14 @@ export function buildHeuristicRecommendations(
       let reason = "Popular with readers like you";
 
       if (readGenres.has(book.genre)) {
-        score += (readCategoryCounts.get(book.genre) ?? 0) * 4;
+        score += (readCategoryCounts.get(book.genre) ?? 0) * 2;
+        score += (highRatedCategoryCounts.get(book.genre) ?? 0) * 5;
         reason = `You already enjoy ${book.genre.toLowerCase()} picks`;
+      }
+
+      if (preferredCategories.includes(book.genre)) {
+        score += 7;
+        reason = `A category you said you enjoy: ${book.genre.toLowerCase()}`;
       }
 
       if (exploreGenre !== "For You" && book.genre === exploreGenre) {
@@ -115,5 +146,9 @@ export function buildHeuristicRecommendations(
       return { ...book, score, reason };
     })
     .sort((a, b) => b.score - a.score)
-    .slice(0, 4);
+    .slice(0, 12);
+
+  return exploreGenre === "For You"
+    ? diversifyRecommendations(recommendations)
+    : recommendations.slice(0, 8);
 }

@@ -4,12 +4,14 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { allGenres } from "@/lib/recommendations";
 import { createSupabaseClient } from "@/lib/supabase/client";
 
 type ProfileState = {
   full_name: string;
   username: string;
   avatar_url: string;
+  preferred_categories: string[];
 };
 
 type ActivityItem = {
@@ -32,6 +34,7 @@ export default function ProfilePage() {
     full_name: "",
     username: "",
     avatar_url: "",
+    preferred_categories: [],
   });
   const [email, setEmail] = useState("");
   const [supabaseReady, setSupabaseReady] = useState(false);
@@ -42,6 +45,7 @@ export default function ProfilePage() {
     favoriteGenre: "N/A",
   });
   const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState(allGenres);
 
   useEffect(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -77,11 +81,12 @@ export default function ProfilePage() {
         full_name: current.full_name || user.user_metadata?.full_name || "",
         username: current.username || "",
         avatar_url: current.avatar_url || user.user_metadata?.avatar_url || "",
+        preferred_categories: current.preferred_categories || [],
       }));
 
       const { data: profileRow } = await supabase
         .from("profiles")
-        .select("full_name, username, avatar_url")
+        .select("full_name, username, avatar_url, preferred_categories")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -92,15 +97,20 @@ export default function ProfilePage() {
           full_name: profileRow.full_name ?? "",
           username: profileRow.username ?? "",
           avatar_url: profileRow.avatar_url ?? "",
+          preferred_categories: profileRow.preferred_categories ?? [],
         });
       }
 
       const { data: booksData } = await supabase
         .from("books")
-        .select("genre, status, rating")
+        .select("genre, categories, status, rating")
         .eq("user_id", user.id);
 
       if (booksData) {
+        const bookCategories = booksData.flatMap((book) =>
+          Array.isArray(book.categories) && book.categories.length > 0 ? book.categories : [book.genre],
+        );
+        setCategoryOptions(Array.from(new Set([...allGenres, ...bookCategories.filter(Boolean)])));
         const total = booksData.length;
         const finished = booksData.filter((book) => book.status === "Read").length;
         const ratedBooks = booksData.filter((book) => Number(book.rating) > 0);
@@ -232,6 +242,7 @@ export default function ProfilePage() {
           full_name: profile.full_name.trim(),
           username: profile.username.trim(),
           avatar_url: profile.avatar_url.trim(),
+          preferred_categories: profile.preferred_categories,
         },
         { onConflict: "id" },
       )
@@ -366,6 +377,34 @@ export default function ProfilePage() {
                   placeholder="bookishreader"
                 />
               </label>
+
+              <fieldset>
+                <legend className="mb-2 block text-sm text-zinc-300">Categories you enjoy</legend>
+                <p className="mb-3 text-xs leading-5 text-zinc-500">
+                  These preferences help shape For You recommendations alongside your library and ratings.
+                </p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {categoryOptions.map((category) => {
+                    const selected = profile.preferred_categories.includes(category);
+                    return (
+                      <label key={category} className="flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-[#0b1120] px-3 py-2 text-sm text-zinc-200 transition hover:border-violet-400/40">
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          onChange={() => setProfile((current) => ({
+                            ...current,
+                            preferred_categories: selected
+                              ? current.preferred_categories.filter((item) => item !== category)
+                              : [...current.preferred_categories, category],
+                          }))}
+                          className="h-4 w-4 accent-violet-500"
+                        />
+                        {category}
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
 
               <label className="block">
                 <span className="mb-2 block text-sm text-zinc-300">Avatar</span>
