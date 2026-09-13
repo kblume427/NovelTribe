@@ -5,11 +5,17 @@ create table if not exists profiles (
   avatar_url text,
   preferred_categories text[] default '{}',
   is_public boolean default false,
+  public_library boolean default false,
+  public_ratings boolean default false,
+  public_reviews boolean default false,
   created_at timestamp with time zone default now()
 );
 
 alter table profiles add column if not exists preferred_categories text[] default '{}';
 alter table profiles add column if not exists is_public boolean default false;
+alter table profiles add column if not exists public_library boolean default false;
+alter table profiles add column if not exists public_ratings boolean default false;
+alter table profiles add column if not exists public_reviews boolean default false;
 
 create table if not exists books (
   id uuid primary key default gen_random_uuid(),
@@ -85,6 +91,11 @@ using (auth.uid() = user_id);
 create policy "Users can delete their own books"
 on books for delete
 using (auth.uid() = user_id);
+
+drop policy if exists "Anyone can view public library books" on books;
+create policy "Anyone can view public library books"
+on books for select
+using (exists (select 1 from profiles where profiles.id = books.user_id and profiles.is_public = true and profiles.public_library = true));
 
 drop policy if exists "Users can view their own reading activity" on reading_activity;
 drop policy if exists "Users can insert their own reading activity" on reading_activity;

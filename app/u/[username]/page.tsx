@@ -69,7 +69,7 @@ export default async function PublicProfilePage({ params }: PublicProfileProps) 
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, full_name, username, avatar_url, preferred_categories, is_public, created_at")
+    .select("id, full_name, username, avatar_url, preferred_categories, is_public, public_library, public_ratings, public_reviews, created_at")
     .ilike("username", decodedUsername)
     .maybeSingle();
 
@@ -79,6 +79,19 @@ export default async function PublicProfilePage({ params }: PublicProfileProps) 
 
   const joinYear = profile.created_at ? new Date(profile.created_at).getFullYear() : 2026;
   const categories = Array.isArray(profile.preferred_categories) ? profile.preferred_categories : [];
+  const { data: publicBooks } = profile.public_library
+    ? await supabase
+        .from("books")
+        .select("title, author, genre, categories, status, rating, review, finished_at")
+        .eq("user_id", profile.id)
+        .order("created_at", { ascending: false })
+    : { data: [] };
+  const visibleBooks = (publicBooks ?? []).map((book) => ({
+    ...book,
+    rating: profile.public_ratings ? book.rating : null,
+    review: profile.public_reviews ? book.review : null,
+  }));
+  const finishedCount = visibleBooks.filter((book) => book.status === "Read").length;
 
   return (
     <main className="min-h-screen bg-[#09090b] px-6 py-10 text-white">
@@ -155,6 +168,42 @@ export default async function PublicProfilePage({ params }: PublicProfileProps) 
                   </span>
                 ))}
               </div>
+            </div>
+          )}
+
+          {profile.public_library && (
+            <div className="mt-8 border-t border-white/10 pt-6">
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <h2 className="text-xs uppercase tracking-[0.24em] text-zinc-400">Shared reading shelf</h2>
+                  <p className="mt-2 text-sm text-zinc-500">{visibleBooks.length} books tracked · {finishedCount} finished</p>
+                </div>
+              </div>
+              {visibleBooks.length === 0 ? (
+                <p className="mt-4 rounded-2xl border border-dashed border-white/10 bg-white/5 p-4 text-sm text-zinc-400">No books shared yet.</p>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  {visibleBooks.map((book) => {
+                    const bookCategories = Array.isArray(book.categories) && book.categories.length > 0 ? book.categories : [book.genre];
+                    return (
+                      <div key={`${book.title}-${book.author}`} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <h3 className="font-semibold text-white">{book.title}</h3>
+                            <p className="mt-1 text-sm text-zinc-400">{book.author}</p>
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {bookCategories.map((category) => <span key={category} className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2 py-0.5 text-[10px] text-cyan-100">{category}</span>)}
+                            </div>
+                          </div>
+                          <span className="text-xs text-violet-200">{book.status}</span>
+                        </div>
+                        {book.rating !== null && <div className="mt-3 text-sm text-amber-300">{book.rating}/5 rating</div>}
+                        {book.review && <p className="mt-3 whitespace-pre-line text-sm leading-6 text-zinc-300">{book.review}</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 

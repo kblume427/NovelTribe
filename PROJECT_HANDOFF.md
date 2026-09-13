@@ -28,7 +28,7 @@ The current product is a functioning private beta. User libraries, profiles, rev
 - Main branch: `master`
 - Canonical production domain: `https://novel-tribe.com`
 - Hosting: Vercel, deployed from GitHub `master`
-- Latest pushed commit: `c990aa1` (`Enforce canonical domain novel-tribe.com across redirects, auth callbacks, and public links`)
+- Latest pushed commit before this feature: `904c19c` (`Fix magic link login persistence`)
 - The repository is kept clean and synchronized with `origin/master`.
 
 ### Environment Variables
@@ -147,6 +147,10 @@ The source of truth for schema and RLS is `supabase-schema.sql`. Run migrations 
 
 - `profiles.preferred_categories text[]`
 - `profiles.is_public boolean`
+- `profiles.public_library boolean`
+- `profiles.public_ratings boolean`
+- `profiles.public_reviews boolean`
+- `profiles.is_public boolean`
 - `books.finished_at timestamp with time zone`
 - `books.isbn text`
 - `books.categories text[]`
@@ -164,9 +168,31 @@ add column if not exists preferred_categories text[] default '{}';
 alter table profiles
 add column if not exists is_public boolean default false;
 
+alter table profiles
+add column if not exists public_library boolean default false;
+
+alter table profiles
+add column if not exists public_ratings boolean default false;
+
+alter table profiles
+add column if not exists public_reviews boolean default false;
+
 create policy "Anyone can view public profiles"
 on profiles for select
 using (is_public = true);
+
+drop policy if exists "Anyone can view public library books" on books;
+
+create policy "Anyone can view public library books"
+on books for select
+using (
+  exists (
+    select 1 from profiles
+    where profiles.id = books.user_id
+      and profiles.is_public = true
+      and profiles.public_library = true
+  )
+);
 
 alter table books
 add column if not exists finished_at timestamp with time zone;
@@ -214,6 +240,8 @@ The SEO enhancements and initial handoff documentation were verified, committed,
 - **Public Reader Profile (`/u/[username]`)**: Implemented dynamic public reader profile page showing avatar, display name, username, join year, verified reader badge, favorite categories/genres, and viral "Join NovelTribe" signup CTA.
 - **Dynamic SEO & OpenGraph**: Added rich metadata generation for `/u/[username]` including canonical URLs, OpenGraph profile cards, and Twitter summary cards.
 - **Custom Not Found page**: Added `app/not-found.tsx` to handle private/non-existent profiles and missing routes with quick return navigation.
+- **Public shelf privacy controls**: Added independent owner controls for showing the public library, ratings, and private reviews. Public book rows are protected by an RLS policy requiring both a public profile and an explicitly shared library.
+- **Public shelf rendering**: Public profiles can now show shared books, categories, statuses, finished counts, and only the ratings/reviews explicitly enabled by the owner.
 
 ## Recommended Next To-Do List
 
@@ -222,6 +250,7 @@ The SEO enhancements and initial handoff documentation were verified, committed,
 - Verify Vercel deployment of the latest commit.
 - Run all current Supabase migrations in production if not already completed.
 - Verify the new public routes (`/about`, `/robots.txt`, `/sitemap.xml`, `/opengraph-image`) and metadata on `https://novel-tribe.com`.
+- Run the public shelf privacy migration and test each visibility combination on `/u/[username]`.
 - Verify the new "Refresh suggestions" button and provider indicator on `/recommendations`.
 - Revoke any previously exposed Google API key and verify the replacement key in Vercel.
 - Confirm Google Books quota and Books API project alignment.

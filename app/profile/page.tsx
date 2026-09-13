@@ -14,6 +14,9 @@ type ProfileState = {
   avatar_url: string;
   preferred_categories: string[];
   is_public: boolean;
+  public_library: boolean;
+  public_ratings: boolean;
+  public_reviews: boolean;
 };
 
 type ActivityItem = {
@@ -38,6 +41,9 @@ export default function ProfilePage() {
     avatar_url: "",
     preferred_categories: [],
     is_public: false,
+    public_library: false,
+    public_ratings: false,
+    public_reviews: false,
   });
   const [copiedLink, setCopiedLink] = useState(false);
   const [email, setEmail] = useState("");
@@ -87,11 +93,14 @@ export default function ProfilePage() {
         avatar_url: current.avatar_url || user.user_metadata?.avatar_url || "",
         preferred_categories: current.preferred_categories || [],
         is_public: current.is_public ?? false,
+        public_library: current.public_library ?? false,
+        public_ratings: current.public_ratings ?? false,
+        public_reviews: current.public_reviews ?? false,
       }));
 
       const { data: profileRow } = await supabase
         .from("profiles")
-        .select("full_name, username, avatar_url, preferred_categories, is_public")
+        .select("full_name, username, avatar_url, preferred_categories, is_public, public_library, public_ratings, public_reviews")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -104,6 +113,9 @@ export default function ProfilePage() {
           avatar_url: profileRow.avatar_url ?? "",
           preferred_categories: profileRow.preferred_categories ?? [],
           is_public: Boolean(profileRow.is_public),
+          public_library: Boolean(profileRow.public_library),
+          public_ratings: Boolean(profileRow.public_ratings),
+          public_reviews: Boolean(profileRow.public_reviews),
         });
       }
 
@@ -251,6 +263,9 @@ export default function ProfilePage() {
           avatar_url: profile.avatar_url.trim(),
           preferred_categories: profile.preferred_categories,
           is_public: profile.is_public,
+          public_library: profile.public_library,
+          public_ratings: profile.public_ratings,
+          public_reviews: profile.public_reviews,
         },
         { onConflict: "id" },
       )
@@ -446,6 +461,29 @@ export default function ProfilePage() {
                   </div>
                 )}
               </div>
+
+              <fieldset className="rounded-2xl border border-white/10 bg-[#0b1120] p-4">
+                <legend className="px-1 text-sm font-semibold text-white">Public profile details</legend>
+                <p className="mt-1 text-xs leading-5 text-zinc-400">Choose what visitors can see. These controls only apply when your profile is public.</p>
+                <div className="mt-4 space-y-3">
+                  {([
+                    ["public_library", "Show my library", "Let visitors see books on your public profile."],
+                    ["public_ratings", "Show my ratings", "Include star ratings with public books."],
+                    ["public_reviews", "Show my reviews", "Include your short reviews with public books."],
+                  ] as const).map(([field, label, description]) => (
+                    <label key={field} className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 px-3 py-3 text-sm text-zinc-200 hover:border-violet-400/40">
+                      <input
+                        type="checkbox"
+                        checked={profile[field]}
+                        disabled={!profile.is_public}
+                        onChange={(event) => setProfile((current) => ({ ...current, [field]: event.target.checked }))}
+                        className="mt-0.5 h-4 w-4 accent-violet-500"
+                      />
+                      <span><span className="block font-medium text-white">{label}</span><span className="mt-1 block text-xs text-zinc-500">{description}</span></span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
 
               <fieldset>
                 <legend className="mb-2 block text-sm text-zinc-300">Categories you enjoy</legend>
