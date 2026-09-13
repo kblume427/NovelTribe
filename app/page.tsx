@@ -237,11 +237,18 @@ export default function Home() {
     setSearchResults([]);
     setSearchError(null);
 
-    await fetch("/api/books", {
+    const response = await fetch("/api/books", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(importedBook),
     });
+
+    if (response.ok) {
+      const payload = await response.json();
+      if (payload.book) {
+        setBooks((current) => current.map((book) => (book.id === importedBook.id ? payload.book : book)));
+      }
+    }
   };
 
   return (
