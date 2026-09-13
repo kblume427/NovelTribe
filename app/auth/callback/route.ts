@@ -6,11 +6,10 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const requestedNext = searchParams.get("next") ?? "/";
   const next = requestedNext.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : "/";
-  const canonicalOrigin =
-    process.env.NODE_ENV === "production" ? "https://novel-tribe.com" : origin;
+  const callbackOrigin = origin;
 
   if (code) {
-    const response = NextResponse.redirect(`${canonicalOrigin}${next}`, { status: 303 });
+    const response = NextResponse.redirect(`${callbackOrigin}${next}`, { status: 303 });
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -36,5 +35,5 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(`${canonicalOrigin}/login?error=auth`);
+  return NextResponse.redirect(`${callbackOrigin}/login?error=auth`);
 }
