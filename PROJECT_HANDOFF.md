@@ -28,7 +28,7 @@ The current product is a functioning private beta. User libraries, profiles, rev
 - Main branch: `master`
 - Canonical production domain: `https://novel-tribe.com`
 - Hosting: Vercel, deployed from GitHub `master`
-- Latest pushed commit: `8477a15` (`Use canonical domain novel-tribe.com for public profile copy link`)
+- Latest pushed commit: `c990aa1` (`Enforce canonical domain novel-tribe.com across redirects, auth callbacks, and public links`)
 - The repository is kept clean and synchronized with `origin/master`.
 
 ### Environment Variables
@@ -208,7 +208,7 @@ The SEO enhancements and initial handoff documentation were verified, committed,
 
 - **Opt-in privacy model**: Added `is_public` boolean column to `profiles` (default: `false`) and created RLS policy `"Anyone can view public profiles"` allowing public access only when `is_public = true`.
 - **Canonical Domain Enforcement (`https://novel-tribe.com`)**:
-  - Configured permanent redirects in `next.config.ts` and `vercel.json` routing both `novel-tribe.vercel.app` and `www.novel-tribe.com` to `https://novel-tribe.com`.
+  - Handled domain redirection gracefully at the Vercel dashboard level to prevent any server-level loop between `www` and root apex domains.
   - Configured auth callbacks and magic links in `app/login/page.tsx` and `app/auth/callback/route.ts` to redirect back to `https://novel-tribe.com` in production rather than raw Vercel domains.
   - Verified all public sharing, SEO metadata, sitemaps, robots, JSON-LD, and copy-link triggers strictly resolve to `https://novel-tribe.com`.
 - **Public Reader Profile (`/u/[username]`)**: Implemented dynamic public reader profile page showing avatar, display name, username, join year, verified reader badge, favorite categories/genres, and viral "Join NovelTribe" signup CTA.
