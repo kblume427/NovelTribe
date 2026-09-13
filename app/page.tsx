@@ -72,10 +72,14 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
+    setRecommendations([]);
+
     fetch("/api/recommend", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ books, exploreGenre }),
+      signal: controller.signal,
     })
       .then((response) => response.json())
       .then((payload: RecommendationResponse) => {
@@ -84,8 +88,12 @@ export default function Home() {
         }
       })
       .catch(() => {
-        setRecommendations([]);
+        if (!controller.signal.aborted) {
+          setRecommendations([]);
+        }
       });
+
+    return () => controller.abort();
   }, [books, exploreGenre]);
 
   const readGenres = useMemo(
