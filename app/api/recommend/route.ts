@@ -6,6 +6,51 @@ import {
 } from "@/lib/recommendations";
 import { openai } from "@/lib/server";
 
+function matchesCategory(value: unknown, category: string) {
+  if (typeof value !== "string") {
+    return false;
+  }
+
+  const normalizedValue = value.toLowerCase();
+  const normalizedCategory = category.toLowerCase();
+  return normalizedValue.includes(normalizedCategory) || normalizedCategory.includes(normalizedValue);
+}
+
+async function getGoogleBookRecommendations(books: BookRecord[], category: string) {
+  const url = new URL("https://www.googleapis.com/books/v1/volumes");
+  url.searchParams.set("q", `subject:${category}`);
+  url.searchParams.set("maxResults", "6");
+  url.searchParams.set("printType", "books");
+
+  if (process.env.GOOGLE_BOOKS_API_KEY) {
+    url.searchParams.set("key", process.env.GOOGLE_BOOKS_API_KEY);
+  }
+
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) {
+    return [];
+  }
+
+  const payload = await response.json();
+  const existingTitles = new Set(books.map((book) => normalizeTitle(book.title)));
+
+  return (payload.items ?? [])
+    .map((item: { id: string; volumeInfo?: { title?: string; authors?: string[]; categories?: string[] } }) => {
+      const title = item.volumeInfo?.title ?? "Untitled";
+      return {
+        id: item.id,
+        title,
+        author: item.volumeInfo?.authors?.join(", ") ?? "Unknown author",
+        genre: item.volumeInfo?.categories?.find((value) => matchesCategory(value, category)) ?? category,
+        status: "Want to Read" as const,
+        rating: 0,
+        score: 5,
+        reason: `A ${category.toLowerCase()} title from Google Books`,
+      };
+    })
+    .filter((book: Recommendation) => !existingTitles.has(normalizeTitle(book.title)));
+}
+
 export async function POST(request: Request) {
   const body = (await request.json()) as {
     books?: BookRecord[];
@@ -39,7 +84,7 @@ export async function POST(request: Request) {
         (recommendation) =>
           typeof recommendation.title === "string" &&
           !existingTitles.has(normalizeTitle(recommendation.title)) &&
-          (exploreGenre === "For You" || recommendation.genre === exploreGenre),
+          (exploreGenre === "For You" || matchesCategory(recommendation.genre, exploreGenre)),
       );
 
       if (filteredRecommendations.length > 0) {
@@ -47,6 +92,13 @@ export async function POST(request: Request) {
       }
     } catch (error) {
       console.warn("OpenAI recommendation fetch failed, using local fallback", error);
+    }
+  }
+
+  if (exploreGenre !== "For You") {
+    const googleRecommendations = await getGoogleBookRecommendations(books, exploreGenre).catch(() => []);
+    if (googleRecommendations.length > 0) {
+      return Response.json({ recommendations: googleRecommendations });
     }
   }
 
