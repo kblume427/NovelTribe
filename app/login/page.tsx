@@ -54,6 +54,9 @@ export default function LoginPage() {
         <p className="mt-3 text-sm leading-6 text-zinc-300">
           Save your books, build a reading profile, and keep your recommendations synced.
         </p>
+        <div className="mt-5 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 px-3 py-3 text-xs leading-5 text-cyan-100">
+          On iPhone or iPad, open the magic link in the same Safari browser where you requested it. If the link opens inside Apple Mail, use the share menu to open it in Safari before signing in.
+        </div>
 
         <form onSubmit={handleLogin} className="mt-8 space-y-4">
           <label className="block">
