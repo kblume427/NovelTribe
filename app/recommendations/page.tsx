@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { allGenres, getBookCategories, starterBooks, type BookRecord, type Recommendation } from "@/lib/recommendations";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics";
+import RecommendedReaders from "@/components/recommended-readers";
 
 type RecommendationResponse = {
   recommendations?: Recommendation[];
@@ -281,6 +282,8 @@ export default function RecommendationsPage() {
             ))}
           </div>
         </section>
+
+        <RecommendedReaders />
       </div>
     </main>
   );

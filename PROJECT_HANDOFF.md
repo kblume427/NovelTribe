@@ -129,6 +129,7 @@ Rules:
 
 - Follow/unfollow API at `/api/follows`
 - Follow button on opt-in public profiles
+- Recommended public readers section on `/recommendations`, excluding the current user and existing follows
 - Private-profile and self-follow protections
 - User-scoped follows RLS policies
 - GA4 events for `user_followed` and `user_unfollowed`
