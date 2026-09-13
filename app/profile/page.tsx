@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -15,6 +16,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [profile, setProfile] = useState<ProfileState>({
@@ -126,6 +128,59 @@ export default function ProfilePage() {
     setProfile((current) => ({ ...current, [field]: value }));
   };
 
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setStatus("Please choose an image file.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setStatus("Avatar images must be smaller than 5 MB.");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    setStatus(null);
+
+    const supabase = createSupabaseClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      setStatus("You need to sign in first.");
+      setUploadingAvatar(false);
+      return;
+    }
+
+    const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const filePath = `${user.id}/avatar.${extension}`;
+    const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, {
+      cacheControl: "3600",
+      contentType: file.type,
+      upsert: true,
+    });
+
+    if (uploadError) {
+      setStatus(uploadError.message);
+      setUploadingAvatar(false);
+      return;
+    }
+
+    const { data } = supabase.storage.from("avatars").getPublicUrl(filePath);
+    setProfile((current) => ({ ...current, avatar_url: `${data.publicUrl}?v=${Date.now()}` }));
+    setStatus("Avatar uploaded. Save your profile to keep it.");
+    setUploadingAvatar(false);
+  };
+
   const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!supabaseReady) {
@@ -186,8 +241,8 @@ export default function ProfilePage() {
       <div className="mx-auto max-w-4xl">
         <header className="mb-8 flex items-center justify-between rounded-full border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-sm">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-500 text-lg font-bold text-white">
-              N
+            <div className="relative h-10 w-10 overflow-hidden rounded-full shadow-lg shadow-violet-500/20">
+              <Image src="/icon.png" alt="NovelTribe" fill sizes="40px" className="object-cover" />
             </div>
             <div>
               <div className="text-sm font-semibold tracking-[0.22em] text-violet-200 uppercase">NovelTribe</div>
@@ -215,8 +270,14 @@ export default function ProfilePage() {
         <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
           <aside className="rounded-[30px] border border-white/10 bg-white/5 p-6">
             <div className="mb-4 flex items-center gap-4">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-500 text-2xl font-bold text-white shadow-lg shadow-violet-500/20">
-                {profile.full_name?.charAt(0)?.toUpperCase() || "N"}
+              <div className="relative h-20 w-20 overflow-hidden rounded-full bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-500 text-2xl font-bold text-white shadow-lg shadow-violet-500/20">
+                {profile.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Your avatar" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    {profile.full_name?.charAt(0)?.toUpperCase() || "N"}
+                  </div>
+                )}
               </div>
               <div>
                 <div className="text-xs uppercase tracking-[0.24em] text-violet-200">Reader</div>
@@ -286,13 +347,17 @@ export default function ProfilePage() {
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-sm text-zinc-300">Avatar URL</span>
+                <span className="mb-2 block text-sm text-zinc-300">Avatar</span>
                 <input
-                  value={profile.avatar_url}
-                  onChange={(event) => handleFieldChange("avatar_url", event.target.value)}
-                  className="w-full rounded-2xl border border-white/10 bg-[#0b1120] px-3 py-3 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/60"
-                  placeholder="https://example.com/avatar.jpg"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  disabled={uploadingAvatar || loading}
+                  className="block w-full cursor-pointer rounded-2xl border border-white/10 bg-[#0b1120] px-3 py-3 text-sm text-zinc-300 file:mr-3 file:rounded-full file:border-0 file:bg-violet-500/20 file:px-3 file:py-2 file:text-sm file:font-medium file:text-violet-100 hover:file:bg-violet-500/30 disabled:cursor-not-allowed disabled:opacity-60"
                 />
+                <span className="mt-2 block text-xs text-zinc-500">
+                  {uploadingAvatar ? "Uploading avatar..." : "PNG, JPG, or GIF up to 5 MB"}
+                </span>
               </label>
 
               {status && (
@@ -303,7 +368,7 @@ export default function ProfilePage() {
 
               <button
                 type="submit"
-                disabled={saving || loading}
+                disabled={saving || loading || uploadingAvatar}
                 className="w-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-4 py-3 font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {saving ? "Saving..." : "Save profile"}

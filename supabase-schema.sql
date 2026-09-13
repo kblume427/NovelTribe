@@ -19,6 +19,10 @@ create table if not exists books (
 
 create index if not exists books_user_id_idx on books(user_id);
 
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do update set public = true;
+
 alter table profiles enable row level security;
 alter table books enable row level security;
 
@@ -49,3 +53,19 @@ using (auth.uid() = user_id);
 create policy "Users can delete their own books"
 on books for delete
 using (auth.uid() = user_id);
+
+create policy "Users can upload their own avatars"
+on storage.objects for insert
+to authenticated
+with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid()::text));
+
+create policy "Users can update their own avatars"
+on storage.objects for update
+to authenticated
+using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid()::text))
+with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid()::text));
+
+create policy "Users can delete their own avatars"
+on storage.objects for delete
+to authenticated
+using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid()::text));
