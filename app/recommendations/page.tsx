@@ -272,7 +272,7 @@ export default function RecommendationsPage() {
             {recommendations.map((book) => (
               <article key={`${book.id}-${book.title}`} className="rounded-[26px] border border-white/10 bg-[#121a2b] p-4">
                 {book.cover_url ? (
-                  <img src={book.cover_url} alt="" className="mb-4 h-40 w-full rounded-2xl object-cover" />
+                  <img src={book.cover_url} alt="" className="mb-4 h-40 w-full rounded-2xl bg-[#0b1120] object-contain" />
                 ) : (
                   <div className="mb-4 h-40 rounded-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-500" />
                 )}

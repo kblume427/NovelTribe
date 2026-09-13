@@ -60,7 +60,11 @@ export default function CurrentlyReadingPage() {
             <div className="grid gap-5 sm:grid-cols-2">
               {books.map((book) => (
                 <article key={book.id} className="rounded-[26px] border border-white/10 bg-[#0f172a] p-5">
-                  <div className="mb-5 h-36 rounded-2xl bg-gradient-to-br from-cyan-400 via-violet-500 to-fuchsia-500" />
+                  {book.cover_url ? (
+                    <img src={book.cover_url} alt="" className="mb-5 h-36 w-full rounded-2xl bg-[#0b1120] object-contain" />
+                  ) : (
+                    <div className="mb-5 h-36 rounded-2xl bg-gradient-to-br from-cyan-400 via-violet-500 to-fuchsia-500" />
+                  )}
                   <div className="text-xs uppercase tracking-[0.2em] text-cyan-200">Currently Reading</div>
                   <h2 className="mt-3 text-2xl font-semibold text-white">{book.title}</h2>
                   <p className="mt-1 text-zinc-400">{book.author}</p>

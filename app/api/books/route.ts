@@ -69,6 +69,7 @@ export async function POST(request: Request) {
       isbn: payload.isbn ?? null,
       categories: payload.categories ?? [payload.genre],
       review: payload.review?.trim().slice(0, 1000) || null,
+      cover_url: payload.cover_url ?? null,
       finished_at: payload.status === "Read" ? new Date().toISOString() : null,
     })
     .select()
@@ -107,7 +108,7 @@ export async function PATCH(request: Request) {
 
   const { data: existingBook, error: existingBookError } = await supabase
     .from("books")
-    .select("status, finished_at, isbn, categories, rating, review")
+    .select("status, finished_at, isbn, categories, rating, review, cover_url")
     .eq("id", bookId)
     .eq("user_id", user.id)
     .single();
@@ -127,6 +128,7 @@ export async function PATCH(request: Request) {
       isbn: payload.isbn ?? existingBook.isbn ?? null,
       categories: payload.categories ?? existingBook.categories ?? [payload.genre],
       review: payload.review?.trim().slice(0, 1000) || null,
+      cover_url: existingBook.cover_url ?? null,
       finished_at:
         payload.status === "Read"
           ? existingBook.status === "Read" && existingBook.finished_at

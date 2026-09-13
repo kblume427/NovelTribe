@@ -11,6 +11,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const categoryCache = new Map<string, { expiresAt: number; recommendations: Recommendation[] }>();
 const CATEGORY_CACHE_TTL = 5 * 60 * 1000;
+const coverCache = new Map<string, string | null>();
 
 function matchesCategory(value: unknown, category: string) {
   if (typeof value !== "string") {
@@ -20,6 +21,34 @@ function matchesCategory(value: unknown, category: string) {
   const normalizedValue = value.toLowerCase();
   const normalizedCategory = category.toLowerCase();
   return normalizedValue.includes(normalizedCategory) || normalizedCategory.includes(normalizedValue);
+}
+
+async function enrichCovers(recommendations: Recommendation[]) {
+  return Promise.all(recommendations.map(async (recommendation) => {
+    if (recommendation.cover_url) return recommendation;
+
+    const cacheKey = normalizeTitle(`${recommendation.title}-${recommendation.author}`);
+    if (coverCache.has(cacheKey)) {
+      return { ...recommendation, cover_url: coverCache.get(cacheKey) ?? null };
+    }
+
+    try {
+      const url = new URL("https://openlibrary.org/search.json");
+      url.searchParams.set("title", recommendation.title);
+      url.searchParams.set("author", recommendation.author);
+      url.searchParams.set("limit", "1");
+      url.searchParams.set("fields", "cover_i");
+      const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(5000) });
+      const payload = response.ok ? await response.json() : null;
+      const coverId = payload?.docs?.[0]?.cover_i;
+      const coverUrl = coverId ? `https://covers.openlibrary.org/b/id/${coverId}-M.jpg` : null;
+      coverCache.set(cacheKey, coverUrl);
+      return { ...recommendation, cover_url: coverUrl };
+    } catch {
+      coverCache.set(cacheKey, null);
+      return recommendation;
+    }
+  }));
 }
 
 async function getGoogleBookRecommendations(books: BookRecord[], category: string, bypassCache = false, offset = 0) {
@@ -48,6 +77,9 @@ async function getGoogleBookRecommendations(books: BookRecord[], category: strin
 
   const payload = await response.json();
   const recommendations = (payload.items ?? [])
+    .filter((item: { volumeInfo?: { categories?: string[] } }) =>
+      item.volumeInfo?.categories?.some((value) => matchesCategory(value, category)),
+    )
     .map((item: { id: string; volumeInfo?: { title?: string; authors?: string[]; categories?: string[]; imageLinks?: { thumbnail?: string; smallThumbnail?: string } } }) => {
       const title = item.volumeInfo?.title ?? "Untitled";
       return {
@@ -87,6 +119,9 @@ async function getOpenLibraryRecommendations(books: BookRecord[], category: stri
 
   const payload = await response.json();
   const recommendations = (payload.docs ?? [])
+    .filter((item: { subject?: string[] }) =>
+      item.subject?.some((value) => matchesCategory(value, category)),
+    )
     .map((item: { key?: string; title?: string; author_name?: string[]; cover_i?: number }) => ({
       id: item.key ?? item.title ?? crypto.randomUUID(),
       title: item.title ?? "Untitled",
@@ -217,25 +252,25 @@ export async function POST(request: Request) {
 
       if (exploreGenre !== "For You" && filteredRecommendations.length > 0) {
         return Response.json({
-          recommendations: filteredRecommendations.map((recommendation) => ({
+          recommendations: await enrichCovers(filteredRecommendations.map((recommendation) => ({
             ...recommendation,
             genre: exploreGenre,
             socialProof: followedCategories.some((category) => matchesCategory(recommendation.genre, category))
               ? "Highly rated by a reader you follow"
               : undefined,
-          })),
+          }))),
           source: "openai",
         });
       }
 
       if (exploreGenre === "For You" && filteredRecommendations.length > 0) {
         return Response.json({
-          recommendations: diversifyRecommendations(filteredRecommendations).map((recommendation) => ({
+          recommendations: await enrichCovers(diversifyRecommendations(filteredRecommendations).map((recommendation) => ({
             ...recommendation,
             socialProof: followedCategories.some((category) => matchesCategory(recommendation.genre, category))
               ? "Highly rated by a reader you follow"
               : undefined,
-          })),
+          }))),
           source: "openai",
         });
       }
@@ -247,7 +282,7 @@ export async function POST(request: Request) {
   if (exploreGenre !== "For You") {
     const externalRecommendations = await getExternalRecommendations(books, exploreGenre, refresh, providerOffset);
     if (externalRecommendations.length > 0) {
-      return Response.json({ recommendations: externalRecommendations.slice(0, 8), source: "google_books_open_library" });
+      return Response.json({ recommendations: await enrichCovers(externalRecommendations.slice(0, 8)), source: "google_books_open_library" });
     }
   }
 
@@ -262,19 +297,19 @@ export async function POST(request: Request) {
 
     if (googleRecommendations.length > 0) {
       return Response.json({
-        recommendations: diversifyRecommendations(googleRecommendations).map((recommendation) => ({
+        recommendations: await enrichCovers(diversifyRecommendations(googleRecommendations).map((recommendation) => ({
           ...recommendation,
           socialProof: followedCategories.some((category) => matchesCategory(recommendation.genre, category))
             ? "Highly rated by a reader you follow"
             : undefined,
-        })),
+        }))),
         source: "google_books_open_library",
       });
     }
   }
 
   return Response.json({
-    recommendations: buildHeuristicRecommendations(books, exploreGenre, preferredCategories, refreshSeed, followedCategories),
+    recommendations: await enrichCovers(buildHeuristicRecommendations(books, exploreGenre, preferredCategories, refreshSeed, followedCategories)),
     source: "local_fallback",
   });
 }
