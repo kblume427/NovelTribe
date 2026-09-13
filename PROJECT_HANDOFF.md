@@ -143,6 +143,7 @@ Rules:
 - Follow button on opt-in public profiles
 - Recommended public readers section on `/recommendations`, excluding the current user and existing follows
 - Private Followers/Following lists on the profile page
+- Follow relationship reads allow both followers and followed users to see their own connection lists
 - In-app follow notifications with unread state and mark-all-read
 - Profile social inbox kept below the navigation header with responsive mobile layout
 - Followers and Following lists use a compact scrollable panel sized for roughly 10 visible rows

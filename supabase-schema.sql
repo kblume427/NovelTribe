@@ -165,7 +165,7 @@ drop policy if exists "Users can delete their own follows" on follows;
 
 create policy "Users can view their own follows"
 on follows for select
-using (auth.uid() = follower_id);
+using (auth.uid() = follower_id or auth.uid() = following_id);
 
 create policy "Users can create their own follows"
 on follows for insert
