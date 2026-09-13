@@ -91,6 +91,7 @@ export default function RecommendationsPage() {
             exploreGenre,
             preferredCategories,
             refresh: bypassCache,
+            refreshSeed: bypassCache ? Date.now() : 0,
           }),
         });
 

@@ -21,7 +21,7 @@ function matchesCategory(value: unknown, category: string) {
   return normalizedValue.includes(normalizedCategory) || normalizedCategory.includes(normalizedValue);
 }
 
-async function getGoogleBookRecommendations(books: BookRecord[], category: string, bypassCache = false) {
+async function getGoogleBookRecommendations(books: BookRecord[], category: string, bypassCache = false, offset = 0) {
   const cacheKey = `google:${category.toLowerCase()}`;
   const cached = categoryCache.get(cacheKey);
   const existingTitles = new Set(books.map((book) => normalizeTitle(book.title)));
@@ -33,6 +33,7 @@ async function getGoogleBookRecommendations(books: BookRecord[], category: strin
   const url = new URL("https://www.googleapis.com/books/v1/volumes");
   url.searchParams.set("q", `subject:${category}`);
   url.searchParams.set("maxResults", "12");
+  url.searchParams.set("startIndex", String(offset));
   url.searchParams.set("printType", "books");
 
   if (process.env.GOOGLE_BOOKS_API_KEY) {
@@ -65,7 +66,7 @@ async function getGoogleBookRecommendations(books: BookRecord[], category: strin
   return recommendations.filter((book: Recommendation) => !existingTitles.has(normalizeTitle(book.title)));
 }
 
-async function getOpenLibraryRecommendations(books: BookRecord[], category: string, bypassCache = false) {
+async function getOpenLibraryRecommendations(books: BookRecord[], category: string, bypassCache = false, offset = 0) {
   const cached = categoryCache.get(`open-library:${category.toLowerCase()}`);
   const existingTitles = new Set(books.map((book) => normalizeTitle(book.title)));
 
@@ -76,6 +77,7 @@ async function getOpenLibraryRecommendations(books: BookRecord[], category: stri
   const url = new URL("https://openlibrary.org/search.json");
   url.searchParams.set("subject", category);
   url.searchParams.set("limit", "12");
+  url.searchParams.set("offset", String(offset));
   url.searchParams.set("fields", "key,title,author_name,subject");
 
   const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(8000) });
@@ -103,10 +105,10 @@ async function getOpenLibraryRecommendations(books: BookRecord[], category: stri
   return recommendations.filter((book: Recommendation) => !existingTitles.has(normalizeTitle(book.title)));
 }
 
-async function getExternalRecommendations(books: BookRecord[], category: string, bypassCache = false) {
+async function getExternalRecommendations(books: BookRecord[], category: string, bypassCache = false, offset = 0) {
   const [googleRecommendations, openLibraryRecommendations] = await Promise.all([
-    getGoogleBookRecommendations(books, category, bypassCache).catch(() => []),
-    getOpenLibraryRecommendations(books, category, bypassCache).catch(() => []),
+    getGoogleBookRecommendations(books, category, bypassCache, offset).catch(() => []),
+    getOpenLibraryRecommendations(books, category, bypassCache, offset).catch(() => []),
   ]);
   const combined = [...googleRecommendations, ...openLibraryRecommendations];
   return combined.filter(
@@ -120,12 +122,15 @@ export async function POST(request: Request) {
     exploreGenre?: string;
     preferredCategories?: string[];
     refresh?: boolean;
+    refreshSeed?: number;
   };
 
   const books = body.books ?? [];
   const exploreGenre = body.exploreGenre ?? "For You";
   const preferredCategories = body.preferredCategories ?? [];
   const refresh = Boolean(body.refresh);
+  const refreshSeed = refresh ? body.refreshSeed ?? Date.now() : 0;
+  const providerOffset = refresh ? (refreshSeed % 4) * 12 : 0;
   const readCategoryCounts = new Map<string, number>();
   const highRatedCategoryCounts = new Map<string, number>();
   books.filter((book) => book.status === "Read").flatMap(getBookCategories).forEach((category) => {
@@ -151,6 +156,7 @@ export async function POST(request: Request) {
         `The user has read these books: ${JSON.stringify(books)}`,
         `The user selected recommendation mode: ${exploreGenre}`,
         `The user's preferred categories are: ${JSON.stringify(preferredCategories)}`,
+        refresh ? `Generate a fresh alternative set, variation ${refreshSeed}.` : "",
         exploreGenre === "For You"
           ? "Recommend across genres based on the user's reading history and preferences."
           : `Return only books in the exact ${exploreGenre} genre.`,
@@ -190,7 +196,7 @@ export async function POST(request: Request) {
   }
 
   if (exploreGenre !== "For You") {
-    const externalRecommendations = await getExternalRecommendations(books, exploreGenre, refresh);
+    const externalRecommendations = await getExternalRecommendations(books, exploreGenre, refresh, providerOffset);
     if (externalRecommendations.length > 0) {
       return Response.json({ recommendations: externalRecommendations.slice(0, 8), source: "google_books_open_library" });
     }
@@ -198,7 +204,7 @@ export async function POST(request: Request) {
 
   if (readCategories.length > 0) {
     const categoryRecommendations = await Promise.all(
-      readCategories.slice(0, 5).map((category) => getExternalRecommendations(books, category, refresh)),
+      readCategories.slice(0, 5).map((category, index) => getExternalRecommendations(books, category, refresh, providerOffset + index * 12)),
     );
     const googleRecommendations = categoryRecommendations
       .flat()
@@ -211,7 +217,7 @@ export async function POST(request: Request) {
   }
 
   return Response.json({
-    recommendations: buildHeuristicRecommendations(books, exploreGenre, preferredCategories),
+    recommendations: buildHeuristicRecommendations(books, exploreGenre, preferredCategories, refreshSeed),
     source: "local_fallback",
   });
 }

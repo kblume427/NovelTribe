@@ -100,6 +100,7 @@ export function buildHeuristicRecommendations(
   books: BookRecord[],
   exploreGenre: string,
   preferredCategories: string[] = [],
+  shuffleSeed = 0,
 ): Recommendation[] {
   const readGenres = new Set(
     books.filter((book) => book.status === "Read").flatMap(getBookCategories),
@@ -148,6 +149,11 @@ export function buildHeuristicRecommendations(
     })
     .sort((a, b) => b.score - a.score)
     .slice(0, 12);
+
+  if (shuffleSeed > 0 && recommendations.length > 1) {
+    const shift = shuffleSeed % recommendations.length;
+    recommendations.push(...recommendations.splice(0, shift));
+  }
 
   return exploreGenre === "For You"
     ? diversifyRecommendations(recommendations)

@@ -116,6 +116,7 @@ Rules:
 - Local curated fallback catalog
 - Provider timeouts and five-minute in-memory category cache
 - Provider source returned as `openai`, `google_books_open_library`, or `local_fallback`
+- Refresh suggestions rotates provider result windows, varies AI generation, and rotates local fallback ordering
 
 ### Private Activity And Reviews
 
