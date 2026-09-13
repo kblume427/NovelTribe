@@ -14,8 +14,11 @@ create table if not exists books (
   genre text not null,
   status text not null check (status in ('Read', 'Currently Reading', 'Want to Read')),
   rating integer not null default 0 check (rating >= 0 and rating <= 5),
+  finished_at timestamp with time zone,
   created_at timestamp with time zone default now()
 );
+
+alter table books add column if not exists finished_at timestamp with time zone;
 
 create index if not exists books_user_id_idx on books(user_id);
 

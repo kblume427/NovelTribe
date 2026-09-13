@@ -494,6 +494,11 @@ export default function Home() {
                   <div>
                     <div className="font-semibold text-white">{book.title}</div>
                     <div className="mt-1 text-sm text-zinc-400">{book.author} · {book.genre}</div>
+                    {book.status === "Read" && book.finished_at && (
+                      <div className="mt-1 text-xs text-emerald-200">
+                        Finished {new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(book.finished_at))}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="rounded-full border border-violet-400/30 bg-violet-500/10 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-violet-100">

@@ -7,6 +7,7 @@ export type BookRecord = {
   genre: string;
   status: BookStatus;
   rating: number;
+  finished_at?: string | null;
 };
 
 export type Recommendation = BookRecord & {

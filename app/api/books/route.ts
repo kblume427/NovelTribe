@@ -47,6 +47,7 @@ export async function POST(request: Request) {
       genre: payload.genre,
       status: payload.status,
       rating: payload.rating,
+      finished_at: payload.status === "Read" ? new Date().toISOString() : null,
     })
     .select()
     .single();
@@ -76,6 +77,17 @@ export async function PATCH(request: Request) {
     return Response.json({ ok: false, error: "Missing book id" }, { status: 400 });
   }
 
+  const { data: existingBook, error: existingBookError } = await supabase
+    .from("books")
+    .select("status, finished_at")
+    .eq("id", bookId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (existingBookError || !existingBook) {
+    return Response.json({ ok: false, error: "Book not found" }, { status: 404 });
+  }
+
   const { data, error } = await supabase
     .from("books")
     .update({
@@ -84,6 +96,12 @@ export async function PATCH(request: Request) {
       genre: payload.genre,
       status: payload.status,
       rating: payload.rating,
+      finished_at:
+        payload.status === "Read"
+          ? existingBook.status === "Read" && existingBook.finished_at
+            ? existingBook.finished_at
+            : new Date().toISOString()
+          : null,
     })
     .eq("id", bookId)
     .eq("user_id", user.id)
