@@ -17,6 +17,7 @@ export type BookRecord = {
 export type Recommendation = BookRecord & {
   score: number;
   reason: string;
+  socialProof?: string;
 };
 
 export const starterBooks: BookRecord[] = [
@@ -101,6 +102,7 @@ export function buildHeuristicRecommendations(
   exploreGenre: string,
   preferredCategories: string[] = [],
   shuffleSeed = 0,
+  followedCategories: string[] = [],
 ): Recommendation[] {
   const readGenres = new Set(
     books.filter((book) => book.status === "Read").flatMap(getBookCategories),
@@ -134,6 +136,11 @@ export function buildHeuristicRecommendations(
       if (preferredCategories.includes(book.genre)) {
         score += 7;
         reason = `A category you said you enjoy: ${book.genre.toLowerCase()}`;
+      }
+
+      if (followedCategories.includes(book.genre)) {
+        score += 6;
+        reason = `Highly rated by a reader you follow`;
       }
 
       if (exploreGenre !== "For You" && book.genre === exploreGenre) {

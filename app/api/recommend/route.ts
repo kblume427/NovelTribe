@@ -7,6 +7,7 @@ import {
   type Recommendation,
 } from "@/lib/recommendations";
 import { openai } from "@/lib/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const categoryCache = new Map<string, { expiresAt: number; recommendations: Recommendation[] }>();
 const CATEGORY_CACHE_TTL = 5 * 60 * 1000;
@@ -116,6 +117,37 @@ async function getExternalRecommendations(books: BookRecord[], category: string,
   );
 }
 
+async function getFollowedHighRatedCategories() {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: follows } = await supabase.from("follows").select("following_id").eq("follower_id", user.id);
+  const followingIds = (follows ?? []).map((follow) => follow.following_id);
+  if (followingIds.length === 0) return [];
+
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id")
+    .in("id", followingIds)
+    .eq("is_public", true)
+    .eq("public_library", true)
+    .eq("public_ratings", true);
+  const publicIds = (profiles ?? []).map((profile) => profile.id);
+  if (publicIds.length === 0) return [];
+
+  const { data: books } = await supabase
+    .from("books")
+    .select("genre, categories")
+    .in("user_id", publicIds)
+    .eq("status", "Read")
+    .gte("rating", 4);
+
+  return [...new Set((books ?? []).flatMap((book) =>
+    Array.isArray(book.categories) && book.categories.length > 0 ? book.categories : [book.genre],
+  ))];
+}
+
 export async function POST(request: Request) {
   const body = (await request.json()) as {
     books?: BookRecord[];
@@ -131,6 +163,9 @@ export async function POST(request: Request) {
   const refresh = Boolean(body.refresh);
   const refreshSeed = refresh ? body.refreshSeed ?? Date.now() : 0;
   const providerOffset = refresh ? (refreshSeed % 4) * 12 : 0;
+  const followedCategories = exploreGenre === "For You"
+    ? await getFollowedHighRatedCategories().catch(() => [])
+    : [];
   const readCategoryCounts = new Map<string, number>();
   const highRatedCategoryCounts = new Map<string, number>();
   books.filter((book) => book.status === "Read").flatMap(getBookCategories).forEach((category) => {
@@ -156,6 +191,7 @@ export async function POST(request: Request) {
         `The user has read these books: ${JSON.stringify(books)}`,
         `The user selected recommendation mode: ${exploreGenre}`,
         `The user's preferred categories are: ${JSON.stringify(preferredCategories)}`,
+        `Readers the user follows have highly rated books in: ${JSON.stringify(followedCategories)}`,
         refresh ? `Generate a fresh alternative set, variation ${refreshSeed}.` : "",
         exploreGenre === "For You"
           ? "Recommend across genres based on the user's reading history and preferences."
@@ -182,13 +218,24 @@ export async function POST(request: Request) {
           recommendations: filteredRecommendations.map((recommendation) => ({
             ...recommendation,
             genre: exploreGenre,
+            socialProof: followedCategories.some((category) => matchesCategory(recommendation.genre, category))
+              ? "Highly rated by a reader you follow"
+              : undefined,
           })),
           source: "openai",
         });
       }
 
       if (exploreGenre === "For You" && filteredRecommendations.length > 0) {
-        return Response.json({ recommendations: diversifyRecommendations(filteredRecommendations), source: "openai" });
+        return Response.json({
+          recommendations: diversifyRecommendations(filteredRecommendations).map((recommendation) => ({
+            ...recommendation,
+            socialProof: followedCategories.some((category) => matchesCategory(recommendation.genre, category))
+              ? "Highly rated by a reader you follow"
+              : undefined,
+          })),
+          source: "openai",
+        });
       }
     } catch (error) {
       console.warn("OpenAI recommendation fetch failed, using local fallback", error);
@@ -212,12 +259,20 @@ export async function POST(request: Request) {
       .slice(0, 12);
 
     if (googleRecommendations.length > 0) {
-      return Response.json({ recommendations: diversifyRecommendations(googleRecommendations), source: "google_books_open_library" });
+      return Response.json({
+        recommendations: diversifyRecommendations(googleRecommendations).map((recommendation) => ({
+          ...recommendation,
+          socialProof: followedCategories.some((category) => matchesCategory(recommendation.genre, category))
+            ? "Highly rated by a reader you follow"
+            : undefined,
+        })),
+        source: "google_books_open_library",
+      });
     }
   }
 
   return Response.json({
-    recommendations: buildHeuristicRecommendations(books, exploreGenre, preferredCategories, refreshSeed),
+    recommendations: buildHeuristicRecommendations(books, exploreGenre, preferredCategories, refreshSeed, followedCategories),
     source: "local_fallback",
   });
 }
