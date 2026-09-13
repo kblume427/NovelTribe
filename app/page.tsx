@@ -254,7 +254,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#09090b] text-white">
       <div className="mx-auto max-w-7xl px-6 pb-20 pt-6 lg:px-8">
-        <header className="mb-10 flex flex-col gap-4 rounded-full border border-white/10 bg-white/5 px-4 py-3 shadow-[0_0_0_1px_rgba(255,255,255,0.03)] backdrop-blur-sm md:flex-row md:items-center md:justify-between">
+        <header className="mb-10 flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 px-4 py-3 shadow-[0_0_0_1px_rgba(255,255,255,0.03)] backdrop-blur-sm md:flex-row md:items-center md:justify-between md:rounded-full">
           <div className="flex items-center gap-3">
             <div className="relative h-11 w-11 overflow-hidden rounded-full shadow-lg shadow-violet-500/30">
               <Image src="/icon.png" alt="NovelTribe" fill sizes="44px" className="object-cover" />
@@ -264,11 +264,11 @@ export default function Home() {
             </div>
           </div>
 
-          <nav className="flex items-center gap-5 text-sm text-zinc-300">
-            <a href="#tracker" className="rounded-full px-2 py-1 transition hover:bg-white/5 hover:text-white">Tracker</a>
-            <a href="#recommendations" className="rounded-full px-2 py-1 transition hover:bg-white/5 hover:text-white">Recommendations</a>
-            <a href="#genres" className="rounded-full px-2 py-1 transition hover:bg-white/5 hover:text-white">Genres</a>
-            <a href="/profile" className="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-violet-100 transition hover:bg-violet-500/15 hover:text-white">Profile</a>
+          <nav className="flex w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-zinc-300 md:w-auto md:flex-nowrap md:gap-5">
+            <a href="#tracker" className="rounded-full px-2 py-1 whitespace-nowrap transition hover:bg-white/5 hover:text-white">Tracker</a>
+            <a href="#recommendations" className="rounded-full px-2 py-1 whitespace-nowrap transition hover:bg-white/5 hover:text-white">Recommendations</a>
+            <a href="#genres" className="rounded-full px-2 py-1 whitespace-nowrap transition hover:bg-white/5 hover:text-white">Genres</a>
+            <a href="/profile" className="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 whitespace-nowrap text-violet-100 transition hover:bg-violet-500/15 hover:text-white">Profile</a>
           </nav>
         </header>
 

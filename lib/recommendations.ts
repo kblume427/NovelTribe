@@ -30,6 +30,8 @@ export const allGenres = [
   "Mystery",
   "Thriller",
   "Romance",
+  "Dark Romance",
+  "Romantasy",
   "Contemporary",
   "Historical Fiction",
   "Horror",
