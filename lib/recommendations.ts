@@ -10,6 +10,7 @@ export type BookRecord = {
   finished_at?: string | null;
   isbn?: string | null;
   categories?: string[] | null;
+  review?: string | null;
 };
 
 export type Recommendation = BookRecord & {

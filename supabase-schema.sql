@@ -17,12 +17,27 @@ create table if not exists books (
   finished_at timestamp with time zone,
   isbn text,
   categories text[] default '{}',
+  review text check (review is null or char_length(review) <= 1000),
   created_at timestamp with time zone default now()
 );
 
 alter table books add column if not exists finished_at timestamp with time zone;
 alter table books add column if not exists isbn text;
 alter table books add column if not exists categories text[] default '{}';
+alter table books add column if not exists review text;
+
+create table if not exists reading_activity (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  book_id uuid references books(id) on delete cascade,
+  title text not null,
+  author text not null,
+  event_type text not null check (event_type in ('started', 'finished', 'rated')),
+  rating integer check (rating is null or (rating >= 1 and rating <= 5)),
+  created_at timestamp with time zone default now()
+);
+
+create index if not exists reading_activity_user_id_idx on reading_activity(user_id, created_at desc);
 
 create index if not exists books_user_id_idx on books(user_id);
 
@@ -32,6 +47,7 @@ on conflict (id) do update set public = true;
 
 alter table profiles enable row level security;
 alter table books enable row level security;
+alter table reading_activity enable row level security;
 
 create policy "Users can view their own profile"
 on profiles for select
@@ -60,6 +76,17 @@ using (auth.uid() = user_id);
 create policy "Users can delete their own books"
 on books for delete
 using (auth.uid() = user_id);
+
+drop policy if exists "Users can view their own reading activity" on reading_activity;
+drop policy if exists "Users can insert their own reading activity" on reading_activity;
+
+create policy "Users can view their own reading activity"
+on reading_activity for select
+using (auth.uid() = user_id);
+
+create policy "Users can insert their own reading activity"
+on reading_activity for insert
+with check (auth.uid() = user_id);
 
 drop policy if exists "Users can view their own avatars" on storage.objects;
 drop policy if exists "Users can upload their own avatars" on storage.objects;

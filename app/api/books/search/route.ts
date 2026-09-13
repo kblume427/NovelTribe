@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
   const googleBooksUrl = new URL("https://www.googleapis.com/books/v1/volumes");
   googleBooksUrl.searchParams.set("q", searchQuery);
-  googleBooksUrl.searchParams.set("maxResults", "6");
+  googleBooksUrl.searchParams.set("maxResults", "12");
   googleBooksUrl.searchParams.set("printType", "books");
 
   const apiKey = process.env.GOOGLE_BOOKS_API_KEY;

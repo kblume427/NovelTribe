@@ -3,15 +3,12 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
-import { allGenres, getBookCategories, starterBooks, type BookRecord, type Recommendation } from "@/lib/recommendations";
+import ShareNovelTribe from "@/components/share-noveltribe";
+import { allGenres, getBookCategories, starterBooks, type BookRecord } from "@/lib/recommendations";
 
 type BookStatus = "Read" | "Currently Reading" | "Want to Read";
 
 type Book = BookRecord;
-
-type RecommendationResponse = {
-  recommendations?: Recommendation[];
-};
 
 type GoogleBookResult = {
   id: string;
@@ -28,13 +25,11 @@ const defaultForm = {
   genre: "Fantasy",
   status: "Read" as BookStatus,
   rating: 5,
+  review: "",
 };
 
 export default function Home() {
-  const amazonAssociateTag = process.env.NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG ?? "noveltribe-20";
-
   const [books, setBooks] = useState<Book[]>(starterBooks);
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [form, setForm] = useState(defaultForm);
   const [editingBookId, setEditingBookId] = useState<string | number | null>(null);
   const [bookError, setBookError] = useState<string | null>(null);
@@ -42,7 +37,6 @@ export default function Home() {
   const [searchResults, setSearchResults] = useState<GoogleBookResult[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
-  const [exploreGenre, setExploreGenre] = useState("For You");
 
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -70,31 +64,6 @@ export default function Home() {
         setBooks(starterBooks);
       });
   }, []);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setRecommendations([]);
-
-    fetch("/api/recommend", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ books, exploreGenre }),
-      signal: controller.signal,
-    })
-      .then((response) => response.json())
-      .then((payload: RecommendationResponse) => {
-        if (Array.isArray(payload.recommendations) && payload.recommendations.length > 0) {
-          setRecommendations(payload.recommendations);
-        }
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) {
-          setRecommendations([]);
-        }
-      });
-
-    return () => controller.abort();
-  }, [books, exploreGenre]);
 
   const readGenres = useMemo(
     () => Array.from(new Set(books.filter((book) => book.status === "Read").flatMap(getBookCategories))),
@@ -129,6 +98,7 @@ export default function Home() {
       genre: form.genre,
       status: form.status,
       rating: form.rating,
+      review: editingBookId !== null ? books.find((book) => String(book.id) === String(editingBookId))?.review ?? null : null,
     };
 
     setBookError(null);
@@ -191,6 +161,7 @@ export default function Home() {
       genre: book.genre,
       status: book.status,
       rating: book.rating,
+      review: book.review ?? "",
     });
   };
 
@@ -305,8 +276,8 @@ export default function Home() {
 
           <nav className="flex w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-zinc-300 md:w-auto md:flex-nowrap md:gap-5">
             <a href="#tracker" className="rounded-full px-2 py-1 whitespace-nowrap transition hover:bg-white/5 hover:text-white">Tracker</a>
-            <a href="#recommendations" className="rounded-full px-2 py-1 whitespace-nowrap transition hover:bg-white/5 hover:text-white">Recommendations</a>
-            <a href="#genres" className="rounded-full px-2 py-1 whitespace-nowrap transition hover:bg-white/5 hover:text-white">Genres</a>
+            <a href="/recommendations" className="rounded-full px-2 py-1 whitespace-nowrap transition hover:bg-white/5 hover:text-white">Recommendations</a>
+            <a href="/recommendations#genres" className="rounded-full px-2 py-1 whitespace-nowrap transition hover:bg-white/5 hover:text-white">Genres</a>
             <a href="/profile" className="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 whitespace-nowrap text-violet-100 transition hover:bg-violet-500/15 hover:text-white">Profile</a>
           </nav>
         </header>
@@ -445,6 +416,21 @@ export default function Home() {
                 <div className="mt-2 text-sm text-violet-200">{form.rating} / 5</div>
               </label>
 
+              {form.status === "Read" && (
+                <label className="block">
+                  <span className="mb-2 block text-sm text-zinc-300">Review</span>
+                  <textarea
+                    value={form.review ?? ""}
+                    onChange={(event) => setForm((current) => ({ ...current, review: event.target.value.slice(0, 1000) }))}
+                    rows={4}
+                    maxLength={1000}
+                    className="w-full resize-y rounded-2xl border border-white/10 bg-[#0b1120] px-3 py-3 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/60"
+                    placeholder="What stayed with you?"
+                  />
+                  <div className="mt-2 text-xs text-zinc-500">{(form.review ?? "").length}/1000 characters</div>
+                </label>
+              )}
+
               <button
                 type="submit"
                 className="w-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-4 py-3 font-semibold text-white shadow-lg shadow-violet-500/30 transition hover:brightness-110"
@@ -553,6 +539,7 @@ export default function Home() {
                       ))}
                     </div>
                     {book.isbn && <div className="mt-1 text-xs text-zinc-500">ISBN {book.isbn}</div>}
+                    {book.review && <p className="mt-3 max-w-xl whitespace-pre-line text-sm leading-6 text-zinc-300">{book.review}</p>}
                     {book.status === "Read" && book.finished_at && (
                       <div className="mt-1 text-xs text-emerald-200">
                         Finished {new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(book.finished_at))}
@@ -587,59 +574,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="genres" className="pb-16">
-          <div className="mb-5 text-xs uppercase tracking-[0.25em] text-cyan-200">Recommendation filters</div>
-          <div className="flex flex-wrap gap-3">
-            {recommendationFilters.map((genre) => (
-              <button
-                key={genre}
-                type="button"
-                onClick={() => setExploreGenre(genre)}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                  exploreGenre === genre
-                    ? "bg-gradient-to-r from-cyan-500 to-violet-500 text-white shadow-lg shadow-cyan-500/20"
-                    : "border border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10"
-                }`}
-              >
-                {genre}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section id="recommendations" className="rounded-[32px] border border-white/10 bg-white/4 p-6 md:p-8">
-          <div className="mb-7 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div>
-              <div className="text-xs uppercase tracking-[0.25em] text-emerald-200">Recommendation engine</div>
-              <h2 className="mt-3 text-3xl font-bold text-white">Suggestions built from your current taste</h2>
-            </div>
-            <p className="text-sm text-zinc-300">Showing: <span className="font-semibold text-white">{exploreGenre}</span></p>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-            {(recommendations.length > 0 ? recommendations : []).map((book) => (
-              <article key={`${book.id}-${book.title}`} className="rounded-[26px] border border-white/10 bg-[#121a2b] p-4">
-                <div className="mb-4 h-40 rounded-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-500" />
-                <div className="text-[10px] uppercase tracking-[0.2em] text-violet-200">{book.genre}</div>
-                <h3 className="mt-3 text-xl font-semibold text-white">{book.title}</h3>
-                <p className="mt-1 text-sm text-zinc-400">{book.author}</p>
-                <p className="mt-3 text-sm leading-6 text-zinc-300">{book.reason}</p>
-
-                <div className="mt-5 flex items-center justify-between gap-3">
-                  <a
-                    href={`https://www.amazon.com/s?k=${encodeURIComponent(`${book.title} ${book.author}`)}&tag=${encodeURIComponent(amazonAssociateTag)}`}
-                    target="_blank"
-                    rel="sponsored noopener noreferrer"
-                    className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-900"
-                  >
-                    Buy on Amazon
-                  </a>
-                  <span className="text-xs text-zinc-500">#ad</span>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
+        <ShareNovelTribe />
 
         <section className="mt-16 rounded-[32px] border border-amber-500/20 bg-amber-500/5 p-6 md:p-8">
           <div className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">

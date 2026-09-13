@@ -20,7 +20,7 @@ function matchesCategory(value: unknown, category: string) {
 async function getGoogleBookRecommendations(books: BookRecord[], category: string) {
   const url = new URL("https://www.googleapis.com/books/v1/volumes");
   url.searchParams.set("q", `subject:${category}`);
-  url.searchParams.set("maxResults", "6");
+  url.searchParams.set("maxResults", "12");
   url.searchParams.set("printType", "books");
 
   if (process.env.GOOGLE_BOOKS_API_KEY) {
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
     try {
       const prompt = [
         "You are building a reading recommendation engine for a book tracker.",
-        "Return JSON only with an array of 4 objects. Each object should include title, author, genre, score, and reason.",
+        "Return JSON only with an array of up to 8 objects. Each object should include title, author, genre, score, and reason.",
         `The user has read these books: ${JSON.stringify(books)}`,
         `The user selected recommendation mode: ${exploreGenre}`,
         exploreGenre === "For You"
@@ -132,7 +132,7 @@ export async function POST(request: Request) {
     const googleRecommendations = categoryRecommendations
       .flat()
       .filter((book, index, allBooks) => allBooks.findIndex((candidate) => normalizeTitle(candidate.title) === normalizeTitle(book.title)) === index)
-      .slice(0, 4);
+      .slice(0, 8);
 
     if (googleRecommendations.length > 0) {
       return Response.json({ recommendations: googleRecommendations });

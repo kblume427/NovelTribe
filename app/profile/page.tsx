@@ -12,6 +12,15 @@ type ProfileState = {
   avatar_url: string;
 };
 
+type ActivityItem = {
+  id: string;
+  title: string;
+  author: string;
+  event_type: "started" | "finished" | "rated";
+  rating: number | null;
+  created_at: string;
+};
+
 export default function ProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -32,6 +41,7 @@ export default function ProfilePage() {
     averageRating: 0,
     favoriteGenre: "N/A",
   });
+  const [activity, setActivity] = useState<ActivityItem[]>([]);
 
   useEffect(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -112,6 +122,17 @@ export default function ProfilePage() {
           averageRating: avgRating,
           favoriteGenre,
         });
+      }
+
+      const { data: activityData } = await supabase
+        .from("reading_activity")
+        .select("id, title, author, event_type, rating, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(12);
+
+      if (activityData) {
+        setActivity(activityData as ActivityItem[]);
       }
 
       setLoading(false);
@@ -376,6 +397,39 @@ export default function ProfilePage() {
             </form>
           </section>
         </div>
+
+        <section className="mt-8 rounded-[30px] border border-white/10 bg-white/5 p-6">
+          <div className="mb-5">
+            <div className="text-xs uppercase tracking-[0.24em] text-cyan-200">Private activity</div>
+            <h2 className="mt-2 text-2xl font-bold text-white">Your reading timeline</h2>
+            <p className="mt-2 text-sm text-zinc-400">Only you can see this activity. Social sharing can come later.</p>
+          </div>
+
+          {activity.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-white/10 bg-[#0b1120] p-4 text-sm text-zinc-400">
+              Your reading activity will appear here as you start, finish, and rate books.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {activity.map((item) => (
+                <div key={item.id} className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-[#0b1120] p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="text-sm text-zinc-300">
+                      {item.event_type === "started" && "Started reading"}
+                      {item.event_type === "finished" && "Finished reading"}
+                      {item.event_type === "rated" && `Rated ${item.rating}/5`}
+                    </div>
+                    <div className="mt-1 font-semibold text-white">{item.title}</div>
+                    <div className="text-sm text-zinc-500">{item.author}</div>
+                  </div>
+                  <time className="text-xs text-zinc-500" dateTime={item.created_at}>
+                    {new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(item.created_at))}
+                  </time>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </main>
   );
