@@ -28,8 +28,8 @@ The current product is a functioning private beta. User libraries, profiles, rev
 - Main branch: `master`
 - Canonical production domain: `https://novel-tribe.com`
 - Hosting: Vercel, deployed from GitHub `master`
-- Latest pushed commit at handoff: `b807d06` (`Add SEO metadata and sitemap`)
-- The repository is normally kept clean after each requested commit/push.
+- Latest pushed commit: `c1028b5` (`Add SEO enhancements, About page, OpenGraph image, and project handoff`)
+- The repository is kept clean and synchronized with `origin/master`.
 
 ### Environment Variables
 
@@ -174,27 +174,25 @@ add column if not exists review text;
 
 The activity table and avatar policies are also present in `supabase-schema.sql`. If a full schema rerun stops on an already-existing policy, run the relevant migration block separately. Avatar uploads require the `avatars` bucket plus the `storage.objects` policies.
 
-## Work In Progress At Handoff
+## Recently Completed & Shipped Changes
 
-The latest pushed commit is `b807d06`. The following SEO improvements exist locally but have not yet been committed/pushed at the time this document was created:
+The SEO enhancements and initial handoff documentation were verified, committed, and pushed to `master` in commit `c1028b5`:
 
-- Structured data in `app/layout.tsx`
-- Stricter `robots.ts` disallow rules
-- `/about`
-- Page layouts for `/recommendations` and `/reading`
-- Generated `app/opengraph-image.tsx`
-- Sitemap entry for `/about`
-
-Run `git status --short` before making a release decision. Build validation passed after these local SEO changes.
+- Structured data (JSON-LD for WebSite, SoftwareApplication, and Organization) added in `app/layout.tsx`
+- Crawl disallow rules updated in `app/robots.ts` for `/api/`, `/auth/`, `/login`, and `/profile`
+- Public `/about` route created (`app/about/page.tsx`) with product overview, features, privacy guarantee, and canonical sharing
+- Sitemap (`app/sitemap.ts`) updated with priority and change frequencies including `/about`
+- Dedicated page layouts with titles and descriptions added for `/reading` and `/recommendations`
+- Generated social preview image added via `app/opengraph-image.tsx`
+- Project handoff documentation created and committed to the repository
 
 ## Recommended Next To-Do List
 
-### Immediate Release Hygiene
+### Immediate Release & Production Verification
 
-- Commit and push the pending SEO improvements.
-- Redeploy Vercel from the resulting commit.
-- Run all current Supabase migrations in production.
-- Verify the new public routes and metadata on `https://novel-tribe.com`.
+- Verify Vercel deployment triggered by `c1028b5`.
+- Run all current Supabase migrations in production if not already completed.
+- Verify the new public routes (`/about`, `/robots.txt`, `/sitemap.xml`, `/opengraph-image`) and metadata on `https://novel-tribe.com`.
 - Revoke any previously exposed Google API key and verify the replacement key in Vercel.
 - Confirm Google Books quota and Books API project alignment.
 - Confirm GA4 Realtime events after deployment.
