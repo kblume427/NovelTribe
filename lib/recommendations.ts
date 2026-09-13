@@ -1,7 +1,7 @@
 export type BookStatus = "Read" | "Currently Reading" | "Want to Read";
 
 export type BookRecord = {
-  id: number;
+  id: string | number;
   title: string;
   author: string;
   genre: string;

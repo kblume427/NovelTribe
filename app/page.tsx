@@ -12,6 +12,14 @@ type RecommendationResponse = {
   recommendations?: Recommendation[];
 };
 
+type GoogleBookResult = {
+  id: string;
+  title: string;
+  author: string;
+  category?: string;
+  thumbnail?: string;
+};
+
 const defaultForm = {
   title: "",
   author: "",
@@ -21,10 +29,29 @@ const defaultForm = {
 };
 
 export default function Home() {
+  const amazonAssociateTag = process.env.NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG ?? "noveltribe-20";
+
   const [books, setBooks] = useState<Book[]>(starterBooks);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [form, setForm] = useState(defaultForm);
+  const [editingBookId, setEditingBookId] = useState<string | number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<GoogleBookResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [exploreGenre, setExploreGenre] = useState("Adventure");
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      void handleGoogleSearch();
+    }, 350);
+
+    return () => window.clearTimeout(timeout);
+  }, [searchQuery]);
 
   useEffect(() => {
     fetch("/api/books")
@@ -78,7 +105,7 @@ export default function Home() {
     }
 
     const bookPayload: Book = {
-      id: Date.now(),
+      id: editingBookId ?? Date.now(),
       title: trimmedTitle,
       author: trimmedAuthor,
       genre: form.genre,
@@ -86,21 +113,131 @@ export default function Home() {
       rating: form.rating,
     };
 
-    setBooks((current) => [bookPayload, ...current]);
+    if (editingBookId) {
+      const response = await fetch("/api/books", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bookPayload),
+      });
+
+      if (response.ok) {
+        const payload = await response.json();
+        if (payload.book) {
+          setBooks((current) => current.map((book) => (book.id === editingBookId ? payload.book : book)));
+        }
+      }
+    } else {
+      const response = await fetch("/api/books", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bookPayload),
+      });
+
+      if (response.ok) {
+        const payload = await response.json();
+        if (payload.book) {
+          setBooks((current) => [payload.book, ...current]);
+        } else {
+          setBooks((current) => [bookPayload, ...current]);
+        }
+      }
+    }
+
+    setForm(defaultForm);
+    setEditingBookId(null);
+  };
+
+  const handleEdit = (book: Book) => {
+    setEditingBookId(book.id);
+    setForm({
+      title: book.title,
+      author: book.author,
+      genre: book.genre,
+      status: book.status,
+      rating: book.rating,
+    });
+  };
+
+  const handleDelete = async (bookId: string | number) => {
+    const response = await fetch("/api/books", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: bookId }),
+    });
+
+    if (response.ok) {
+      setBooks((current) => current.filter((book) => book.id !== bookId));
+      if (editingBookId === bookId) {
+        setForm(defaultForm);
+        setEditingBookId(null);
+      }
+    }
+  };
+
+  const handleGoogleSearch = async () => {
+    const query = searchQuery.trim();
+    if (!query) {
+      return;
+    }
+
+    setIsSearching(true);
+
+    try {
+      const response = await fetch(
+        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=6&printType=books`,
+      );
+      const payload = await response.json();
+
+      if (!payload.items) {
+        setSearchResults([]);
+        return;
+      }
+
+      const mapped: GoogleBookResult[] = payload.items.map((item: any) => ({
+        id: item.id,
+        title: item.volumeInfo?.title ?? "Untitled",
+        author: item.volumeInfo?.authors?.join(", ") ?? "Unknown author",
+        category: item.volumeInfo?.categories?.[0],
+        thumbnail: item.volumeInfo?.imageLinks?.thumbnail,
+      }));
+
+      setSearchResults(mapped);
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleImportFromGoogle = async (result: GoogleBookResult) => {
+    const normalizedGenre = allGenres.includes(result.category ?? "")
+      ? result.category!
+      : form.genre || "Fantasy";
+
+    const importedBook: Book = {
+      id: Date.now(),
+      title: result.title,
+      author: result.author,
+      genre: normalizedGenre,
+      status: "Want to Read",
+      rating: 0,
+    };
+
+    setBooks((current) => [importedBook, ...current]);
+    setSearchQuery("");
+    setSearchResults([]);
 
     await fetch("/api/books", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(bookPayload),
+      body: JSON.stringify(importedBook),
     });
-
-    setForm(defaultForm);
   };
 
   return (
     <main className="min-h-screen bg-[#09090b] text-white">
       <div className="mx-auto max-w-7xl px-6 pb-20 pt-6 lg:px-8">
-        <header className="mb-10 flex flex-col gap-4 rounded-full border border-white/10 bg-white/4 px-4 py-3 backdrop-blur-sm md:flex-row md:items-center md:justify-between">
+        <header className="mb-10 flex flex-col gap-4 rounded-full border border-white/10 bg-white/5 px-4 py-3 shadow-[0_0_0_1px_rgba(255,255,255,0.03)] backdrop-blur-sm md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-500 text-lg font-bold text-white shadow-lg shadow-violet-500/30">
               N
@@ -111,9 +248,10 @@ export default function Home() {
           </div>
 
           <nav className="flex items-center gap-5 text-sm text-zinc-300">
-            <a href="#tracker" className="transition hover:text-white">Tracker</a>
-            <a href="#recommendations" className="transition hover:text-white">Recommendations</a>
-            <a href="#genres" className="transition hover:text-white">Genres</a>
+            <a href="#tracker" className="rounded-full px-2 py-1 transition hover:bg-white/5 hover:text-white">Tracker</a>
+            <a href="#recommendations" className="rounded-full px-2 py-1 transition hover:bg-white/5 hover:text-white">Recommendations</a>
+            <a href="#genres" className="rounded-full px-2 py-1 transition hover:bg-white/5 hover:text-white">Genres</a>
+            <a href="/profile" className="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-violet-100 transition hover:bg-violet-500/15 hover:text-white">Profile</a>
           </nav>
         </header>
 
@@ -130,22 +268,22 @@ export default function Home() {
             </p>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Books tracked</div>
+              <div className="rounded-2xl border border-violet-500/20 bg-violet-500/7 p-4 shadow-lg shadow-violet-500/5">
+                <div className="text-xs uppercase tracking-[0.2em] text-zinc-400">Books tracked</div>
                 <div className="mt-3 text-3xl font-bold text-white">{totalBooks}</div>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Finished</div>
+              <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/7 p-4 shadow-lg shadow-cyan-500/5">
+                <div className="text-xs uppercase tracking-[0.2em] text-zinc-400">Finished</div>
                 <div className="mt-3 text-3xl font-bold text-white">{finishedBooks}</div>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Avg rating</div>
+              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/7 p-4 shadow-lg shadow-amber-500/5">
+                <div className="text-xs uppercase tracking-[0.2em] text-zinc-400">Avg rating</div>
                 <div className="mt-3 text-3xl font-bold text-white">{avgRating.toFixed(1)}</div>
               </div>
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-white/10 bg-[#111827] p-6">
+          <div className="rounded-[28px] border border-white/10 bg-[#111827]/80 p-6 shadow-[0_20px_50px_rgba(15,23,42,0.45)]">
             <div className="mb-5 text-xs uppercase tracking-[0.24em] text-cyan-200">Currently reading</div>
             <div className="space-y-4">
               {books.filter((book) => book.status !== "Read").slice(0, 3).map((book) => (
@@ -170,7 +308,23 @@ export default function Home() {
 
         <section id="tracker" className="grid gap-8 pb-16 lg:grid-cols-[0.8fr_1.2fr]">
           <form onSubmit={handleSubmit} className="rounded-[28px] border border-white/10 bg-white/4 p-6">
-            <div className="mb-6 text-xs uppercase tracking-[0.25em] text-violet-200">Add a book</div>
+            <div className="mb-6 flex items-center justify-between gap-3">
+              <div className="text-xs uppercase tracking-[0.25em] text-violet-200">
+                {editingBookId ? "Edit book" : "Add a book"}
+              </div>
+              {editingBookId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingBookId(null);
+                    setForm(defaultForm);
+                  }}
+                  className="text-sm text-zinc-300 transition hover:text-white"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
             <div className="space-y-4">
               <label className="block">
                 <span className="mb-2 block text-sm text-zinc-300">Title</span>
@@ -239,8 +393,71 @@ export default function Home() {
                 type="submit"
                 className="w-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-4 py-3 font-semibold text-white shadow-lg shadow-violet-500/30 transition hover:brightness-110"
               >
-                Save to my shelf
+                {editingBookId ? "Save changes" : "Save to my shelf"}
               </button>
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-white/10 bg-[#0b1120] p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="text-xs uppercase tracking-[0.22em] text-cyan-200">Quick import</div>
+                <button
+                  type="button"
+                  onClick={handleGoogleSearch}
+                  disabled={isSearching || !searchQuery.trim()}
+                  className="rounded-full bg-gradient-to-r from-cyan-500 to-violet-500 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSearching ? "Searching..." : "Search"}
+                </button>
+              </div>
+
+              <input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    void handleGoogleSearch();
+                  }
+                }}
+                placeholder="Search Google Books..."
+                className="w-full rounded-2xl border border-white/10 bg-[#101827] px-3 py-2.5 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/60"
+              />
+
+              {searchQuery.trim() && !isSearching && searchResults.length === 0 && (
+                <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-white/3 p-3 text-sm text-zinc-400">
+                  No matching titles found. Try a different search.
+                </div>
+              )}
+
+              {searchResults.length > 0 && (
+                <div className="mt-4 space-y-3">
+                  {searchResults.map((result) => (
+                    <div key={result.id} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
+                      {result.thumbnail ? (
+                        <img src={result.thumbnail} alt={result.title} className="h-16 w-12 rounded-lg object-cover" />
+                      ) : (
+                        <div className="flex h-16 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500/30 to-cyan-500/30 text-[10px] uppercase tracking-[0.2em] text-violet-100">
+                          Book
+                        </div>
+                      )}
+
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-medium text-white">{result.title}</div>
+                        <div className="truncate text-sm text-zinc-400">{result.author}</div>
+                        {result.category && <div className="mt-1 text-[10px] uppercase tracking-[0.2em] text-cyan-200">{result.category}</div>}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => void handleImportFromGoogle(result)}
+                        className="rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2.5 py-1.5 text-[10px] uppercase tracking-[0.2em] text-cyan-100 transition hover:bg-cyan-500/20"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </form>
 
@@ -257,7 +474,7 @@ export default function Home() {
 
             <div className="space-y-4">
               {books.map((book) => (
-                <div key={book.id} className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div key={book.id} className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.25)]">
                   <div>
                     <div className="font-semibold text-white">{book.title}</div>
                     <div className="mt-1 text-sm text-zinc-400">{book.author} · {book.genre}</div>
@@ -267,6 +484,22 @@ export default function Home() {
                       {book.status}
                     </span>
                     <span className="text-sm font-medium text-amber-300">{book.rating}/5</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleEdit(book)}
+                        className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-zinc-200 transition hover:bg-white/10"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(book.id)}
+                        className="rounded-full border border-red-500/30 bg-red-500/10 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-red-200 transition hover:bg-red-500/20"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -314,9 +547,9 @@ export default function Home() {
 
                 <div className="mt-5 flex items-center justify-between gap-3">
                   <a
-                    href={`https://www.amazon.com/s?k=${encodeURIComponent(`${book.title} ${book.author}`)}&tag=noveltribe-20`}
+                    href={`https://www.amazon.com/s?k=${encodeURIComponent(`${book.title} ${book.author}`)}&tag=${encodeURIComponent(amazonAssociateTag)}`}
                     target="_blank"
-                    rel="noopener noreferrer"
+                    rel="sponsored noopener noreferrer"
                     className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-900"
                   >
                     Buy on Amazon
@@ -341,7 +574,7 @@ export default function Home() {
             <div className="rounded-3xl border border-amber-500/30 bg-black/20 p-5">
               <div className="text-xs uppercase tracking-[0.2em] text-amber-100">Required disclosure</div>
               <p className="mt-4 text-base text-zinc-200">
-                “As an Amazon Associate I earn from qualifying purchases.”
+                “As an Amazon Associate, NovelTribe earns from qualifying purchases. The affiliate tag is configured through the site environment and used for compliant product discovery links.”
               </p>
             </div>
           </div>
