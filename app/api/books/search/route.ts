@@ -7,8 +7,14 @@ export async function GET(request: NextRequest) {
     return Response.json({ items: [] });
   }
 
+  const normalizedIsbn = query
+    .replace(/^isbn[:\s]*/i, "")
+    .replace(/[\s-]/g, "");
+  const isIsbn = /^(?:\d{9}[\dXx]|\d{13})$/.test(normalizedIsbn);
+  const searchQuery = isIsbn ? `isbn:${normalizedIsbn.toUpperCase()}` : query;
+
   const googleBooksUrl = new URL("https://www.googleapis.com/books/v1/volumes");
-  googleBooksUrl.searchParams.set("q", query);
+  googleBooksUrl.searchParams.set("q", searchQuery);
   googleBooksUrl.searchParams.set("maxResults", "6");
   googleBooksUrl.searchParams.set("printType", "books");
 
