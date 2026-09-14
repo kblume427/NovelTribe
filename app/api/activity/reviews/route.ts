@@ -14,7 +14,6 @@ export async function GET() {
     .select("id, username, full_name, avatar_url, public_library, public_reviews, public_ratings")
     .in("id", followingIds)
     .eq("is_public", true)
-    .eq("public_library", true)
     .eq("public_reviews", true);
   const eligibleProfiles = profiles ?? [];
   const eligibleIds = eligibleProfiles.map((profile) => profile.id);

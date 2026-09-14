@@ -157,6 +157,7 @@ Rules:
 - Followers and Following lists use a compact scrollable panel sized for roughly 10 visible rows
 - Privacy-controlled activity feed on `/recommendations` for followed users who enable public activity
 - From your circle review shelf showing followed users' public reviewed books ordered by rating
+- Public reviews are independently visible from the public library setting through a dedicated RLS policy
 - Activity feed items carry and display the book cover URL when available
 - Private-profile and self-follow protections
 - User-scoped follows RLS policies

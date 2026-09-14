@@ -142,6 +142,20 @@ create policy "Anyone can view public library books"
 on books for select
 using (exists (select 1 from profiles where profiles.id = books.user_id and profiles.is_public = true and profiles.public_library = true));
 
+drop policy if exists "Anyone can view public review books" on books;
+create policy "Anyone can view public review books"
+on books for select
+using (
+  review is not null
+  and review <> ''
+  and exists (
+    select 1 from profiles
+    where profiles.id = books.user_id
+      and profiles.is_public = true
+      and profiles.public_reviews = true
+  )
+);
+
 drop policy if exists "Users can view their own reading activity" on reading_activity;
 drop policy if exists "Users can insert their own reading activity" on reading_activity;
 
