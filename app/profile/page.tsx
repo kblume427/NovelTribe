@@ -468,6 +468,12 @@ export default function ProfilePage() {
 
           <div className="flex items-center gap-3">
             <a
+              href="/features"
+              className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-sm text-cyan-200 transition hover:bg-cyan-500/20"
+            >
+              Feature guide
+            </a>
+            <a
               href="/"
               className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-200 transition hover:bg-white/10"
             >

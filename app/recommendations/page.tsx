@@ -193,7 +193,7 @@ export default function RecommendationsPage() {
             <a href="/" className="rounded-full px-2 py-1 whitespace-nowrap transition hover:bg-white/5 hover:text-white">Tracker</a>
             <a href="/reading" className="rounded-full px-2 py-1 whitespace-nowrap transition hover:bg-white/5 hover:text-white">Reading</a>
             <a href="/recommendations" className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2 py-1 whitespace-nowrap text-violet-100">Recommendations</a>
-            <a href="/#genres" className="rounded-full px-2 py-1 whitespace-nowrap transition hover:bg-white/5 hover:text-white">Genres</a>
+            <a href="/features" className="rounded-full px-2 py-1 whitespace-nowrap transition hover:bg-white/5 hover:text-white">Features</a>
             <a href="/profile" className="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 whitespace-nowrap text-violet-100 transition hover:bg-violet-500/15 hover:text-white">Profile</a>
           </nav>
         </header>

@@ -62,15 +62,69 @@ Rules:
 - `/reading` is intentionally read-only; book editing remains on the Tracker page
 - `/recommendations` - recommendation page with `For You` and category filters
 - `/about` - public crawlable product description
+- `/features` - comprehensive platform feature guide explaining all core and opt-in toggles
 - `/auth/callback` - Supabase magic-link callback
 - `/u/[username]` - opt-in public reader card with favorite genres, reading history teaser, dynamic SEO/OG, and join CTA
 - `/api/books` - authenticated user-scoped book CRUD
 - `/api/books/search` - Google Books proxy with ISBN normalization
 - `/api/recommend` - OpenAI, Google Books, Open Library, and local fallback recommendation engine
+- `/api/sessions` - authenticated user-scoped reading sessions CRUD and daily streak calculator
 - `/robots.txt` and `/sitemap.xml` - generated SEO routes
 - `/opengraph-image` - generated 1200x630 social preview image
 
 ## Completed Product Features
+
+### Opt-In Feature Toggles & Single Store
+
+- Single source of truth in `lib/featureFlags.ts` storing feature preferences as JSONB on `profiles.feature_flags`.
+- Privacy-first: all optional features are disabled by default until the reader explicitly opts in.
+- UI toggles organized cleanly in `/profile` under four sections:
+  1. Discovery & recommendations
+  2. Reading habit tracking
+  3. Book entry extras
+  4. Dashboard display
+
+### Reading Habits, Sessions & Streaks
+
+- Dedicated `reading_sessions` table with user-scoped Row-Level Security.
+- Quick session logger directly on `/reading` to record minutes read, pages turned, and optional session notes.
+- Consecutive-day streak calculation algorithm (`lib/sessions.ts`) with live streak badges displayed across Currently Reading, Tracker hero, and Profile.
+- Expandable chronological session history timeline on each book.
+- Gentle reading reminder banner on `/` when no session has been logged today, encouraging daily habits.
+
+### Reading Goals & Velocity Estimator
+
+- Annual reading goal input in `/profile` with live progress bars and remaining-books countdowns on Profile and Dashboard.
+- Book page tracking (`books.total_pages` and `books.current_page`).
+- Daily pace calculation and dynamic finish date forecasting (`lib/velocity.ts`) displaying `~X days to finish (Date)` and percentage complete.
+- Inline page-update controls on Currently Reading cards.
+
+### Book Cataloging Extras
+
+- **Mood & Vibe Tags**: Controlled vocabulary (`MOOD_TAGS`) with chip multi-select in book entry; rendered in library list; boosts recommendations matching 4- and 5-star vibes.
+- **Custom Shelves**: User-created tags (e.g. *Favorites*, *DNF*, *Book Club*, *Re-read*) with instant filter bar above library list.
+- **Quote Capture**: Interactive quote entry and deletion; rendered as formatted blockquote cards in library.
+- **Format Tracking**: Physical, E-Book, and Audiobook selector with aggregate format breakdown cards on Profile.
+- **Audiobook Support**: Narrator name and duration/runtime tracking with contextual inputs and library badges.
+
+### Milestones & Achievements
+
+- Badge evaluation engine (`lib/milestones.ts`) with 11 private achievements (*First Step*, *Reviewer*, *Found a Gem*, *Page Turner*, *Bibliophile*, *Genre Explorer*, *Daily Reader*, *Habit Master*, *Format Flexible*, *Quote Collector*, *Goal Crusher*).
+- Showcase cards in Profile and Tracker dashboard highlighting unlocked badges and tracking locked progress.
+
+### Data Ownership & Mobile App (PWA)
+
+- **One-Click Export**: Full library backup to CSV or JSON format from Profile.
+- **Goodreads CSV Import**: High-fidelity parser (`lib/importExport.ts`) reading `goodreads_library_export.csv` with automated shelf, status, rating, review, and finish date mapping.
+- **PWA / Mobile Home Screen**: Web App Manifest (`manifest.webmanifest`), apple-web-app configuration, and mobile viewport optimizations for standalone native-like installation.
+
+### Social & Peer Matching
+
+- **Strict Peer Genre Matching**: Filtered reader recommendations and peer-influenced "For You" recommendations ensuring followed users only shape suggestions when favorite genres overlap.
+
+### Platform Documentation
+
+- Public `/features` guide route detailing all core and toggleable capabilities with direct CTAs.
 
 ### Accounts And Persistence
 
@@ -265,11 +319,92 @@ add column if not exists categories text[] default '{}';
 
 alter table books
 add column if not exists review text;
+
+-- Optional feature flags, reading goals, and book extensions
+alter table profiles
+add column if not exists feature_flags jsonb not null default '{}'::jsonb;
+
+alter table profiles
+add column if not exists reading_goal integer default null;
+
+alter table books
+add column if not exists mood_tags text[] default '{}',
+add column if not exists quotes text[] default '{}',
+add column if not exists format text default null,
+add column if not exists audiobook_narrator text default null,
+add column if not exists audiobook_duration text default null,
+add column if not exists custom_shelves text[] default '{}',
+add column if not exists total_pages integer default null,
+add column if not exists current_page integer default null;
+
+-- Reading sessions table
+create table if not exists reading_sessions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  book_id uuid references books(id) on delete cascade,
+  duration_minutes integer check (duration_minutes is null or duration_minutes > 0),
+  pages_read integer check (pages_read is null or pages_read >= 0),
+  notes text,
+  session_date date not null default current_date,
+  created_at timestamp with time zone default now()
+);
+
+create index if not exists reading_sessions_user_date_idx on reading_sessions(user_id, session_date desc);
+create index if not exists reading_sessions_book_idx on reading_sessions(book_id);
+
+alter table reading_sessions enable row level security;
+
+create policy "Users can view their own reading sessions"
+on reading_sessions for select
+using (auth.uid() = user_id);
+
+create policy "Users can insert their own reading sessions"
+on reading_sessions for insert
+with check (auth.uid() = user_id);
+
+create policy "Users can update their own reading sessions"
+on reading_sessions for update
+using (auth.uid() = user_id);
+
+create policy "Users can delete their own reading sessions"
+on reading_sessions for delete
+using (auth.uid() = user_id);
 ```
 
 The activity table and avatar policies are also present in `supabase-schema.sql`. If a full schema rerun stops on an already-existing policy, run the relevant migration block separately. Avatar uploads require the `avatars` bucket plus the `storage.objects` policies.
 
 ## Recently Completed & Shipped Changes
+
+### Phase 0 & Phase 1: Feature Architecture & Full Backlog Implementation (Commits `8a851e4`, `3ba36ee`, `8ea396a`, `0cd468c`)
+
+1. **Opt-in Feature Flags Architecture**:
+   - Single JSONB store (`profiles.feature_flags`) avoiding schema migration churn.
+   - Comprehensive toggle center on `/profile` divided into 4 intuitive categories.
+   - All optional features disabled by default for privacy and clutter-free usage.
+
+2. **Habits, Goals & Velocity**:
+   - `reading_sessions` table with user-scoped CRUD and daily streak calculator.
+   - Quick session logger and expandable session history timeline on `/reading`.
+   - Annual reading goal progress bars and remaining-books countdown.
+   - Daily reading pace calculator and estimated finish date forecasts (`lib/velocity.ts`).
+   - Gentle reading habit reminder banner on `/` when no session has been recorded today.
+
+3. **Book Cataloging & Customization**:
+   - Mood & vibe tag chip selector (`MOOD_TAGS`), library badge display, and recommendation weighting.
+   - Custom shelves tagging and dynamic shelf filter bar in library.
+   - Multi-quote capture and blockquote rendering.
+   - Format breakdown (Physical, E-Book, Audio) and audiobook narrator/runtime tracking.
+
+4. **Milestones, Data Ownership & PWA**:
+   - 11 badge achievements evaluated in `lib/milestones.ts` displayed on Profile and Dashboard.
+   - One-click CSV and JSON library export.
+   - High-fidelity Goodreads CSV export parser (`lib/importExport.ts`) with automated shelf/status/rating/review mapping.
+   - PWA web app manifest and iOS fullscreen standalone configuration.
+   - Strict peer genre matching for reader recommendations and circle discovery.
+
+5. **Platform Guide Route**:
+   - Public `/features` page showcasing all platform capabilities with direct CTAs.
+   - Header navigation and sitemap integration across the entire application.
 
 The SEO enhancements and initial handoff documentation were verified, committed, and pushed to `master` in commits `c1028b5` and `ee35c55`:
 
