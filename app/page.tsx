@@ -30,6 +30,7 @@ const defaultForm = {
 };
 
 export default function Home() {
+  const amazonAssociateTag = process.env.NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG ?? "noveltribe-20";
   const [books, setBooks] = useState<Book[]>(starterBooks);
   const [form, setForm] = useState(defaultForm);
   const [editingBookId, setEditingBookId] = useState<string | number | null>(null);
@@ -701,6 +702,17 @@ export default function Home() {
                       {book.status}
                     </span>
                     <span className="text-sm font-medium text-amber-300">{book.rating}/5</span>
+                    {book.status === "Want to Read" && (
+                      <a
+                        href={`https://www.amazon.com/s?k=${encodeURIComponent(`${book.title} ${book.author}`)}&tag=${encodeURIComponent(amazonAssociateTag)}`}
+                        onClick={() => trackEvent("affiliate_link_clicked", { category: book.genre, source: "library" })}
+                        target="_blank"
+                        rel="sponsored noopener noreferrer"
+                        className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-900"
+                      >
+                        Buy
+                      </a>
+                    )}
                     <div className="flex items-center gap-2">
                       <button
                         type="button"

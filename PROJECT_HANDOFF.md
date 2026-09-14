@@ -129,6 +129,8 @@ Rules:
 - Login page includes Apple/Safari guidance to keep magic-link requests and callbacks in the same browser context
 - Private admin-only total user count available through `/api/admin/user-count` for allowlisted usernames
 - Recommendation cards preserve the full cover image with `object-contain` instead of cropping it
+- Recommendation cards can add a title directly to the library as Read or Want to Read
+- Want to Read library cards include a disclosed Amazon affiliate purchase link
 - Quick Add stores immutable Google Books cover URLs for library and Currently Reading display
 - Manual book entry looks up and previews an official Google Books cover when a title/author match is found
 - Manual cover previews require explicit Use/Skip approval; approved covers are shared by ISBN through `cover_approvals`
