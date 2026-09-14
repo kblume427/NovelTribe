@@ -49,6 +49,8 @@ export default function Home() {
   const [profileFlags, setProfileFlags] = useState<FeatureFlags | null>(null);
   const [readingGoal, setReadingGoal] = useState<number | null>(null);
   const [streak, setStreak] = useState<number>(0);
+  const [loggedToday, setLoggedToday] = useState<boolean>(false);
+  const [reminderDismissed, setReminderDismissed] = useState<boolean>(false);
   const [selectedShelfFilter, setSelectedShelfFilter] = useState<string>("All");
   const [editingBookId, setEditingBookId] = useState<string | number | null>(null);
   const [bookError, setBookError] = useState<string | null>(null);
@@ -144,12 +146,15 @@ export default function Home() {
       if (typeof profileRow?.reading_goal === "number") {
         setReadingGoal(profileRow.reading_goal);
       }
-      if (flags.reading_sessions) {
+      if (flags.reading_sessions || flags.reading_reminders) {
         fetch("/api/sessions")
           .then((res) => (res.ok ? res.json() : null))
           .then((data) => {
             if (!active || !data) return;
             setStreak(data.streak ?? 0);
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const hasToday = Array.isArray(data.sessions) && data.sessions.some((s: { session_date?: string }) => s.session_date?.slice(0, 10) === todayStr);
+            setLoggedToday(hasToday);
           })
           .catch(() => undefined);
       }
@@ -488,6 +493,38 @@ export default function Home() {
           </nav>
         </header>
 
+        {profileFlags && isFeatureEnabled(profileFlags, "reading_reminders") && !loggedToday && !reminderDismissed && (
+          <aside aria-label="Daily reading reminder" className="mb-6 flex flex-col gap-3 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/15 via-violet-500/10 to-cyan-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">📖</span>
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wider text-amber-200">Daily Reading Habit</div>
+                <p className="text-sm text-zinc-200">
+                  {streak > 0
+                    ? `Keep your ${streak}-day reading streak alive! Even 10 minutes today keeps your momentum going.`
+                    : "Carve out a few quiet minutes to read today and start a reading streak."}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <a
+                href="/reading"
+                className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-4 py-1.5 text-xs font-semibold text-slate-900 shadow-md transition hover:brightness-110"
+              >
+                Log today&apos;s session →
+              </a>
+              <button
+                type="button"
+                onClick={() => setReminderDismissed(true)}
+                className="rounded-full border border-white/10 px-2.5 py-1.5 text-xs text-zinc-400 hover:text-white"
+                aria-label="Dismiss reading reminder"
+              >
+                ✕
+              </button>
+            </div>
+          </aside>
+        )}
+
         <section className="mb-10 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-violet-500/10 via-[#111827] to-cyan-500/10 p-6 shadow-2xl shadow-violet-500/10">
             <div className="mb-4 inline-flex rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.25em] text-violet-100">
@@ -500,20 +537,22 @@ export default function Home() {
               Log the books you’ve finished, keep tabs on your current reads, and let NovelTribe suggest titles based on the genres and stories you already love.
             </p>
 
-            <div className="mt-8 grid gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl border border-violet-500/20 bg-violet-500/7 p-4 shadow-lg shadow-violet-500/5">
-                <div className="text-xs uppercase tracking-[0.2em] text-zinc-400">Books tracked</div>
-                <div className="mt-3 text-3xl font-bold text-white">{totalBooks}</div>
+            {(!profileFlags || isFeatureEnabled(profileFlags, "show_stats_widgets")) && (
+              <div className="mt-8 grid gap-4 sm:grid-cols-3">
+                <div className="rounded-2xl border border-violet-500/20 bg-violet-500/7 p-4 shadow-lg shadow-violet-500/5">
+                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-400">Books tracked</div>
+                  <div className="mt-3 text-3xl font-bold text-white">{totalBooks}</div>
+                </div>
+                <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/7 p-4 shadow-lg shadow-cyan-500/5">
+                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-400">Finished</div>
+                  <div className="mt-3 text-3xl font-bold text-white">{finishedBooks}</div>
+                </div>
+                <div className="rounded-2xl border border-amber-500/20 bg-amber-500/7 p-4 shadow-lg shadow-amber-500/5">
+                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-400">Avg rating</div>
+                  <div className="mt-3 text-3xl font-bold text-white">{avgRating.toFixed(1)}</div>
+                </div>
               </div>
-              <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/7 p-4 shadow-lg shadow-cyan-500/5">
-                <div className="text-xs uppercase tracking-[0.2em] text-zinc-400">Finished</div>
-                <div className="mt-3 text-3xl font-bold text-white">{finishedBooks}</div>
-              </div>
-              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/7 p-4 shadow-lg shadow-amber-500/5">
-                <div className="text-xs uppercase tracking-[0.2em] text-zinc-400">Avg rating</div>
-                <div className="mt-3 text-3xl font-bold text-white">{avgRating.toFixed(1)}</div>
-              </div>
-            </div>
+            )}
 
             {profileFlags && isFeatureEnabled(profileFlags, "reading_goals") && readingGoal && (
               <div className="mt-6 rounded-2xl border border-violet-500/20 bg-[#0b1120]/80 p-4">

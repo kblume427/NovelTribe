@@ -52,10 +52,22 @@ export const metadata: Metadata = {
     googleBot: { index: true, follow: true },
   },
   manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "NovelTribe",
+  },
   icons: {
     icon: [{ url: "/icon.png", sizes: "1254x1254", type: "image/png" }],
     apple: [{ url: "/apple-icon.png", sizes: "1254x1254", type: "image/png" }],
   },
+};
+
+export const viewport = {
+  themeColor: "#09090b",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

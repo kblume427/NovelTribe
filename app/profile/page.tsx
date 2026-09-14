@@ -10,6 +10,7 @@ import { createSupabaseClient } from "@/lib/supabase/client";
 import SocialInbox from "@/components/social-inbox";
 import { DEFAULT_FEATURE_FLAGS, resolveFeatureFlags, type FeatureFlagKey, type FeatureFlags } from "@/lib/featureFlags";
 import { evaluateMilestones } from "@/lib/milestones";
+import { exportBooksToCSV, exportBooksToJSON, parseGoodreadsCSV } from "@/lib/importExport";
 
 type ProfileState = {
   full_name: string;
@@ -109,6 +110,8 @@ export default function ProfilePage() {
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [categoryOptions, setCategoryOptions] = useState(allGenres);
   const [totalUsers, setTotalUsers] = useState<number | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -363,6 +366,81 @@ export default function ProfilePage() {
     setSaving(false);
   };
 
+  const handleExport = (format: "json" | "csv") => {
+    if (!profileBooks.length) {
+      setImportStatus("No books found to export.");
+      return;
+    }
+    const content = format === "json" ? exportBooksToJSON(profileBooks) : exportBooksToCSV(profileBooks);
+    const mime = format === "json" ? "application/json" : "text/csv";
+    const filename = `noveltribe-library-${new Date().toISOString().slice(0, 10)}.${format}`;
+
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setImportStatus(`Exported ${profileBooks.length} books as ${format.toUpperCase()}.`);
+  };
+
+  const handleImportCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setImporting(true);
+    setImportStatus("Reading file...");
+
+    try {
+      const text = await file.text();
+      const parsedBooks = parseGoodreadsCSV(text);
+
+      if (!parsedBooks.length) {
+        setImportStatus("Could not find any books in that file. Please ensure it is a valid Goodreads or NovelTribe CSV export.");
+        setImporting(false);
+        return;
+      }
+
+      setImportStatus(`Importing ${parsedBooks.length} books...`);
+      let successCount = 0;
+
+      for (const b of parsedBooks) {
+        try {
+          const res = await fetch("/api/books", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(b),
+          });
+          if (res.ok) successCount++;
+        } catch {
+          // continue importing remaining items
+        }
+      }
+
+      setImportStatus(`Successfully imported ${successCount} of ${parsedBooks.length} books to your shelf!`);
+      // refresh stats
+      const { data: refreshed } = await createSupabaseClient()
+        .from("books")
+        .select("id, title, author, genre, categories, status, rating, review, quotes, format, total_pages, current_page");
+      if (refreshed) {
+        setProfileBooks(refreshed as BookRecord[]);
+        setStats((prev) => ({
+          ...prev,
+          total: refreshed.length,
+          finished: refreshed.filter((b) => b.status === "Read").length,
+        }));
+      }
+    } catch {
+      setImportStatus("Error reading or parsing the CSV file.");
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const handleSignOut = async () => {
     if (!supabaseReady) {
       return;
@@ -551,6 +629,47 @@ export default function ProfilePage() {
                 <div className="mt-1 text-xs text-zinc-400">Total registered readers</div>
               </div>
             )}
+
+            {/* Data Ownership: Import & Export */}
+            <div className="mt-4 rounded-2xl border border-white/10 bg-[#0b1120] p-4">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-cyan-300">Data ownership</div>
+              <p className="mt-1 text-xs text-zinc-400">
+                Your data belongs to you. Export your entire library at any time or import your books from Goodreads.
+              </p>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleExport("csv")}
+                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-zinc-200 hover:bg-white/10"
+                >
+                  📥 Export CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleExport("json")}
+                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-zinc-200 hover:bg-white/10"
+                >
+                  📥 Export JSON
+                </button>
+                <label className="cursor-pointer rounded-xl bg-violet-600/30 border border-violet-500/40 px-3 py-1.5 text-xs font-semibold text-violet-200 hover:bg-violet-600/50">
+                  <span>{importing ? "Importing..." : "📤 Import Goodreads CSV"}</span>
+                  <input
+                    type="file"
+                    accept=".csv"
+                    disabled={importing}
+                    onChange={handleImportCSV}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              {importStatus && (
+                <div className="mt-2.5 text-[11px] text-cyan-300">
+                  {importStatus}
+                </div>
+              )}
+            </div>
           </aside>
 
           <section className="rounded-[30px] border border-white/10 bg-[#0f172a] p-6">
