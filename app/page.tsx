@@ -196,7 +196,7 @@ export default function Home() {
       genre: form.genre,
       status: form.status,
       rating: form.rating,
-      review: editingBookId !== null ? books.find((book) => String(book.id) === String(editingBookId))?.review ?? null : null,
+      review: form.review?.trim() || null,
       cover_url: editingBookId !== null ? books.find((book) => String(book.id) === String(editingBookId))?.cover_url ?? null : useManualCover ? manualCoverUrl : null,
     };
 
