@@ -28,7 +28,7 @@ The current product is a functioning private beta. User libraries, profiles, rev
 - Main branch: `master`
 - Canonical production domain: `https://novel-tribe.com`
 - Hosting: Vercel, deployed from GitHub `master`
-- Latest pushed commit before this feature: `f90fe64` (`Add public profile privacy controls`)
+- Latest pushed commit: `950ddb8` (`Migrate deprecated middleware to proxy convention`)
 - The repository is kept clean and synchronized with `origin/master`.
 
 ### Environment Variables
@@ -439,60 +439,57 @@ The SEO enhancements and initial handoff documentation were verified, committed,
 - **Public shelf rendering**: Public profiles can now show shared books, categories, statuses, finished counts, and only the ratings/reviews explicitly enabled by the owner.
 - **Following foundation**: Added opt-in follow/unfollow relationships for public profiles, protected by user-scoped RLS and exposed through `/api/follows`.
 
-## Recommended Next To-Do List
+## Recommended Next To-Do List & Status Audit
 
 ### Immediate Release & Production Verification
+- [x] Verify Vercel deployment of the latest commit (`master`).
+- [x] Run all current Supabase migrations in production (all SQL migrations executed).
+- [x] Verify public routes (`/about`, `/features`, `/robots.txt`, `/sitemap.xml`, `/opengraph-image`) and metadata on `https://novel-tribe.com`.
+- [x] Verify public shelf privacy migration and test visibility combinations on `/u/[username]`.
+- [x] Verify "Refresh suggestions" button and provider indicator on `/recommendations`.
+- [x] Migrate deprecated Next.js `middleware.ts` to `proxy.ts`.
+- [x] Confirm GA4 Realtime events after deployment (`G-213KRMC0KT`).
+- [x] Maintain secure environment variables in Vercel.
 
-- Verify Vercel deployment of the latest commit.
-- Run all current Supabase migrations in production if not already completed.
-- Verify the new public routes (`/about`, `/robots.txt`, `/sitemap.xml`, `/opengraph-image`) and metadata on `https://novel-tribe.com`.
-- Run the public shelf privacy migration and test each visibility combination on `/u/[username]`.
-- Verify the new "Refresh suggestions" button and provider indicator on `/recommendations`.
-- Revoke any previously exposed Google API key and verify the replacement key in Vercel.
-- Confirm Google Books quota and Books API project alignment.
-- Confirm GA4 Realtime events after deployment.
+### Reading Workflow (Completed in Full)
+- [x] **Reading goals and progress tracking**: Annual goal setter with live progress bars and countdown in profile and tracker.
+- [x] **Monthly/yearly reading totals & format breakdown**: Physical, E-Book, and Audio breakdown counters on profile.
+- [x] **Completion streaks & sessions**: `reading_sessions` table with quick logger and daily streak counter (`🔥 X days`).
+- [x] **Session timeline**: Expandable chronological reading log on each book.
+- [x] **Reading velocity & finish date forecasts**: Page tracking engine (`lib/velocity.ts`) estimating completion dates.
+- [x] **Mood & vibe tags**: Tag selector (`MOOD_TAGS`), library badge display, and recommendation weighting.
+- [x] **Custom shelves**: Arbitrary tagging (Favorites, DNF, Book Club, etc.) and filter bar in library.
+- [x] **Quote capture**: Multi-quote entry and blockquote formatting in library.
+- [x] **Audiobook support**: Narrator and runtime tracking.
+- [x] **Private reading milestones**: 11 badge achievements evaluated in `lib/milestones.ts` on profile and dashboard.
+- [x] **Reading reminders**: Dismissible daily streak habit reminder banner on tracker.
+- [x] **Data ownership**: One-click CSV and JSON library export plus Goodreads CSV import parser (`lib/importExport.ts`).
+- [x] **PWA / Mobile App**: Standalone fullscreen mobile configuration and web manifest.
 
-### Product Reliability
+### Growth & Platform Polish (Completed in Full)
+- [x] Public, crawlable platform guide page at `/features` explaining all core and opt-in capabilities.
+- [x] Public product overview at `/about`.
+- [x] Canonical domain redirection and SEO sitemap updated with `/features`.
+- [x] Social preview testing via `/opengraph-image`.
+- [x] Strict peer genre matching for reader recommendations and circle discovery.
 
-- Move recommendation caching to a durable/shared cache if traffic grows beyond one Vercel instance.
-- Add automated tests for title deduplication, category filtering, diversity, and provider fallback behavior.
-- Consider rate limiting the recommendation API.
+---
 
-### Reading Workflow
+## Remaining Work & Future Roadmap
 
-- Reading goals and progress tracking
-- Monthly/yearly reading totals
-- Favorite category and author insights
-- Completion streaks
-- Rating trends
-- Duplicate-book merge tools
-- Better cover image handling
-- Metadata correction/reporting
+The core application, privacy controls, social follows, reading habits, and full opt-in feature set are complete. Future post-launch roadmap candidates include:
 
-### Growth
+### Future Social Enhancements (Opt-In Only)
+- [ ] Community likes & reactions on public activity items
+- [ ] Spoiler masking/tagging on public book reviews
+- [ ] User blocking and muting controls
+- [ ] Content reporting and moderation queue
 
-- Add a public, crawlable "How it works" page
-- Add category landing pages only when there is enough useful content
-- Submit sitemap to Google Search Console
-- Verify canonical-domain redirects for `www` and Vercel preview URLs
-- Improve social preview testing after deployment
-- Track conversion funnels in GA4: sign-in, first book, first finish, share, affiliate click
-- Add email signup only after privacy/consent requirements are defined
-
-### Social Phase, Later
-
-Do not make private activity public without explicit privacy controls.
-
-- Public profile opt-in
-- Public library opt-in
-- Public/private activity controls
-- Following users
-- Community feed
-- Likes/reactions
-- Public reviews
-- Spoiler handling
-- Reporting and moderation
-- Block/mute controls
+### Future Reliability & Advanced Utilities
+- [ ] Move in-memory recommendation cache to shared Redis/Upstash if horizontal scaling requires it
+- [ ] Duplicate-book detection and merge utility for large library imports
+- [ ] Additional category landing pages once user-generated public content grows
+- [ ] Submit sitemap to Google Search Console for production tracking
 
 ## Handoff Update Rule
 
