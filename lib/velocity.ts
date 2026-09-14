@@ -1,4 +1,4 @@
-import type { ReadingSession } from "@/app/api/sessions/route";
+import type { ReadingSession } from "@/lib/sessions";
 
 export type VelocityEstimate = {
   progressPercent: number;

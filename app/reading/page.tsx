@@ -8,7 +8,7 @@ import { trackEvent } from "@/lib/analytics";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { isFeatureEnabled, resolveFeatureFlags, type FeatureFlags } from "@/lib/featureFlags";
 import { calculateDailyPace, estimateBookCompletion } from "@/lib/velocity";
-import type { ReadingSession } from "@/app/api/sessions/route";
+import { calculateStreak, type ReadingSession } from "@/lib/sessions";
 
 export default function CurrentlyReadingPage() {
   const [books, setBooks] = useState<BookRecord[]>(starterBooks.filter((book) => book.status === "Currently Reading"));
@@ -112,7 +112,6 @@ export default function CurrentlyReadingPage() {
         setTotalMinutes((curr) => curr + (data.session.duration_minutes ?? 0));
         // refresh streak
         const updatedDates = [data.session.session_date, ...sessions.map((s) => s.session_date)];
-        const { calculateStreak } = await import("@/app/api/sessions/route");
         setStreak(calculateStreak(updatedDates));
       }
 
