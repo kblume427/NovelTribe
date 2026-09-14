@@ -59,6 +59,7 @@ Rules:
 - `/login` - Supabase magic-link login
 - `/profile` - private profile, avatar upload, preferred categories, private activity timeline
 - `/reading` - dedicated Currently Reading view
+- `/reading` is intentionally read-only; book editing remains on the Tracker page
 - `/recommendations` - recommendation page with `For You` and category filters
 - `/about` - public crawlable product description
 - `/auth/callback` - Supabase magic-link callback
@@ -90,6 +91,7 @@ Rules:
 - Multiple categories stored in `books.categories` while retaining a primary `genre`
 - Search by title, author, ISBN, category, and review text
 - Sort by newest added, title, rating, and recently finished
+- Sort by status with Want to Read and Currently Reading books first
 - Mobile layout fixes for navigation, quick import, and edit/save flows
 
 ### Google Books And Metadata

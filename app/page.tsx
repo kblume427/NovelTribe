@@ -125,6 +125,10 @@ export default function Home() {
     });
 
     return [...filtered].sort((first, second) => {
+      if (librarySort === "status") {
+        const statusOrder = { "Want to Read": 0, "Currently Reading": 1, Read: 2 };
+        return statusOrder[first.status] - statusOrder[second.status] || first.title.localeCompare(second.title);
+      }
       if (librarySort === "title") return first.title.localeCompare(second.title);
       if (librarySort === "rating") return second.rating - first.rating || first.title.localeCompare(second.title);
       if (librarySort === "finished") {
@@ -657,6 +661,7 @@ export default function Home() {
                   className="rounded-full border border-white/10 bg-[#0b1120] px-4 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/60"
                 >
                   <option value="newest">Newest added</option>
+                  <option value="status">Want/Currently reading first</option>
                   <option value="title">Title A-Z</option>
                   <option value="rating">Highest rated</option>
                   <option value="finished">Recently finished</option>

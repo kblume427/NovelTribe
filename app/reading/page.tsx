@@ -73,9 +73,8 @@ export default function CurrentlyReadingPage() {
                       <span key={category} className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-zinc-300">{category}</span>
                     ))}
                   </div>
-                  <div className="mt-6 flex items-center justify-between">
+                  <div className="mt-6">
                     <span className="text-sm text-amber-300">{book.rating}/5 rating</span>
-                    <a href="/#tracker" className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-500/20">Update book</a>
                   </div>
                 </article>
               ))}
