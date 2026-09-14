@@ -50,6 +50,8 @@ export default function RecommendationsPage() {
   const [source, setSource] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [savingBookKey, setSavingBookKey] = useState<string | null>(null);
+  const [savedBookKeys, setSavedBookKeys] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetch("/api/books")
@@ -138,6 +140,30 @@ export default function RecommendationsPage() {
     [books],
   );
   const recommendationFilters = ["For You", ...availableGenres];
+
+  const addRecommendationToLibrary = async (book: Recommendation, status: "Read" | "Want to Read") => {
+    const bookKey = `${book.id}-${book.title}`;
+    setSavingBookKey(bookKey);
+    const response = await fetch("/api/books", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: book.title,
+        author: book.author,
+        genre: book.genre,
+        categories: [book.genre],
+        status,
+        rating: status === "Read" ? 5 : 0,
+        cover_url: book.cover_url ?? null,
+      }),
+    });
+
+    if (response.ok) {
+      setSavedBookKeys((current) => ({ ...current, [bookKey]: status }));
+      trackEvent("book_added", { method: "recommendation", status, category: book.genre });
+    }
+    setSavingBookKey(null);
+  };
 
   return (
     <main className="min-h-screen bg-[#09090b] text-white">
@@ -281,6 +307,16 @@ export default function RecommendationsPage() {
                 <h2 className="mt-3 text-xl font-semibold text-white">{book.title}</h2>
                 <p className="mt-1 text-sm text-zinc-400">{book.author}</p>
                 <p className="mt-3 text-sm leading-6 text-zinc-300">{book.reason}</p>
+                {savedBookKeys[`${book.id}-${book.title}`] ? (
+                  <div className="mt-5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-center text-xs font-medium text-emerald-100">
+                    Added as {savedBookKeys[`${book.id}-${book.title}`]}
+                  </div>
+                ) : (
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <button type="button" disabled={savingBookKey === `${book.id}-${book.title}`} onClick={() => void addRecommendationToLibrary(book, "Want to Read")} className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs font-medium text-cyan-100 hover:bg-cyan-500/20 disabled:opacity-60">Want to Read</button>
+                    <button type="button" disabled={savingBookKey === `${book.id}-${book.title}`} onClick={() => void addRecommendationToLibrary(book, "Read")} className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-100 hover:bg-emerald-500/20 disabled:opacity-60">Add as Read</button>
+                  </div>
+                )}
                 <div className="mt-5 flex items-center justify-between gap-3">
                   <a href={`https://www.amazon.com/s?k=${encodeURIComponent(`${book.title} ${book.author}`)}&tag=${encodeURIComponent(amazonAssociateTag)}`} onClick={() => { trackEvent("recommendation_clicked", { category: book.genre }); trackEvent("affiliate_link_clicked", { category: book.genre, source: "recommendation" }); }} target="_blank" rel="sponsored noopener noreferrer" className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-900">Buy on Amazon</a>
                   <span className="text-xs text-zinc-500">#ad</span>
