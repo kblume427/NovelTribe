@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function FeaturesPage() {
   const featureCategories = [
     {
-      category: "Reading Habit & Goal Tracking",
+      category: "Reading Habit, Goals & Pace Estimator",
       badge: "Opt-In & Private",
       color: "from-amber-500/20 to-orange-500/20 border-amber-500/30",
       description: "Build a lasting daily reading habit on your own terms with zero vanity pressure.",
@@ -49,7 +49,39 @@ export default function FeaturesPage() {
       ],
     },
     {
-      category: "Book Cataloging & Custom Shelves",
+      category: "Kindle, Audiobooks & Multi-Format Reading",
+      badge: "Format Versatility",
+      color: "from-blue-500/20 to-indigo-500/20 border-blue-500/30",
+      description: "Seamlessly track reads across Kindle e-readers, audiobooks, and printed editions.",
+      features: [
+        {
+          title: "Kindle & E-Book Matching",
+          icon: "📱",
+          desc: "Search books by Amazon ASIN (B0...) or ISBN-10/13. Imported Kindle books are automatically categorized and tagged.",
+          flag: "Core & format_stats",
+        },
+        {
+          title: "Audiobook Narrator & Duration Tracking",
+          icon: "🎧",
+          desc: "Track narrator names, audiobook runtimes (e.g. 11h 45m), and audio-specific notes for dedicated listeners.",
+          flag: "audiobook_format",
+        },
+        {
+          title: "Format Breakdown Analytics",
+          icon: "📖",
+          desc: "Categorize reads by Physical, E-Book, and Audiobook editions with aggregate format counts in your reading profile.",
+          flag: "format_stats",
+        },
+        {
+          title: "One-Click Amazon & Kindle Buying",
+          icon: "🛒",
+          desc: "Convenient compliant links on Want to Read books to purchase or borrow Kindle, Audible, or physical editions.",
+          flag: "Core Platform",
+        },
+      ],
+    },
+    {
+      category: "Book Cataloging, Shelves & Mood Tags",
       badge: "Flexible Organization",
       color: "from-violet-500/20 to-fuchsia-500/20 border-violet-500/30",
       description: "Customize your shelf beyond standard shelves. Keep the details that matter most to you.",
@@ -57,13 +89,13 @@ export default function FeaturesPage() {
         {
           title: "Mood & Vibe Tags",
           icon: "✨",
-          desc: "Tag books as Cozy, Dark, Fast-paced, Slow burn, Thought-provoking, Heartwarming, Tense, Atmospheric, and more.",
+          desc: "Tag books with curated moods like Cozy, Dark, Fast-paced, Slow burn, Thought-provoking, Heartwarming, Tense, Atmospheric, and more.",
           flag: "mood_tags",
         },
         {
-          title: "Custom Shelves & Tags",
+          title: "Custom Shelves & Instant Filtering",
           icon: "🏷️",
-          desc: "Create arbitrary custom shelves (e.g. 'Favorites', 'DNF', 'Book Club', 'Re-read') and filter your library with one click.",
+          desc: "Create arbitrary custom shelves (e.g. 'Favorites', 'DNF', 'Book Club', 'Re-read') with instant one-click filter buttons in your library.",
           flag: "custom_shelves",
         },
         {
@@ -73,23 +105,23 @@ export default function FeaturesPage() {
           flag: "quote_capture",
         },
         {
-          title: "Format Breakdown (Physical, E-Book, Audio)",
-          icon: "📖",
-          desc: "Categorize reads by edition format and view aggregate statistics in your reading profile.",
-          flag: "format_stats",
+          title: "Ratings & Private 1,000-Char Reviews",
+          icon: "⭐",
+          desc: "Rate books 1 to 5 stars and record personal reflections on what stayed with you after finishing.",
+          flag: "Core Platform",
         },
         {
-          title: "Audiobook Support",
-          icon: "🎧",
-          desc: "Track narrator names, audiobook runtimes, and audio-specific notes for listeners.",
-          flag: "audiobook_format",
+          title: "Automated & Community Cover Artwork",
+          icon: "🖼️",
+          desc: "Automatic high-resolution cover lookup from Google Books and Open Library, with community cover approval by ISBN.",
+          flag: "Core Platform",
         },
       ],
     },
     {
       category: "Discovery & Personalized Recommendations",
       badge: "Smart & Non-Commercial",
-      color: "from-cyan-500/20 to-blue-500/20 border-cyan-500/30",
+      color: "from-cyan-500/20 to-teal-500/20 border-cyan-500/30",
       description: "Discover books tailored to your unique taste, favorite genres, and mood vibes.",
       features: [
         {
@@ -111,6 +143,12 @@ export default function FeaturesPage() {
           flag: "strict_peer_genre_match",
         },
         {
+          title: "Recommendation Refresh & Dismissal",
+          icon: "🔄",
+          desc: "Bypass cache on demand for fresh title variations, or permanently dismiss titles with a private 'Not Interested' action.",
+          flag: "Core Platform",
+        },
+        {
           title: "Quick Google Books & Open Library Search",
           icon: "🔍",
           desc: "Instant title and author lookup with cover artwork and metadata import in seconds.",
@@ -119,15 +157,47 @@ export default function FeaturesPage() {
       ],
     },
     {
+      category: "Community, Follows & Circle Reviews",
+      badge: "Opt-In & Controlled",
+      color: "from-pink-500/20 to-rose-500/20 border-pink-500/30",
+      description: "Connect with fellow readers and share your reading journey on your terms.",
+      features: [
+        {
+          title: "Opt-in Public Reader Profiles",
+          icon: "👤",
+          desc: "Optional public reader card at novel-tribe.com/u/[username] showcasing verified reader badge, favorite genres, and shared reads.",
+          flag: "Social Opt-In",
+        },
+        {
+          title: "Granular Shelf Privacy Controls",
+          icon: "🛡️",
+          desc: "Independent owner toggles for showing public library, ratings, reviews, and activity. Hidden by default.",
+          flag: "Privacy Core",
+        },
+        {
+          title: "Follow & Unfollow Readers",
+          icon: "👥",
+          desc: "Follow other readers to see their public activity and reviews, with in-app follow notifications and one-click unfollowing.",
+          flag: "Social Opt-In",
+        },
+        {
+          title: "From Your Circle Review Shelf",
+          icon: "📚",
+          desc: "Dedicated feed on the recommendations page displaying top-rated reviews written by readers in your circle.",
+          flag: "Social Opt-In",
+        },
+      ],
+    },
+    {
       category: "Privacy, Data Ownership & Badges",
       badge: "Reader First",
-      color: "from-emerald-500/20 to-teal-500/20 border-emerald-500/30",
+      color: "from-emerald-500/20 to-green-500/20 border-emerald-500/30",
       description: "Your reading data belongs strictly to you. No unwanted public feeds or lock-in.",
       features: [
         {
           title: "Private by Default",
           icon: "🔒",
-          desc: "Your library, reviews, and activity are private. You decide if and when to make your profile or library public.",
+          desc: "Your library, reviews, sessions, and activity are protected by Row-Level Security and private to your account.",
           flag: "Privacy Core",
         },
         {
@@ -137,15 +207,15 @@ export default function FeaturesPage() {
           flag: "milestones",
         },
         {
-          title: "Goodreads CSV Import",
+          title: "Goodreads CSV Import (with Kindle Detection)",
           icon: "📤",
-          desc: "Seamlessly import your existing Goodreads library export CSV with read dates, ratings, reviews, and shelves.",
+          desc: "Seamlessly import your Goodreads library export CSV with read dates, ratings, reviews, Kindle binding detection, and custom shelves.",
           flag: "Data Ownership",
         },
         {
           title: "One-Click CSV & JSON Export",
           icon: "📥",
-          desc: "Download your entire library anytime in spreadsheet-friendly CSV format or full JSON backup.",
+          desc: "Download your entire library anytime in spreadsheet-friendly CSV format or complete JSON backup.",
           flag: "Data Ownership",
         },
         {
@@ -156,7 +226,7 @@ export default function FeaturesPage() {
         },
         {
           title: "Mobile PWA App",
-          icon: "📱",
+          icon: "📲",
           desc: "Install NovelTribe directly to your iPhone or Android home screen as a standalone, fullscreen web app.",
           flag: "PWA",
         },
