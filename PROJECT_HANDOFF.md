@@ -28,7 +28,7 @@ The current product is a functioning private beta. User libraries, profiles, rev
 - Main branch: `master`
 - Canonical production domain: `https://novel-tribe.com`
 - Hosting: Vercel, deployed from GitHub `master`
-- Latest pushed commit: `950ddb8` (`Migrate deprecated middleware to proxy convention`)
+- Latest pushed commit: `a33ac6e` (`Update Features page to include Kindle support, community follows, and full feature set`)
 - The repository is kept clean and synchronized with `origin/master`.
 
 ### Environment Variables
