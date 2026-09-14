@@ -121,6 +121,7 @@ Rules:
 - Matching recommendation cards identify the followed-reader high-rating signal
 - Recommendation cards show Google Books or Open Library cover art when available, with a visual fallback otherwise
 - External category recommendations require matching source metadata to avoid mislabeled or unrelated cards
+- Quick Add searches run only on Search/Enter, cache results for ten minutes, and fall back to Open Library when Google Books is quota-limited
 - Missing recommendation covers are enriched from Open Library using title/author lookup with in-process caching
 - Production Supabase auth cookies use explicit secure, lax, canonical-domain attributes for Safari persistence
 - Login page includes Apple/Safari guidance to keep magic-link requests and callbacks in the same browser context

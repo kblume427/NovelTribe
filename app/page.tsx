@@ -49,20 +49,6 @@ export default function Home() {
   const [isFindingMissingCovers, setIsFindingMissingCovers] = useState(false);
 
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      setSearchError(null);
-      return;
-    }
-
-    const timeout = window.setTimeout(() => {
-      void handleGoogleSearch();
-    }, 350);
-
-    return () => window.clearTimeout(timeout);
-  }, [searchQuery]);
-
-  useEffect(() => {
     const title = form.title.trim();
     const author = form.author.trim();
     if (!title || !author || editingBookId !== null) {
