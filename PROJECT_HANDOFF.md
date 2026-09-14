@@ -129,7 +129,7 @@ Rules:
 ### Accounts And Persistence
 
 - Supabase magic-link authentication
-- Auth callback and middleware session refresh
+- Auth callback and proxy session refresh (migrated from deprecated middleware to `proxy.ts`)
 - Per-user book storage protected by RLS
 - User-scoped API reads and writes
 - Profile records with name, username, avatar, and preferred categories
@@ -523,10 +523,6 @@ Before committing:
 4. Commit only related changes.
 5. Push `master` when requested.
 6. Confirm `git status --short` is clean and `git branch -vv` matches `origin/master`.
-
-Known warning:
-
-- Next.js 16 reports that the `middleware` file convention is deprecated and suggests migrating to `proxy`. This is currently a warning, not a build failure. Treat migration as a focused future maintenance task.
 
 ## Guidance For Future AI Assistants
 
