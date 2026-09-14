@@ -200,6 +200,12 @@ export async function POST(request: Request) {
   const refresh = Boolean(body.refresh);
   const refreshSeed = refresh ? body.refreshSeed ?? Date.now() : 0;
   const providerOffset = refresh ? (refreshSeed % 4) * 12 : 0;
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: dismissalRows } = user
+    ? await supabase.from("recommendation_dismissals").select("title").eq("user_id", user.id)
+    : { data: [] };
+  const dismissedTitles = new Set((dismissalRows ?? []).map((item) => normalizeTitle(item.title)));
   const followedCategories = exploreGenre === "For You"
     ? await getFollowedHighRatedCategories().catch(() => [])
     : [];
@@ -309,7 +315,7 @@ export async function POST(request: Request) {
   }
 
   return Response.json({
-    recommendations: await enrichCovers(buildHeuristicRecommendations(books, exploreGenre, preferredCategories, refreshSeed, followedCategories)),
+    recommendations: await enrichCovers(buildHeuristicRecommendations(books, exploreGenre, preferredCategories, refreshSeed, followedCategories).filter((book) => !dismissedTitles.has(normalizeTitle(book.title)))),
     source: "local_fallback",
   });
 }

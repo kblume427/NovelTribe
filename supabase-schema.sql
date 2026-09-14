@@ -36,6 +36,13 @@ create table if not exists books (
 );
 
 create table if not exists cover_approvals (
+
+  create table if not exists recommendation_dismissals (
+    user_id uuid not null references auth.users(id) on delete cascade,
+    title text not null,
+    created_at timestamp with time zone default now(),
+    primary key (user_id, title)
+  );
   isbn text primary key,
   cover_url text not null,
   approved_by uuid not null references auth.users(id) on delete cascade,
@@ -94,6 +101,7 @@ alter table profiles enable row level security;
 alter table books enable row level security;
 alter table reading_activity enable row level security;
 alter table cover_approvals enable row level security;
+alter table recommendation_dismissals enable row level security;
 alter table follows enable row level security;
 alter table notifications enable row level security;
 
@@ -187,6 +195,17 @@ create policy "Authenticated users can create cover approvals"
 on cover_approvals for insert
 to authenticated
 with check (auth.uid() = approved_by);
+
+drop policy if exists "Users can view their own recommendation dismissals" on recommendation_dismissals;
+drop policy if exists "Users can create their own recommendation dismissals" on recommendation_dismissals;
+
+create policy "Users can view their own recommendation dismissals"
+on recommendation_dismissals for select
+using (auth.uid() = user_id);
+
+create policy "Users can create their own recommendation dismissals"
+on recommendation_dismissals for insert
+with check (auth.uid() = user_id);
 
 drop policy if exists "Users can view their own notifications" on notifications;
 drop policy if exists "Actors can create notifications" on notifications;

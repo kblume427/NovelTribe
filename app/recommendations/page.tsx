@@ -52,8 +52,14 @@ export default function RecommendationsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [savingBookKey, setSavingBookKey] = useState<string | null>(null);
   const [savedBookKeys, setSavedBookKeys] = useState<Record<string, string>>({});
+  const [dismissedTitles, setDismissedTitles] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+        fetch("/api/recommend/dismiss").then((response) => response.json()).then((payload) => setDismissedTitles(new Set(payload.titles ?? []))).catch(() => undefined);
+      }, []);
+
+      useEffect(() => {
+      setRecommendations([]);
     fetch("/api/books")
       .then((response) => response.json())
       .then((payload) => {
@@ -163,6 +169,13 @@ export default function RecommendationsPage() {
       trackEvent("book_added", { method: "recommendation", status, category: book.genre });
     }
     setSavingBookKey(null);
+  };
+
+  const dismissRecommendation = async (book: Recommendation) => {
+    await fetch("/api/recommend/dismiss", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: book.title }) });
+    setDismissedTitles((current) => new Set([...current, book.title]));
+    setRecommendations((current) => current.filter((item) => item.title !== book.title));
+    trackEvent("recommendation_dismissed", { category: book.genre });
   };
 
   return (
@@ -315,6 +328,7 @@ export default function RecommendationsPage() {
                   <div className="mt-5 flex flex-wrap gap-2">
                     <button type="button" disabled={savingBookKey === `${book.id}-${book.title}`} onClick={() => void addRecommendationToLibrary(book, "Want to Read")} className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs font-medium text-cyan-100 hover:bg-cyan-500/20 disabled:opacity-60">Want to Read</button>
                     <button type="button" disabled={savingBookKey === `${book.id}-${book.title}`} onClick={() => void addRecommendationToLibrary(book, "Read")} className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-100 hover:bg-emerald-500/20 disabled:opacity-60">Add as Read</button>
+                    <button type="button" onClick={() => void dismissRecommendation(book)} className="basis-full text-left text-xs text-zinc-500 underline hover:text-zinc-300">Not Interested</button>
                   </div>
                 )}
                 <div className="mt-5 flex items-center justify-between gap-3">
