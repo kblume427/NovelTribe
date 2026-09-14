@@ -8,6 +8,7 @@ import { createSupabaseClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics";
 import RecommendedReaders from "@/components/recommended-readers";
 import ActivityFeed from "@/components/activity-feed";
+import CircleReviews from "@/components/circle-reviews";
 
 type RecommendationResponse = {
   recommendations?: Recommendation[];
@@ -342,6 +343,7 @@ export default function RecommendationsPage() {
 
         <RecommendedReaders />
         <ActivityFeed />
+        <CircleReviews />
       </div>
     </main>
   );

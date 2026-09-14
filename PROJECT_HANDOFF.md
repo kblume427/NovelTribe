@@ -156,6 +156,7 @@ Rules:
 - Profile social inbox kept below the navigation header with responsive mobile layout
 - Followers and Following lists use a compact scrollable panel sized for roughly 10 visible rows
 - Privacy-controlled activity feed on `/recommendations` for followed users who enable public activity
+- From your circle review shelf showing followed users' public reviewed books ordered by rating
 - Activity feed items carry and display the book cover URL when available
 - Private-profile and self-follow protections
 - User-scoped follows RLS policies
