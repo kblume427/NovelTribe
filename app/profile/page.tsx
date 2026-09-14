@@ -8,6 +8,7 @@ import { allGenres } from "@/lib/recommendations";
 import { trackEvent } from "@/lib/analytics";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import SocialInbox from "@/components/social-inbox";
+import { DEFAULT_FEATURE_FLAGS, resolveFeatureFlags, type FeatureFlagKey, type FeatureFlags } from "@/lib/featureFlags";
 
 type ProfileState = {
   full_name: string;
@@ -19,7 +20,45 @@ type ProfileState = {
   public_ratings: boolean;
   public_reviews: boolean;
   public_activity: boolean;
+  reading_goal: number | null;
+  feature_flags: FeatureFlags;
 };
+
+const FEATURE_TOGGLE_GROUPS: Array<{ heading: string; items: Array<[FeatureFlagKey, string, string]> }> = [
+  {
+    heading: "Discovery & recommendations",
+    items: [
+      ["mood_tags", "Mood & vibe tags", "Tag books as cozy, dark, fast-paced, and more to sharpen your recommendations."],
+      ["strict_peer_genre_match", "Strict genre matching for peers", "Only surface followed readers whose favorite genres overlap with yours."],
+    ],
+  },
+  {
+    heading: "Reading habit tracking",
+    items: [
+      ["reading_sessions", "Reading sessions & streaks", "Log daily reading sessions and track a streak counter."],
+      ["reading_goals", "Reading goals", "Set an annual or monthly reading goal with a progress bar."],
+      ["reading_velocity", "Reading pace indicator", "Show pace and estimated completion based on your logging trends."],
+      ["format_stats", "Format breakdown", "See stats on physical, digital, and audiobook reading."],
+      ["audiobook_format", "Audiobook support", "Track narrator and runtime when logging audiobooks."],
+      ["reading_reminders", "Reading reminders", "Get gentle nudges to keep your reading streak going."],
+    ],
+  },
+  {
+    heading: "Book entry extras",
+    items: [
+      ["quote_capture", "Quote capture", "Save favorite quotes and passages from your books."],
+      ["custom_shelves", "Custom shelves", "Create your own tags or lists beyond Read, Currently Reading, and Want to Read."],
+      ["show_session_timeline", "Session timeline", "Show a chronological log of reading sessions on each book."],
+    ],
+  },
+  {
+    heading: "Dashboard display",
+    items: [
+      ["show_stats_widgets", "Show stats widgets", "Display summary stat cards and streak counters on your dashboard."],
+      ["milestones", "Reading milestones", "Track private achievement badges for personal reading milestones."],
+    ],
+  },
+];
 
 type ActivityItem = {
   id: string;
@@ -47,10 +86,17 @@ export default function ProfilePage() {
     public_ratings: false,
     public_reviews: false,
     public_activity: false,
+    reading_goal: null,
+    feature_flags: DEFAULT_FEATURE_FLAGS,
   });
   const [copiedLink, setCopiedLink] = useState(false);
   const [email, setEmail] = useState("");
   const [supabaseReady, setSupabaseReady] = useState(false);
+  const [formatCounts, setFormatCounts] = useState<{ physical: number; ebook: number; audiobook: number }>({
+    physical: 0,
+    ebook: 0,
+    audiobook: 0,
+  });
   const [stats, setStats] = useState({
     total: 0,
     finished: 0,
@@ -107,11 +153,13 @@ export default function ProfilePage() {
         public_ratings: current.public_ratings ?? false,
         public_reviews: current.public_reviews ?? false,
         public_activity: current.public_activity ?? false,
+        reading_goal: current.reading_goal ?? null,
+        feature_flags: current.feature_flags ?? DEFAULT_FEATURE_FLAGS,
       }));
 
       const { data: profileRow } = await supabase
         .from("profiles")
-        .select("full_name, username, avatar_url, preferred_categories, is_public, public_library, public_ratings, public_reviews, public_activity")
+        .select("full_name, username, avatar_url, preferred_categories, is_public, public_library, public_ratings, public_reviews, public_activity, reading_goal, feature_flags")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -128,12 +176,14 @@ export default function ProfilePage() {
           public_ratings: Boolean(profileRow.public_ratings),
           public_reviews: Boolean(profileRow.public_reviews),
           public_activity: Boolean(profileRow.public_activity),
+          reading_goal: typeof profileRow.reading_goal === "number" ? profileRow.reading_goal : null,
+          feature_flags: resolveFeatureFlags(profileRow.feature_flags),
         });
       }
 
       const { data: booksData } = await supabase
         .from("books")
-        .select("genre, categories, status, rating")
+        .select("genre, categories, status, rating, format")
         .eq("user_id", user.id);
 
       if (booksData) {
@@ -155,6 +205,11 @@ export default function ProfilePage() {
         }, {});
 
         const favoriteGenre = Object.entries(genreCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "N/A";
+
+        const physicalCount = booksData.filter((b) => b.format === "Physical").length;
+        const ebookCount = booksData.filter((b) => b.format === "E-Book").length;
+        const audiobookCount = booksData.filter((b) => b.format === "Audiobook").length;
+        setFormatCounts({ physical: physicalCount, ebook: ebookCount, audiobook: audiobookCount });
 
         setStats({
           total,
@@ -279,6 +334,8 @@ export default function ProfilePage() {
           public_ratings: profile.public_ratings,
           public_reviews: profile.public_reviews,
           public_activity: profile.public_activity,
+          reading_goal: profile.reading_goal,
+          feature_flags: profile.feature_flags,
         },
         { onConflict: "id" },
       )
@@ -389,6 +446,42 @@ export default function ProfilePage() {
                 <div className="mt-2 text-2xl font-bold text-white">{stats.favoriteGenre}</div>
               </div>
             </div>
+
+            {profile.feature_flags.format_stats && (
+              <div className="mt-3 rounded-2xl border border-white/10 bg-[#0b1120] p-3">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-400">Format breakdown</div>
+                <div className="mt-2 flex items-center justify-between text-xs text-zinc-300">
+                  <span>📖 Physical: <strong className="text-white">{formatCounts.physical}</strong></span>
+                  <span>📱 E-Book: <strong className="text-white">{formatCounts.ebook}</strong></span>
+                  <span>🎧 Audio: <strong className="text-white">{formatCounts.audiobook}</strong></span>
+                </div>
+              </div>
+            )}
+
+            {profile.feature_flags.reading_goals && (
+              <div className="mt-3 rounded-2xl border border-violet-500/20 bg-violet-500/5 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-[10px] uppercase tracking-[0.2em] text-violet-300">Annual Reading Goal</div>
+                  <span className="text-xs font-semibold text-white">
+                    {profile.reading_goal ? `${stats.finished} / ${profile.reading_goal} books` : "No goal set"}
+                  </span>
+                </div>
+                {profile.reading_goal && profile.reading_goal > 0 && (
+                  <div className="mt-3">
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-500"
+                        style={{ width: `${Math.min(100, Math.round((stats.finished / profile.reading_goal) * 100))}%` }}
+                      />
+                    </div>
+                    <div className="mt-2 text-xs text-zinc-400">
+                      {Math.min(100, Math.round((stats.finished / profile.reading_goal) * 100))}% completed
+                      {stats.finished >= profile.reading_goal ? " · 🎉 Goal achieved!" : ` · ${profile.reading_goal - stats.finished} books to go`}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             {totalUsers !== null && (
               <div className="mt-3 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-3">
                 <div className="text-[10px] uppercase tracking-[0.2em] text-cyan-200">NovelTribe readers</div>
@@ -424,6 +517,30 @@ export default function ProfilePage() {
                   placeholder="bookishreader"
                 />
               </label>
+
+              {profile.feature_flags.reading_goals && (
+                <label className="block">
+                  <span className="mb-2 block text-sm text-zinc-300">Annual reading goal (books)</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={1000}
+                    value={profile.reading_goal ?? ""}
+                    onChange={(event) => {
+                      const val = event.target.value.trim();
+                      setProfile((current) => ({
+                        ...current,
+                        reading_goal: val === "" ? null : Math.max(1, parseInt(val, 10)),
+                      }));
+                    }}
+                    className="w-full rounded-2xl border border-white/10 bg-[#0b1120] px-3 py-3 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/60"
+                    placeholder="e.g. 25"
+                  />
+                  <span className="mt-2 block text-xs text-zinc-500">
+                    Set a yearly target to display your progress bar on your profile and dashboard.
+                  </span>
+                </label>
+              )}
 
               <div className="rounded-2xl border border-white/10 bg-[#0b1120] p-4">
                 <div className="flex items-start justify-between gap-4">
@@ -505,6 +622,41 @@ export default function ProfilePage() {
                       />
                       <span><span className="block font-medium text-white">{label}</span><span className="mt-1 block text-xs text-zinc-500">{description}</span></span>
                     </label>
+                  ))}
+                </div>
+              </fieldset>
+
+              <fieldset className="rounded-2xl border border-white/10 bg-[#0b1120] p-4">
+                <legend className="px-1 text-sm font-semibold text-white">Optional features</legend>
+                <p className="mt-1 text-xs leading-5 text-zinc-400">
+                  Everything here is off by default. Turn on only what you want — the tracker stays simple otherwise.
+                </p>
+                <div className="mt-4 space-y-5">
+                  {FEATURE_TOGGLE_GROUPS.map((group) => (
+                    <div key={group.heading}>
+                      <div className="text-[10px] uppercase tracking-[0.2em] text-violet-300">{group.heading}</div>
+                      <div className="mt-2 space-y-2">
+                        {group.items.map(([key, label, description]) => (
+                          <label key={key} className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 px-3 py-3 text-sm text-zinc-200 hover:border-violet-400/40">
+                            <input
+                              type="checkbox"
+                              checked={profile.feature_flags[key]}
+                              onChange={(event) =>
+                                setProfile((current) => ({
+                                  ...current,
+                                  feature_flags: { ...current.feature_flags, [key]: event.target.checked },
+                                }))
+                              }
+                              className="mt-0.5 h-4 w-4 accent-violet-500"
+                            />
+                            <span>
+                              <span className="block font-medium text-white">{label}</span>
+                              <span className="mt-1 block text-xs text-zinc-500">{description}</span>
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </fieldset>

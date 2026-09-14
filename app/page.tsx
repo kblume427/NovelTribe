@@ -6,6 +6,8 @@ import { useEffect, useMemo, useState } from "react";
 import ShareNovelTribe from "@/components/share-noveltribe";
 import { trackEvent } from "@/lib/analytics";
 import { allGenres, getBookCategories, starterBooks, type BookRecord } from "@/lib/recommendations";
+import { createSupabaseClient } from "@/lib/supabase/client";
+import { MOOD_TAGS, isFeatureEnabled, resolveFeatureFlags, type FeatureFlags } from "@/lib/featureFlags";
 
 type BookStatus = "Read" | "Currently Reading" | "Want to Read";
 
@@ -27,12 +29,23 @@ const defaultForm = {
   status: "Read" as BookStatus,
   rating: 5,
   review: "",
+  mood_tags: [] as string[],
+  quotes: [] as string[],
+  newQuoteText: "",
+  format: "Physical" as "Physical" | "E-Book" | "Audiobook",
+  audiobook_narrator: "",
+  audiobook_duration: "",
+  custom_shelves: [] as string[],
+  newShelfInput: "",
 };
 
 export default function Home() {
   const amazonAssociateTag = process.env.NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG ?? "noveltribe-20";
   const [books, setBooks] = useState<Book[]>(starterBooks);
   const [form, setForm] = useState(defaultForm);
+  const [profileFlags, setProfileFlags] = useState<FeatureFlags | null>(null);
+  const [readingGoal, setReadingGoal] = useState<number | null>(null);
+  const [selectedShelfFilter, setSelectedShelfFilter] = useState<string>("All");
   const [editingBookId, setEditingBookId] = useState<string | number | null>(null);
   const [bookError, setBookError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -108,6 +121,31 @@ export default function Home() {
       });
   }, []);
 
+  useEffect(() => {
+    const supabase = createSupabaseClient();
+    let active = true;
+
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!active || !user) return;
+      const { data: profileRow } = await supabase
+        .from("profiles")
+        .select("feature_flags, reading_goal")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (!active) return;
+      setProfileFlags(resolveFeatureFlags(profileRow?.feature_flags));
+      if (typeof profileRow?.reading_goal === "number") {
+        setReadingGoal(profileRow.reading_goal);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const readGenres = useMemo(
     () => Array.from(new Set(books.filter((book) => book.status === "Read").flatMap(getBookCategories))),
     [books],
@@ -116,11 +154,36 @@ export default function Home() {
     () => Array.from(new Set([...allGenres, ...books.flatMap(getBookCategories).filter(Boolean)])),
     [books],
   );
+  const allShelves = useMemo(() => {
+    const set = new Set<string>();
+    books.forEach((b) => {
+      if (Array.isArray(b.custom_shelves)) {
+        b.custom_shelves.forEach((s) => set.add(s));
+      }
+    });
+    return Array.from(set);
+  }, [books]);
+
   const visibleBooks = useMemo(() => {
     const query = libraryQuery.trim().toLowerCase();
     const filtered = books.filter((book) => {
+      if (selectedShelfFilter !== "All") {
+        if (!Array.isArray(book.custom_shelves) || !book.custom_shelves.includes(selectedShelfFilter)) {
+          return false;
+        }
+      }
       if (!query) return true;
-      return [book.title, book.author, book.isbn, book.review, ...getBookCategories(book)]
+      return [
+        book.title,
+        book.author,
+        book.isbn,
+        book.review,
+        book.format,
+        book.audiobook_narrator,
+        ...(Array.isArray(book.quotes) ? book.quotes : []),
+        ...(Array.isArray(book.custom_shelves) ? book.custom_shelves : []),
+        ...getBookCategories(book),
+      ]
         .filter(Boolean)
         .some((value) => value!.toLowerCase().includes(query));
     });
@@ -198,6 +261,12 @@ export default function Home() {
       rating: form.rating,
       review: form.review?.trim() || null,
       cover_url: editingBookId !== null ? books.find((book) => String(book.id) === String(editingBookId))?.cover_url ?? null : useManualCover ? manualCoverUrl : null,
+      mood_tags: form.mood_tags && form.mood_tags.length > 0 ? form.mood_tags : null,
+      quotes: form.quotes && form.quotes.length > 0 ? form.quotes : null,
+      format: profileFlags?.format_stats || profileFlags?.audiobook_format ? form.format : null,
+      audiobook_narrator: profileFlags?.audiobook_format && form.format === "Audiobook" && form.audiobook_narrator.trim() ? form.audiobook_narrator.trim() : null,
+      audiobook_duration: profileFlags?.audiobook_format && form.format === "Audiobook" && form.audiobook_duration.trim() ? form.audiobook_duration.trim() : null,
+      custom_shelves: form.custom_shelves && form.custom_shelves.length > 0 ? form.custom_shelves : null,
     };
 
     setBookError(null);
@@ -266,6 +335,14 @@ export default function Home() {
       status: book.status,
       rating: book.rating,
       review: book.review ?? "",
+      mood_tags: Array.isArray(book.mood_tags) ? book.mood_tags : [],
+      quotes: Array.isArray(book.quotes) ? book.quotes : [],
+      newQuoteText: "",
+      format: (book.format as any) || "Physical",
+      audiobook_narrator: book.audiobook_narrator ?? "",
+      audiobook_duration: book.audiobook_duration ?? "",
+      custom_shelves: Array.isArray(book.custom_shelves) ? book.custom_shelves : [],
+      newShelfInput: "",
     });
   };
 
@@ -345,6 +422,10 @@ export default function Home() {
       isbn: result.isbn ?? null,
       cover_url: result.thumbnail ?? null,
       categories: importedCategories.length > 0 ? importedCategories : [importedGenre],
+      mood_tags: [],
+      quotes: [],
+      format: "Physical",
+      custom_shelves: [],
     };
 
     setBooks((current) => [importedBook, ...current]);
@@ -415,6 +496,25 @@ export default function Home() {
                 <div className="mt-3 text-3xl font-bold text-white">{avgRating.toFixed(1)}</div>
               </div>
             </div>
+
+            {profileFlags && isFeatureEnabled(profileFlags, "reading_goals") && readingGoal && (
+              <div className="mt-6 rounded-2xl border border-violet-500/20 bg-[#0b1120]/80 p-4">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold uppercase tracking-wider text-violet-300">Reading Goal</span>
+                  <span className="font-bold text-white">{finishedBooks} / {readingGoal} books</span>
+                </div>
+                <div className="mt-2.5 h-2.5 w-full overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-cyan-500 transition-all duration-500"
+                    style={{ width: `${Math.min(100, Math.round((finishedBooks / readingGoal) * 100))}%` }}
+                  />
+                </div>
+                <div className="mt-2 flex items-center justify-between text-[11px] text-zinc-400">
+                  <span>{Math.min(100, Math.round((finishedBooks / readingGoal) * 100))}% completed</span>
+                  <span>{finishedBooks >= readingGoal ? "🎉 Goal reached!" : `${readingGoal - finishedBooks} remaining`}</span>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="rounded-[28px] border border-white/10 bg-[#111827]/80 p-6 shadow-[0_20px_50px_rgba(15,23,42,0.45)]">
@@ -537,6 +637,189 @@ export default function Home() {
                   />
                   <div className="mt-2 text-xs text-zinc-500">{(form.review ?? "").length}/1000 characters</div>
                 </label>
+              )}
+
+              {profileFlags && isFeatureEnabled(profileFlags, "mood_tags") && (
+                <label className="block">
+                  <span className="mb-2 block text-sm text-zinc-300">Mood &amp; vibe tags</span>
+                  <div className="flex flex-wrap gap-2">
+                    {MOOD_TAGS.map((tag) => {
+                      const selected = Array.isArray(form.mood_tags) && form.mood_tags.includes(tag as string);
+                      return (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => setForm((current) => {
+                            const currentTags = Array.isArray(current.mood_tags) ? [...current.mood_tags] : [];
+                            const idx = currentTags.indexOf(tag as string);
+                            if (idx >= 0) currentTags.splice(idx, 1);
+                            else currentTags.push(tag as string);
+                            return { ...current, mood_tags: currentTags };
+                          })}
+                          className={`rounded-full px-3 py-1 text-sm transition ${selected ? "bg-violet-500/80 text-white" : "border border-white/10 bg-[#0b1120] text-zinc-300 hover:bg-white/5"}`}
+                        >
+                          {tag}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-2 text-xs text-zinc-500">Tags are optional — use them to improve recommendations.</div>
+                </label>
+              )}
+
+              {profileFlags && (isFeatureEnabled(profileFlags, "format_stats") || isFeatureEnabled(profileFlags, "audiobook_format")) && (
+                <div className="rounded-2xl border border-white/10 bg-[#0b1120] p-4">
+                  <span className="mb-2 block text-sm text-zinc-300">Format</span>
+                  <div className="flex flex-wrap gap-2">
+                    {(["Physical", "E-Book", "Audiobook"] as const).map((fmt) => (
+                      <button
+                        key={fmt}
+                        type="button"
+                        onClick={() => setForm((curr) => ({ ...curr, format: fmt }))}
+                        className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                          form.format === fmt
+                            ? "bg-gradient-to-r from-violet-500 to-cyan-500 text-white"
+                            : "border border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10"
+                        }`}
+                      >
+                        {fmt === "Physical" ? "📖 Physical" : fmt === "E-Book" ? "📱 E-Book" : "🎧 Audiobook"}
+                      </button>
+                    ))}
+                  </div>
+
+                  {profileFlags && isFeatureEnabled(profileFlags, "audiobook_format") && form.format === "Audiobook" && (
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      <label className="block">
+                        <span className="mb-1 block text-xs text-zinc-400">Narrator</span>
+                        <input
+                          value={form.audiobook_narrator}
+                          onChange={(e) => setForm((curr) => ({ ...curr, audiobook_narrator: e.target.value }))}
+                          placeholder="e.g. Stephen Fry"
+                          className="w-full rounded-xl border border-white/10 bg-[#111827] px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500/60"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="mb-1 block text-xs text-zinc-400">Duration / Length</span>
+                        <input
+                          value={form.audiobook_duration}
+                          onChange={(e) => setForm((curr) => ({ ...curr, audiobook_duration: e.target.value }))}
+                          placeholder="e.g. 11h 45m"
+                          className="w-full rounded-xl border border-white/10 bg-[#111827] px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500/60"
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {profileFlags && isFeatureEnabled(profileFlags, "custom_shelves") && (
+                <div className="rounded-2xl border border-white/10 bg-[#0b1120] p-4">
+                  <span className="mb-2 block text-sm text-zinc-300">Custom shelves &amp; tags</span>
+                  {form.custom_shelves.length > 0 && (
+                    <div className="mb-3 flex flex-wrap gap-1.5">
+                      {form.custom_shelves.map((shelf) => (
+                        <span key={shelf} className="inline-flex items-center gap-1 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2.5 py-1 text-xs text-cyan-200">
+                          {shelf}
+                          <button
+                            type="button"
+                            onClick={() => setForm((curr) => ({ ...curr, custom_shelves: curr.custom_shelves.filter((s) => s !== shelf) }))}
+                            className="ml-1 text-cyan-400 hover:text-white"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      value={form.newShelfInput}
+                      onChange={(e) => setForm((curr) => ({ ...curr, newShelfInput: e.target.value }))}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          const val = form.newShelfInput.trim();
+                          if (val && !form.custom_shelves.includes(val)) {
+                            setForm((curr) => ({
+                              ...curr,
+                              custom_shelves: [...curr.custom_shelves, val],
+                              newShelfInput: "",
+                            }));
+                          }
+                        }
+                      }}
+                      placeholder="Add shelf (e.g. Favorites, Book Club, DNF)..."
+                      className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#111827] px-3 py-2 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/60"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const val = form.newShelfInput.trim();
+                        if (val && !form.custom_shelves.includes(val)) {
+                          setForm((curr) => ({
+                            ...curr,
+                            custom_shelves: [...curr.custom_shelves, val],
+                            newShelfInput: "",
+                          }));
+                        }
+                      }}
+                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-zinc-200 hover:bg-white/10"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {profileFlags && isFeatureEnabled(profileFlags, "quote_capture") && (
+                <div className="rounded-2xl border border-white/10 bg-[#0b1120] p-4">
+                  <span className="mb-2 block text-sm text-zinc-300">Saved quotes &amp; passages</span>
+                  {form.quotes.length > 0 && (
+                    <div className="mb-3 space-y-2">
+                      {form.quotes.map((q, idx) => (
+                        <div key={idx} className="flex items-start justify-between gap-2 rounded-xl border border-white/5 bg-[#111827] p-2.5 text-xs text-zinc-300">
+                          <span className="italic leading-relaxed">“{q}”</span>
+                          <button
+                            type="button"
+                            onClick={() => setForm((curr) => ({ ...curr, quotes: curr.quotes.filter((_, i) => i !== idx) }))}
+                            className="text-zinc-400 hover:text-red-300 shrink-0 ml-2"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      value={form.newQuoteText}
+                      onChange={(e) => setForm((curr) => ({ ...curr, newQuoteText: e.target.value }))}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          const val = form.newQuoteText.trim();
+                          if (val) {
+                            setForm((curr) => ({ ...curr, quotes: [...curr.quotes, val], newQuoteText: "" }));
+                          }
+                        }
+                      }}
+                      placeholder="Add a memorable passage or line..."
+                      className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#111827] px-3 py-2 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/60"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const val = form.newQuoteText.trim();
+                        if (val) {
+                          setForm((curr) => ({ ...curr, quotes: [...curr.quotes, val], newQuoteText: "" }));
+                        }
+                      }}
+                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-zinc-200 hover:bg-white/10"
+                    >
+                      Save quote
+                    </button>
+                  </div>
+                </div>
               )}
 
               {editingBookId === null && (isFindingManualCover || manualCoverUrl) && (
@@ -668,6 +951,38 @@ export default function Home() {
                   <option value="finished">Recently finished</option>
                 </select>
               </div>
+
+              {profileFlags && isFeatureEnabled(profileFlags, "custom_shelves") && allShelves.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs uppercase tracking-wider text-zinc-400">Shelf:</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedShelfFilter("All")}
+                    className={`rounded-full px-3 py-1 text-xs transition ${
+                      selectedShelfFilter === "All"
+                        ? "bg-cyan-500/30 text-cyan-200 border border-cyan-400/40"
+                        : "border border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10"
+                    }`}
+                  >
+                    All shelves
+                  </button>
+                  {allShelves.map((shelf) => (
+                    <button
+                      key={shelf}
+                      type="button"
+                      onClick={() => setSelectedShelfFilter(shelf)}
+                      className={`rounded-full px-3 py-1 text-xs transition ${
+                        selectedShelfFilter === shelf
+                          ? "bg-cyan-500/30 text-cyan-200 border border-cyan-400/40"
+                          : "border border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10"
+                      }`}
+                    >
+                      {shelf}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <div className="flex flex-wrap items-center gap-3 text-sm text-zinc-400">
                 <span>{visibleBooks.length} books · {readGenres.length} genres tracked</span>
                 {missingCoverBooks.length > 0 && <button type="button" onClick={() => void findMissingCovers()} disabled={isFindingMissingCovers} className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-xs font-medium text-cyan-100 hover:bg-cyan-500/20 disabled:opacity-60">{isFindingMissingCovers ? "Finding covers..." : `Find ${missingCoverBooks.length} missing cover${missingCoverBooks.length === 1 ? "" : "s"}`}</button>}
@@ -689,7 +1004,48 @@ export default function Home() {
                         </span>
                       ))}
                     </div>
+                    {book.mood_tags && book.mood_tags.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {book.mood_tags.map((tag) => (
+                          <span key={tag} className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2 py-0.5 text-[10px] text-violet-100">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {(book.format || book.audiobook_narrator) && (
+                      <div className="mt-2 flex items-center gap-2 text-xs text-zinc-400">
+                        {book.format && (
+                          <span className="rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-zinc-300">
+                            {book.format === "Physical" ? "📖 Physical" : book.format === "E-Book" ? "📱 E-Book" : "🎧 Audio"}
+                          </span>
+                        )}
+                        {book.audiobook_narrator && (
+                          <span className="text-[11px] text-zinc-400">
+                            Narrated by <strong className="text-zinc-200">{book.audiobook_narrator}</strong>
+                            {book.audiobook_duration ? ` (${book.audiobook_duration})` : ""}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {Array.isArray(book.custom_shelves) && book.custom_shelves.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {book.custom_shelves.map((shelf) => (
+                          <span key={shelf} className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 text-[10px] text-cyan-200">
+                            🏷️ {shelf}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     {book.isbn && <div className="mt-1 text-xs text-zinc-500">ISBN {book.isbn}</div>}
+                    {Array.isArray(book.quotes) && book.quotes.length > 0 && (
+                      <div className="mt-3 space-y-1 rounded-xl border border-white/5 bg-[#0b1120] p-2.5">
+                        <div className="text-[10px] uppercase tracking-wider text-violet-300">Quotes</div>
+                        {book.quotes.map((q, i) => (
+                          <p key={i} className="text-xs italic text-zinc-300">“{q}”</p>
+                        ))}
+                      </div>
+                    )}
                     {book.review && <p className="mt-3 max-w-xl whitespace-pre-line text-sm leading-6 text-zinc-300">{book.review}</p>}
                     {book.status === "Read" && book.finished_at && (
                       <div className="mt-1 text-xs text-emerald-200">

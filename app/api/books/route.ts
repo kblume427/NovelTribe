@@ -69,6 +69,12 @@ export async function POST(request: Request) {
       status: payload.status,
       rating: payload.rating,
       isbn: payload.isbn ?? null,
+      mood_tags: Array.isArray(payload.mood_tags) ? payload.mood_tags : null,
+      quotes: Array.isArray(payload.quotes) ? payload.quotes : null,
+      format: payload.format ?? null,
+      audiobook_narrator: payload.audiobook_narrator ?? null,
+      audiobook_duration: payload.audiobook_duration ?? null,
+      custom_shelves: Array.isArray(payload.custom_shelves) ? payload.custom_shelves : null,
       categories: payload.categories ?? [payload.genre],
       review: payload.review?.trim().slice(0, 1000) || null,
       cover_url: payload.cover_url ?? null,
@@ -110,7 +116,7 @@ export async function PATCH(request: Request) {
 
   const { data: existingBook, error: existingBookError } = await supabase
     .from("books")
-    .select("status, finished_at, isbn, categories, rating, review, cover_url")
+    .select("status, finished_at, isbn, categories, rating, review, cover_url, mood_tags, quotes, format, audiobook_narrator, audiobook_duration, custom_shelves")
     .eq("id", bookId)
     .eq("user_id", user.id)
     .single();
@@ -127,6 +133,12 @@ export async function PATCH(request: Request) {
       genre: payload.genre,
       status: payload.status,
       rating: payload.rating,
+      mood_tags: Array.isArray(payload.mood_tags) ? payload.mood_tags : existingBook.mood_tags ?? null,
+      quotes: Array.isArray(payload.quotes) ? payload.quotes : existingBook.quotes ?? null,
+      format: payload.format !== undefined ? payload.format : existingBook.format ?? null,
+      audiobook_narrator: payload.audiobook_narrator !== undefined ? payload.audiobook_narrator : existingBook.audiobook_narrator ?? null,
+      audiobook_duration: payload.audiobook_duration !== undefined ? payload.audiobook_duration : existingBook.audiobook_duration ?? null,
+      custom_shelves: Array.isArray(payload.custom_shelves) ? payload.custom_shelves : existingBook.custom_shelves ?? null,
       isbn: payload.isbn ?? existingBook.isbn ?? null,
       categories: payload.categories ?? existingBook.categories ?? [payload.genre],
       review: payload.review?.trim().slice(0, 1000) || null,

@@ -12,6 +12,12 @@ export type BookRecord = {
   categories?: string[] | null;
   review?: string | null;
   cover_url?: string | null;
+  mood_tags?: string[] | null;
+  quotes?: string[] | null;
+  format?: "Physical" | "E-Book" | "Audiobook" | string | null;
+  audiobook_narrator?: string | null;
+  audiobook_duration?: string | null;
+  custom_shelves?: string[] | null;
   created_at?: string;
 };
 
@@ -109,6 +115,18 @@ export function buildHeuristicRecommendations(
   const readGenres = new Set(
     books.filter((book) => book.status === "Read").flatMap(getBookCategories),
   );
+  const moodTagCounts = new Map<string, number>();
+  const highRatedMoodTagCounts = new Map<string, number>();
+  books
+    .filter((book) => book.status === "Read" && Array.isArray(book.mood_tags) && book.mood_tags!.length > 0)
+    .forEach((book) => {
+      for (const tag of book.mood_tags as string[]) {
+        moodTagCounts.set(tag, (moodTagCounts.get(tag) ?? 0) + 1);
+        if (book.rating >= 4) {
+          highRatedMoodTagCounts.set(tag, (highRatedMoodTagCounts.get(tag) ?? 0) + 1);
+        }
+      }
+    });
   const readCategoryCounts = new Map<string, number>();
   const highRatedCategoryCounts = new Map<string, number>();
   books.filter((book) => book.status === "Read").flatMap(getBookCategories).forEach((category) => {
@@ -152,6 +170,20 @@ export function buildHeuristicRecommendations(
 
       if (book.rating >= 4) {
         score += 2;
+      }
+
+      // Mood tag matching: boost candidates that match mood tags you've read and liked.
+      if (Array.isArray(book.mood_tags) && book.mood_tags.length > 0) {
+        const candidateTags = book.mood_tags as string[];
+        const matched = candidateTags.filter((t) => moodTagCounts.has(t));
+        const matchedHigh = candidateTags.filter((t) => highRatedMoodTagCounts.has(t));
+        if (matched.length > 0) {
+          score += matched.length * 3;
+          reason = `Matches mood tags you favor: ${matched.join(", ").toLowerCase()}`;
+        }
+        if (matchedHigh.length > 0) {
+          score += matchedHigh.length * 5;
+        }
       }
 
       return { ...book, score, reason };

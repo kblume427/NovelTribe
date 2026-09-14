@@ -9,6 +9,7 @@ create table if not exists profiles (
   public_ratings boolean default false,
   public_reviews boolean default false,
   public_activity boolean default false,
+  feature_flags jsonb not null default '{}'::jsonb,
   created_at timestamp with time zone default now()
 );
 
@@ -18,6 +19,9 @@ alter table profiles add column if not exists public_library boolean default fal
 alter table profiles add column if not exists public_ratings boolean default false;
 alter table profiles add column if not exists public_reviews boolean default false;
 alter table profiles add column if not exists public_activity boolean default false;
+alter table profiles add column if not exists reading_goal integer default null;
+-- Single JSON store for all optional/toggleable feature preferences (see lib/featureFlags.ts).
+alter table profiles add column if not exists feature_flags jsonb not null default '{}'::jsonb;
 
 create table if not exists books (
   id uuid primary key default gen_random_uuid(),
@@ -36,17 +40,17 @@ create table if not exists books (
 );
 
 create table if not exists cover_approvals (
-
-  create table if not exists recommendation_dismissals (
-    user_id uuid not null references auth.users(id) on delete cascade,
-    title text not null,
-    created_at timestamp with time zone default now(),
-    primary key (user_id, title)
-  );
   isbn text primary key,
   cover_url text not null,
   approved_by uuid not null references auth.users(id) on delete cascade,
   created_at timestamp with time zone default now()
+);
+
+create table if not exists recommendation_dismissals (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  title text not null,
+  created_at timestamp with time zone default now(),
+  primary key (user_id, title)
 );
 
 alter table books add column if not exists finished_at timestamp with time zone;
@@ -54,6 +58,13 @@ alter table books add column if not exists isbn text;
 alter table books add column if not exists categories text[] default '{}';
 alter table books add column if not exists review text;
 alter table books add column if not exists cover_url text;
+-- Phase 1: optional mood/vibe tags, only populated when the user enables the mood_tags feature flag.
+alter table books add column if not exists mood_tags text[] default '{}';
+alter table books add column if not exists quotes text[] default '{}';
+alter table books add column if not exists format text default null;
+alter table books add column if not exists audiobook_narrator text default null;
+alter table books add column if not exists audiobook_duration text default null;
+alter table books add column if not exists custom_shelves text[] default '{}';
 
 create table if not exists reading_activity (
   id uuid primary key default gen_random_uuid(),
