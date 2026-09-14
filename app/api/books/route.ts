@@ -75,6 +75,8 @@ export async function POST(request: Request) {
       audiobook_narrator: payload.audiobook_narrator ?? null,
       audiobook_duration: payload.audiobook_duration ?? null,
       custom_shelves: Array.isArray(payload.custom_shelves) ? payload.custom_shelves : null,
+      total_pages: payload.total_pages !== undefined && payload.total_pages !== null && payload.total_pages !== "" ? Number(payload.total_pages) : null,
+      current_page: payload.current_page !== undefined && payload.current_page !== null && payload.current_page !== "" ? Number(payload.current_page) : null,
       categories: payload.categories ?? [payload.genre],
       review: payload.review?.trim().slice(0, 1000) || null,
       cover_url: payload.cover_url ?? null,
@@ -116,7 +118,7 @@ export async function PATCH(request: Request) {
 
   const { data: existingBook, error: existingBookError } = await supabase
     .from("books")
-    .select("status, finished_at, isbn, categories, rating, review, cover_url, mood_tags, quotes, format, audiobook_narrator, audiobook_duration, custom_shelves")
+    .select("status, finished_at, isbn, categories, rating, review, cover_url, mood_tags, quotes, format, audiobook_narrator, audiobook_duration, custom_shelves, total_pages, current_page")
     .eq("id", bookId)
     .eq("user_id", user.id)
     .single();
@@ -139,6 +141,8 @@ export async function PATCH(request: Request) {
       audiobook_narrator: payload.audiobook_narrator !== undefined ? payload.audiobook_narrator : existingBook.audiobook_narrator ?? null,
       audiobook_duration: payload.audiobook_duration !== undefined ? payload.audiobook_duration : existingBook.audiobook_duration ?? null,
       custom_shelves: Array.isArray(payload.custom_shelves) ? payload.custom_shelves : existingBook.custom_shelves ?? null,
+      total_pages: payload.total_pages !== undefined ? (payload.total_pages !== null && payload.total_pages !== "" ? Number(payload.total_pages) : null) : existingBook.total_pages ?? null,
+      current_page: payload.current_page !== undefined ? (payload.current_page !== null && payload.current_page !== "" ? Number(payload.current_page) : null) : existingBook.current_page ?? null,
       isbn: payload.isbn ?? existingBook.isbn ?? null,
       categories: payload.categories ?? existingBook.categories ?? [payload.genre],
       review: payload.review?.trim().slice(0, 1000) || null,

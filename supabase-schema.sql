@@ -65,6 +65,8 @@ alter table books add column if not exists format text default null;
 alter table books add column if not exists audiobook_narrator text default null;
 alter table books add column if not exists audiobook_duration text default null;
 alter table books add column if not exists custom_shelves text[] default '{}';
+alter table books add column if not exists total_pages integer default null;
+alter table books add column if not exists current_page integer default null;
 
 create table if not exists reading_activity (
   id uuid primary key default gen_random_uuid(),
@@ -77,6 +79,20 @@ create table if not exists reading_activity (
   rating integer check (rating is null or (rating >= 1 and rating <= 5)),
   created_at timestamp with time zone default now()
 );
+
+create table if not exists reading_sessions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  book_id uuid references books(id) on delete cascade,
+  duration_minutes integer check (duration_minutes is null or duration_minutes > 0),
+  pages_read integer check (pages_read is null or pages_read >= 0),
+  notes text,
+  session_date date not null default current_date,
+  created_at timestamp with time zone default now()
+);
+
+create index if not exists reading_sessions_user_date_idx on reading_sessions(user_id, session_date desc);
+create index if not exists reading_sessions_book_idx on reading_sessions(book_id);
 
 create table if not exists follows (
   follower_id uuid not null references auth.users(id) on delete cascade,
@@ -111,6 +127,7 @@ on conflict (id) do update set public = true;
 alter table profiles enable row level security;
 alter table books enable row level security;
 alter table reading_activity enable row level security;
+alter table reading_sessions enable row level security;
 alter table cover_approvals enable row level security;
 alter table recommendation_dismissals enable row level security;
 alter table follows enable row level security;
@@ -253,6 +270,27 @@ drop policy if exists "Users can view their own avatars" on storage.objects;
 drop policy if exists "Users can upload their own avatars" on storage.objects;
 drop policy if exists "Users can update their own avatars" on storage.objects;
 drop policy if exists "Users can delete their own avatars" on storage.objects;
+
+drop policy if exists "Users can view their own reading sessions" on reading_sessions;
+drop policy if exists "Users can insert their own reading sessions" on reading_sessions;
+drop policy if exists "Users can update their own reading sessions" on reading_sessions;
+drop policy if exists "Users can delete their own reading sessions" on reading_sessions;
+
+create policy "Users can view their own reading sessions"
+on reading_sessions for select
+using (auth.uid() = user_id);
+
+create policy "Users can insert their own reading sessions"
+on reading_sessions for insert
+with check (auth.uid() = user_id);
+
+create policy "Users can update their own reading sessions"
+on reading_sessions for update
+using (auth.uid() = user_id);
+
+create policy "Users can delete their own reading sessions"
+on reading_sessions for delete
+using (auth.uid() = user_id);
 
 create policy "Users can view their own avatars"
 on storage.objects for select

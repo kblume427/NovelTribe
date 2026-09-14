@@ -8,6 +8,7 @@ import {
 } from "@/lib/recommendations";
 import { openai } from "@/lib/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { isFeatureEnabled, resolveFeatureFlags } from "@/lib/featureFlags";
 
 const categoryCache = new Map<string, { expiresAt: number; recommendations: Recommendation[] }>();
 const CATEGORY_CACHE_TTL = 5 * 60 * 1000;
@@ -154,10 +155,19 @@ async function getExternalRecommendations(books: BookRecord[], category: string,
   );
 }
 
-async function getFollowedHighRatedCategories() {
+async function getFollowedHighRatedCategories(userGenres: string[] = []) {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
+
+  const { data: userProfile } = await supabase
+    .from("profiles")
+    .select("feature_flags")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const flags = resolveFeatureFlags(userProfile?.feature_flags);
+  const strictMatch = isFeatureEnabled(flags, "strict_peer_genre_match");
 
   const { data: follows } = await supabase.from("follows").select("following_id").eq("follower_id", user.id);
   const followingIds = (follows ?? []).map((follow) => follow.following_id);
@@ -180,9 +190,16 @@ async function getFollowedHighRatedCategories() {
     .eq("status", "Read")
     .gte("rating", 4);
 
-  return [...new Set((books ?? []).flatMap((book) =>
+  const categories = [...new Set((books ?? []).flatMap((book) =>
     Array.isArray(book.categories) && book.categories.length > 0 ? book.categories : [book.genre],
   ))];
+
+  if (strictMatch && userGenres.length > 0) {
+    const userGenreSet = new Set(userGenres.map((g) => g.toLowerCase()));
+    return categories.filter((c) => userGenreSet.has(c.toLowerCase()));
+  }
+
+  return categories;
 }
 
 export async function POST(request: Request) {
@@ -206,8 +223,12 @@ export async function POST(request: Request) {
     ? await supabase.from("recommendation_dismissals").select("title").eq("user_id", user.id)
     : { data: [] };
   const dismissedTitles = new Set((dismissalRows ?? []).map((item) => normalizeTitle(item.title)));
+  const userKnownGenres = [
+    ...preferredCategories,
+    ...books.filter((b) => b.status === "Read").flatMap(getBookCategories),
+  ];
   const followedCategories = exploreGenre === "For You"
-    ? await getFollowedHighRatedCategories().catch(() => [])
+    ? await getFollowedHighRatedCategories(userKnownGenres).catch(() => [])
     : [];
   const readCategoryCounts = new Map<string, number>();
   const highRatedCategoryCounts = new Map<string, number>();

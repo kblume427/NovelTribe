@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { isFeatureEnabled, resolveFeatureFlags } from "@/lib/featureFlags";
 
 export async function GET() {
   const supabase = await createSupabaseServerClient();
@@ -7,6 +8,18 @@ export async function GET() {
   } = await supabase.auth.getUser();
 
   if (!user) return Response.json({ profiles: [] }, { status: 401 });
+
+  const { data: userProfile } = await supabase
+    .from("profiles")
+    .select("feature_flags, preferred_categories")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const flags = resolveFeatureFlags(userProfile?.feature_flags);
+  const strictMatch = isFeatureEnabled(flags, "strict_peer_genre_match");
+  const userCategories = new Set(
+    (userProfile?.preferred_categories ?? []).map((c: string) => c.toLowerCase()),
+  );
 
   const { data: follows } = await supabase
     .from("follows")
@@ -21,8 +34,22 @@ export async function GET() {
     .not("username", "is", null)
     .not("id", "in", `(${excludedIds.join(",")})`)
     .order("created_at", { ascending: false })
-    .limit(6);
+    .limit(24);
 
-  if (error) return Response.json({ profiles: [] });
-  return Response.json({ profiles: data ?? [] });
+  if (error || !data) return Response.json({ profiles: [] });
+
+  let result = data;
+  if (strictMatch && userCategories.size > 0) {
+    result = data
+      .map((profile) => {
+        const peerCategories = (profile.preferred_categories ?? []).map((c: string) => c.toLowerCase());
+        const overlap = peerCategories.filter((c: string) => userCategories.has(c)).length;
+        return { profile, overlap };
+      })
+      .filter(({ overlap }) => overlap > 0)
+      .sort((a, b) => b.overlap - a.overlap)
+      .map(({ profile }) => profile);
+  }
+
+  return Response.json({ profiles: result.slice(0, 6) });
 }

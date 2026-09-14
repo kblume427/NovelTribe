@@ -18,6 +18,8 @@ export type BookRecord = {
   audiobook_narrator?: string | null;
   audiobook_duration?: string | null;
   custom_shelves?: string[] | null;
+  total_pages?: number | null;
+  current_page?: number | null;
   created_at?: string;
 };
 

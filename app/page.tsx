@@ -8,6 +8,7 @@ import { trackEvent } from "@/lib/analytics";
 import { allGenres, getBookCategories, starterBooks, type BookRecord } from "@/lib/recommendations";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { MOOD_TAGS, isFeatureEnabled, resolveFeatureFlags, type FeatureFlags } from "@/lib/featureFlags";
+import { evaluateMilestones } from "@/lib/milestones";
 
 type BookStatus = "Read" | "Currently Reading" | "Want to Read";
 
@@ -37,6 +38,8 @@ const defaultForm = {
   audiobook_duration: "",
   custom_shelves: [] as string[],
   newShelfInput: "",
+  total_pages: "",
+  current_page: "",
 };
 
 export default function Home() {
@@ -45,6 +48,7 @@ export default function Home() {
   const [form, setForm] = useState(defaultForm);
   const [profileFlags, setProfileFlags] = useState<FeatureFlags | null>(null);
   const [readingGoal, setReadingGoal] = useState<number | null>(null);
+  const [streak, setStreak] = useState<number>(0);
   const [selectedShelfFilter, setSelectedShelfFilter] = useState<string>("All");
   const [editingBookId, setEditingBookId] = useState<string | number | null>(null);
   const [bookError, setBookError] = useState<string | null>(null);
@@ -135,9 +139,19 @@ export default function Home() {
         .maybeSingle();
 
       if (!active) return;
-      setProfileFlags(resolveFeatureFlags(profileRow?.feature_flags));
+      const flags = resolveFeatureFlags(profileRow?.feature_flags);
+      setProfileFlags(flags);
       if (typeof profileRow?.reading_goal === "number") {
         setReadingGoal(profileRow.reading_goal);
+      }
+      if (flags.reading_sessions) {
+        fetch("/api/sessions")
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (!active || !data) return;
+            setStreak(data.streak ?? 0);
+          })
+          .catch(() => undefined);
       }
     })();
 
@@ -267,6 +281,8 @@ export default function Home() {
       audiobook_narrator: profileFlags?.audiobook_format && form.format === "Audiobook" && form.audiobook_narrator.trim() ? form.audiobook_narrator.trim() : null,
       audiobook_duration: profileFlags?.audiobook_format && form.format === "Audiobook" && form.audiobook_duration.trim() ? form.audiobook_duration.trim() : null,
       custom_shelves: form.custom_shelves && form.custom_shelves.length > 0 ? form.custom_shelves : null,
+      total_pages: form.total_pages ? Math.max(1, parseInt(form.total_pages, 10)) : null,
+      current_page: form.current_page ? Math.max(0, parseInt(form.current_page, 10)) : null,
     };
 
     setBookError(null);
@@ -343,6 +359,8 @@ export default function Home() {
       audiobook_duration: book.audiobook_duration ?? "",
       custom_shelves: Array.isArray(book.custom_shelves) ? book.custom_shelves : [],
       newShelfInput: "",
+      total_pages: book.total_pages ? String(book.total_pages) : "",
+      current_page: book.current_page !== null && book.current_page !== undefined ? String(book.current_page) : "",
     });
   };
 
@@ -515,10 +533,53 @@ export default function Home() {
                 </div>
               </div>
             )}
+
+            {profileFlags && isFeatureEnabled(profileFlags, "reading_sessions") && (
+              <div className="mt-4 flex items-center justify-between rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">🔥</span>
+                  <div>
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-amber-200">Daily Reading Streak</div>
+                    <div className="text-sm font-bold text-white">{streak} {streak === 1 ? "day" : "days"}</div>
+                  </div>
+                </div>
+                <a href="/reading" className="rounded-full bg-amber-500/20 px-3 py-1 text-xs font-medium text-amber-100 hover:bg-amber-500/30">
+                  Log session →
+                </a>
+              </div>
+            )}
+
+            {profileFlags && isFeatureEnabled(profileFlags, "milestones") && (() => {
+              const milestones = evaluateMilestones(books, streak, readingGoal);
+              const unlocked = milestones.filter((m) => m.unlocked);
+              const latest = unlocked[unlocked.length - 1];
+
+              return (
+                <div className="mt-3 flex items-center justify-between rounded-2xl border border-violet-500/20 bg-violet-500/5 px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{latest ? latest.icon : "🏆"}</span>
+                    <div>
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-violet-300">
+                        {unlocked.length} of {milestones.length} Milestones Unlocked
+                      </div>
+                      <div className="text-xs text-white">
+                        {latest ? `Latest: ${latest.title}` : "Keep reading to unlock badges"}
+                      </div>
+                    </div>
+                  </div>
+                  <a href="/profile" className="rounded-full bg-violet-500/20 px-3 py-1 text-xs font-medium text-violet-100 hover:bg-violet-500/30">
+                    View badges →
+                  </a>
+                </div>
+              );
+            })()}
           </div>
 
           <div className="rounded-[28px] border border-white/10 bg-[#111827]/80 p-6 shadow-[0_20px_50px_rgba(15,23,42,0.45)]">
-            <div className="mb-5 text-xs uppercase tracking-[0.24em] text-cyan-200">Currently reading</div>
+            <div className="mb-5 flex items-center justify-between">
+              <div className="text-xs uppercase tracking-[0.24em] text-cyan-200">Currently reading</div>
+              <a href="/reading" className="text-xs text-cyan-300 hover:underline">Open shelf →</a>
+            </div>
             <div className="space-y-4">
               {books.filter((book) => book.status !== "Read").slice(0, 3).map((book) => (
                 <div key={book.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-3">
@@ -822,6 +883,36 @@ export default function Home() {
                 </div>
               )}
 
+              {profileFlags && isFeatureEnabled(profileFlags, "reading_velocity") && (
+                <div className="rounded-2xl border border-white/10 bg-[#0b1120] p-4">
+                  <span className="mb-2 block text-sm text-zinc-300">Page tracking (Reading pace &amp; finish estimator)</span>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="block">
+                      <span className="mb-1 block text-xs text-zinc-400">Total pages</span>
+                      <input
+                        type="number"
+                        min="1"
+                        value={form.total_pages}
+                        onChange={(e) => setForm((curr) => ({ ...curr, total_pages: e.target.value }))}
+                        placeholder="e.g. 400"
+                        className="w-full rounded-xl border border-white/10 bg-[#111827] px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/60"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1 block text-xs text-zinc-400">Current page reached</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={form.current_page}
+                        onChange={(e) => setForm((curr) => ({ ...curr, current_page: e.target.value }))}
+                        placeholder="e.g. 120"
+                        className="w-full rounded-xl border border-white/10 bg-[#111827] px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/60"
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
+
               {editingBookId === null && (isFindingManualCover || manualCoverUrl) && (
                 <div className="flex flex-col gap-3 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-3 sm:flex-row sm:items-center">
                   {manualCoverUrl ? <img src={manualCoverUrl} alt="Google Books cover preview" className="h-20 w-14 rounded-lg bg-[#0b1120] object-contain" /> : <div className="h-20 w-14 animate-pulse rounded-lg bg-white/10" />}
@@ -1038,6 +1129,12 @@ export default function Home() {
                       </div>
                     )}
                     {book.isbn && <div className="mt-1 text-xs text-zinc-500">ISBN {book.isbn}</div>}
+                    {book.total_pages && (
+                      <div className="mt-1 text-xs text-cyan-300 font-medium">
+                        📄 Page {book.current_page ?? 0} of {book.total_pages}
+                        {book.total_pages > 0 && ` (${Math.min(100, Math.round(((book.current_page ?? 0) / book.total_pages) * 100))}%)`}
+                      </div>
+                    )}
                     {Array.isArray(book.quotes) && book.quotes.length > 0 && (
                       <div className="mt-3 space-y-1 rounded-xl border border-white/5 bg-[#0b1120] p-2.5">
                         <div className="text-[10px] uppercase tracking-wider text-violet-300">Quotes</div>

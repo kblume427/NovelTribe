@@ -4,11 +4,12 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { allGenres } from "@/lib/recommendations";
+import { allGenres, type BookRecord } from "@/lib/recommendations";
 import { trackEvent } from "@/lib/analytics";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import SocialInbox from "@/components/social-inbox";
 import { DEFAULT_FEATURE_FLAGS, resolveFeatureFlags, type FeatureFlagKey, type FeatureFlags } from "@/lib/featureFlags";
+import { evaluateMilestones } from "@/lib/milestones";
 
 type ProfileState = {
   full_name: string;
@@ -97,6 +98,8 @@ export default function ProfilePage() {
     ebook: 0,
     audiobook: 0,
   });
+  const [readingStreak, setReadingStreak] = useState<number>(0);
+  const [profileBooks, setProfileBooks] = useState<BookRecord[]>([]);
   const [stats, setStats] = useState({
     total: 0,
     finished: 0,
@@ -183,10 +186,11 @@ export default function ProfilePage() {
 
       const { data: booksData } = await supabase
         .from("books")
-        .select("genre, categories, status, rating, format")
+        .select("id, title, author, genre, categories, status, rating, review, quotes, format, total_pages, current_page")
         .eq("user_id", user.id);
 
       if (booksData) {
+        setProfileBooks(booksData as BookRecord[]);
         const bookCategories = booksData.flatMap((book) =>
           Array.isArray(book.categories) && book.categories.length > 0 ? book.categories : [book.genre],
         );
@@ -229,6 +233,14 @@ export default function ProfilePage() {
       if (activityData) {
         setActivity(activityData as ActivityItem[]);
       }
+
+      fetch("/api/sessions")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((payload) => {
+          if (!active || !payload) return;
+          setReadingStreak(payload.streak ?? 0);
+        })
+        .catch(() => undefined);
 
       setLoading(false);
     }
@@ -458,6 +470,20 @@ export default function ProfilePage() {
               </div>
             )}
 
+            {profile.feature_flags.reading_sessions && (
+              <div className="mt-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-[10px] uppercase tracking-[0.2em] text-amber-200">Reading streak</div>
+                    <div className="mt-1 text-2xl font-bold text-white">🔥 {readingStreak} {readingStreak === 1 ? "day" : "days"}</div>
+                  </div>
+                  <a href="/reading" className="rounded-full bg-amber-500/20 px-3 py-1.5 text-xs text-amber-100 hover:bg-amber-500/30">
+                    Log session →
+                  </a>
+                </div>
+              </div>
+            )}
+
             {profile.feature_flags.reading_goals && (
               <div className="mt-3 rounded-2xl border border-violet-500/20 bg-violet-500/5 p-4">
                 <div className="flex items-center justify-between">
@@ -482,6 +508,42 @@ export default function ProfilePage() {
                 )}
               </div>
             )}
+
+            {profile.feature_flags.milestones && (() => {
+              const milestones = evaluateMilestones(profileBooks, readingStreak, profile.reading_goal);
+              const unlockedCount = milestones.filter((m) => m.unlocked).length;
+
+              return (
+                <div className="mt-3 rounded-2xl border border-violet-500/20 bg-[#0b1120] p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-[10px] uppercase tracking-[0.2em] text-violet-300">Reading Milestones</div>
+                    <span className="text-xs font-semibold text-white">{unlockedCount} / {milestones.length} unlocked</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {milestones.map((m) => (
+                      <div
+                        key={m.id}
+                        className={`rounded-xl border p-2.5 transition ${
+                          m.unlocked
+                            ? "border-violet-500/40 bg-violet-500/10 shadow-sm"
+                            : "border-white/5 bg-[#111827]/60 opacity-60"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{m.icon}</span>
+                          <div className="min-w-0 flex-1">
+                            <div className={`text-xs font-semibold truncate ${m.unlocked ? "text-white" : "text-zinc-400"}`}>
+                              {m.title}
+                            </div>
+                            <div className="text-[10px] text-zinc-500 truncate">{m.progressText}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
             {totalUsers !== null && (
               <div className="mt-3 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-3">
                 <div className="text-[10px] uppercase tracking-[0.2em] text-cyan-200">NovelTribe readers</div>
