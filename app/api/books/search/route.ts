@@ -20,7 +20,12 @@ export async function GET(request: NextRequest) {
     .replace(/^isbn[:\s]*/i, "")
     .replace(/[\s-]/g, "");
   const isIsbn = /^(?:\d{9}[\dXx]|\d{13})$/.test(normalizedIsbn);
-  const searchQuery = isIsbn ? `isbn:${normalizedIsbn.toUpperCase()}` : query;
+  const isAsin = /^B0[A-Z0-9]{8}$/i.test(query.trim());
+  const searchQuery = isIsbn
+    ? `isbn:${normalizedIsbn.toUpperCase()}`
+    : isAsin
+    ? query.trim()
+    : query;
 
   const googleBooksUrl = new URL("https://www.googleapis.com/books/v1/volumes");
   googleBooksUrl.searchParams.set("q", searchQuery);

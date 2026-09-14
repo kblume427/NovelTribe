@@ -89,6 +89,8 @@ export type ParsedImportBook = {
   review?: string | null;
   isbn?: string | null;
   finished_at?: string | null;
+  format?: "Physical" | "E-Book" | "Audiobook" | null;
+  custom_shelves?: string[];
 };
 
 /**
@@ -132,6 +134,7 @@ export function parseGoodreadsCSV(csvText: string): ParsedImportBook[] {
   const reviewIdx = headerRow.findIndex((h) => h === "myreview" || h === "review");
   const isbnIdx = headerRow.findIndex((h) => h === "isbn13" || h === "isbn");
   const dateReadIdx = headerRow.findIndex((h) => h === "dateread" || h === "finisheddate");
+  const bindingIdx = headerRow.findIndex((h) => h === "binding" || h === "format");
 
   if (titleIdx === -1 || authorIdx === -1) {
     return [];
@@ -174,6 +177,31 @@ export function parseGoodreadsCSV(csvText: string): ParsedImportBook[] {
       }
     }
 
+    // Detect Kindle / E-Book from Goodreads Binding column or shelf tags
+    const rawBinding = (row[bindingIdx] ?? "").toLowerCase();
+    let format: "Physical" | "E-Book" | "Audiobook" | null = null;
+    const isKindleOrEbook =
+      rawBinding.includes("kindle") ||
+      rawBinding.includes("ebook") ||
+      rawBinding.includes("nook") ||
+      rawShelf.includes("kindle") ||
+      rawShelf.includes("ebook");
+    const isAudio =
+      rawBinding.includes("audio") ||
+      rawBinding.includes("audible") ||
+      rawShelf.includes("audio");
+
+    if (isAudio) {
+      format = "Audiobook";
+    } else if (isKindleOrEbook) {
+      format = "E-Book";
+    }
+
+    const customShelves: string[] = [];
+    if (rawBinding.includes("kindle") || rawShelf.includes("kindle")) {
+      customShelves.push("Kindle");
+    }
+
     books.push({
       title,
       author,
@@ -183,6 +211,8 @@ export function parseGoodreadsCSV(csvText: string): ParsedImportBook[] {
       review: review ? review.slice(0, 1000) : null,
       isbn,
       finished_at,
+      format,
+      custom_shelves: customShelves.length > 0 ? customShelves : undefined,
     });
   }
 
