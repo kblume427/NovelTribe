@@ -1,8 +1,11 @@
 @import "tailwindcss";
 
 :root {
-  --background: #09090b;
-  --foreground: #f4f4f5;
+  --background: #100e0d;
+  --foreground: #f7f1e8;
+  --reading-ink: #191412;
+  --reading-amber: #d6a15d;
+  --reading-paper: #f3e6d0;
 }
 
 @theme inline {
@@ -20,11 +23,24 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    radial-gradient(circle at top, rgba(139, 92, 246, 0.18), transparent 25%),
-    radial-gradient(circle at bottom right, rgba(34, 211, 238, 0.14), transparent 32%),
+    radial-gradient(circle at 12% 0%, rgba(214, 161, 93, 0.16), transparent 28%),
+    radial-gradient(circle at 88% 100%, rgba(125, 77, 48, 0.2), transparent 34%),
+    linear-gradient(135deg, rgba(255, 248, 235, 0.025), transparent 42%),
     var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Georgia, "Times New Roman", serif;
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  mix-blend-mode: soft-light;
+  z-index: 10;
 }
 
 * {
@@ -32,8 +48,8 @@ body {
 }
 
 ::selection {
-  background: rgba(168, 85, 247, 0.45);
-  color: white;
+  background: rgba(214, 161, 93, 0.55);
+  color: #191412;
 }
 
 button,

@@ -116,7 +116,6 @@ Rules:
 
 - **One-Click Export**: Full library backup to CSV or JSON format from Profile.
 - **Goodreads CSV Import**: High-fidelity parser (`lib/importExport.ts`) reading `goodreads_library_export.csv` with automated shelf, status, rating, review, and finish date mapping.
-- **Protected Read-Book Clearing**: Profile data-ownership controls require typing `DELETE` before permanently removing books marked `Read`; active and planned books remain.
 - **PWA / Mobile Home Screen**: Web App Manifest (`manifest.webmanifest`), apple-web-app configuration, and mobile viewport optimizations for standalone native-like installation.
 
 ### Social & Peer Matching
@@ -229,13 +228,14 @@ Rules:
   - **Library Management**: `book_added` (manual / recommendation), `book_status_changed`, `book_finished`, `book_rated`, `review_saved`, `book_edit_opened`, `book_deleted`
   - **Library Navigation**: `library_sorted`, `shelf_filter_selected`, `quick_import_searched`, `landing_cta_clicked`
   - **Cover Art Pipeline**: `missing_covers_searched`, `missing_cover_approved`, `missing_covers_approved_all`
-  - **Data Ownership**: `library_exported` (CSV/JSON), `library_import_started`, `library_imported` (breakdown of inserted, updated, unchanged), `read_books_cleared`, `book_imported` (Google Books)
+  - **Data Ownership**: `library_exported` (CSV/JSON), `library_import_started`, `library_imported` (breakdown of inserted, updated, unchanged), `book_imported` (Google Books)
   - **Habits & Goals**: `reading_session_logged`, `reading_progress_updated`, `reading_goal_updated`, `reminder_clicked`, `reminder_dismissed`, `currently_reading_viewed`
   - **Settings & Preferences**: `profile_updated`, `avatar_uploaded`, `feature_flag_toggled`
   - **Recommendations & Affiliate**: `recommendations_viewed`, `recommendation_source_used`, `recommendation_filter_selected`, `recommendations_refresh_clicked`, `recommendation_dismissed`, `affiliate_link_clicked`, `recommendation_clicked`
   - **Community & Social**: `user_followed`, `user_unfollowed`, `recommended_reader_clicked`, `social_tab_changed`, `notifications_marked_read`, `circle_review_expanded`
   - **Sharing**: `share_clicked`, `share_completed`, `share_link_copied`
   - **Updates**: `updates_cta_clicked`, `updates_viewed`
+  - **Feedback**: `feedback_submitted`
   - **Reader Search**: `public_reader_search`
 - Amazon affiliate links with disclosure
 - Canonical URL metadata
@@ -449,6 +449,9 @@ The SEO enhancements and initial handoff documentation were verified, committed,
 - **Libby Import**: Profile accepts Libby/OverDrive tag spreadsheets alongside Goodreads exports, mapping titles, authors, ISBNs, formats, tags, loan status, and dates through the same duplicate-safe upsert flow.
 - **Privacy-Controlled Reader Search**: Recommendations includes public reader search by name or username; only profiles with `is_public = true` are searchable, and the signed-in user is excluded.
 - **FAQ Page**: Added public `/faq` answers for privacy, Goodreads/Libby imports, duplicate handling, editing, recommendations, feature toggles, mobile use, and exports.
+- **Feedback Form**: Added public `/feedback` for bug reports, feature ideas, import issues, and general feedback with an optional reply-to email and privacy guidance.
+- **Server-Side Feedback Delivery**: `/api/feedback` sends validated submissions through Resend from `noreply@novel-tribe.com` to `kblume427@gmail.com`; requires the private `RESEND_API_KEY` environment variable.
+- **Cozy Reading Visual Treatment**: Shared styling now uses warmer ink-and-amber atmosphere, subtle paper grain, softer selection colors, a bookish serif fallback, and matching mobile browser chrome.
 - **Weighted Top Genre**: Profile statistics count every distinct category attached to each book when determining the reader's top genre, with primary-genre fallback for legacy records.
 
 ### Quick Import Search & ASIN / Kindle Support
@@ -543,8 +546,8 @@ The core application, privacy controls, social follows, reading habits, and full
 - [x] Optimize landing page calls to action with benefit-driven text and clearer conversion paths.
 - [x] Add a public updates or changelog page for shipped product improvements.
 - [x] Add a dedicated FAQ page covering privacy, imports, recommendations, accounts, and common workflows.
-- [ ] Add a bug report and feedback mechanism with privacy-conscious submission handling.
-- [ ] Make visual changes that give the product a warmer, more inviting "curl up with a good book" feeling.
+- [x] Add a bug report and feedback mechanism with privacy-conscious submission handling.
+- [x] Make visual changes that give the product a warmer, more inviting "curl up with a good book" feeling.
 
 ### Search, Commerce & Privacy
 - [x] Update affiliate links to search and link by book ISBN instead of title and author name when an ISBN is available.

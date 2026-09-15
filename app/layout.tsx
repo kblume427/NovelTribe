@@ -54,7 +54,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "NovelTribe",
   },
   icons: {
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport = {
-  themeColor: "#09090b",
+  themeColor: "#100e0d",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,

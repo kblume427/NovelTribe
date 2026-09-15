@@ -84,6 +84,7 @@ export default function FAQPage() {
         <div className="mt-12 flex flex-wrap gap-3 border-t border-white/10 pt-8">
           <a href="/getting-started" className="rounded-full bg-gradient-to-r from-cyan-400 to-violet-500 px-5 py-3 text-sm font-semibold text-white">Read Getting Started</a>
           <a href="/profile" className="rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-zinc-200">Open Profile</a>
+          <a href="/feedback" className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-5 py-3 text-sm font-semibold text-cyan-100">Report an issue</a>
         </div>
       </div>
     </main>

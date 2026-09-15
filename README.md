@@ -28,6 +28,8 @@ Onboarding instructions are available at `/getting-started`, and product history
 
 Configure the Supabase and optional provider variables described in `PROJECT_HANDOFF.md`. Never commit secrets or service-role keys.
 
+The server-side feedback form requires a `RESEND_API_KEY` and a verified `noreply@novel-tribe.com` sender in Resend. Submissions are routed to `kblume427@gmail.com`.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
