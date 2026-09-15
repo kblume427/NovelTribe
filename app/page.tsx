@@ -542,7 +542,7 @@ export default function Home() {
         <UpdatesCta />
 
         {profileFlags && isFeatureEnabled(profileFlags, "reading_reminders") && !loggedToday && !reminderDismissed && (
-          <aside aria-label="Daily reading reminder" className="mb-6 flex flex-col gap-3 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/15 via-violet-500/10 to-cyan-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <aside aria-label="Daily reading reminder" className="mb-6 flex flex-col gap-3 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/20 via-[#251b18] to-[#16161b] p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <span className="text-2xl">📖</span>
               <div>
@@ -578,7 +578,7 @@ export default function Home() {
         )}
 
         <section className="mb-10 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-violet-500/10 via-[#111827] to-cyan-500/10 p-6 shadow-2xl shadow-violet-500/10">
+          <div className="rounded-[28px] border border-amber-200/15 bg-gradient-to-br from-[#2a211e] via-[#171416] to-[#171923] p-6 shadow-2xl shadow-amber-950/30">
             <div className="mb-4 inline-flex rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.25em] text-violet-100">
               Reading profile
             </div>
@@ -592,7 +592,7 @@ export default function Home() {
               <a
                 href={isSignedIn === false ? "/login" : "#tracker"}
                 onClick={() => trackEvent("landing_cta_clicked", { action: isSignedIn === false ? "sign_in_to_start" : "start_library" })}
-                className="rounded-full bg-gradient-to-r from-cyan-400 to-violet-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-500/15 transition hover:brightness-110"
+                className="rounded-full bg-gradient-to-r from-amber-300 to-orange-500 px-5 py-3 text-sm font-semibold text-[#20130d] shadow-lg shadow-amber-900/25 transition hover:brightness-110"
               >
                 {isSignedIn === false ? "Start my private library" : "Start building my library"}
               </a>
@@ -691,7 +691,7 @@ export default function Home() {
             })()}
           </div>
 
-          <div className="rounded-[28px] border border-white/10 bg-[#111827]/80 p-6 shadow-[0_20px_50px_rgba(15,23,42,0.45)]">
+          <div className="rounded-[28px] border border-amber-100/10 bg-[#171416]/90 p-6 shadow-[0_20px_50px_rgba(50,28,18,0.35)]">
             <div className="mb-5 flex items-center justify-between">
               <div className="text-xs uppercase tracking-[0.24em] text-cyan-200">Currently reading</div>
               <a href="/reading" className="text-xs text-cyan-300 hover:underline">Open shelf →</a>
