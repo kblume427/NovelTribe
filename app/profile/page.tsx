@@ -4,13 +4,13 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { allGenres, type BookRecord } from "@/lib/recommendations";
+import { allGenres, getBookCategories, type BookRecord } from "@/lib/recommendations";
 import { trackEvent } from "@/lib/analytics";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import SocialInbox from "@/components/social-inbox";
 import { DEFAULT_FEATURE_FLAGS, resolveFeatureFlags, type FeatureFlagKey, type FeatureFlags } from "@/lib/featureFlags";
 import { evaluateMilestones } from "@/lib/milestones";
-import { exportBooksToCSV, exportBooksToJSON, parseGoodreadsCSV } from "@/lib/importExport";
+import { exportBooksToCSV, exportBooksToJSON, normalizeImportedGenre, parseGoodreadsCSV } from "@/lib/importExport";
 
 type ProfileState = {
   full_name: string;
@@ -205,13 +205,20 @@ export default function ProfilePage() {
           ratedBooks.reduce((sum, book) => sum + Number(book.rating), 0) /
           Math.max(ratedBooks.length, 1);
 
-        const genreCounts = booksData.reduce<Record<string, number>>((acc, book) => {
-          const genre = book.genre || "Uncategorized";
-          acc[genre] = (acc[genre] ?? 0) + 1;
+        const genreCounts = booksData.reduce<Record<string, { label: string; count: number }>>((acc, book) => {
+          const categories = Array.from(new Set(getBookCategories(book).filter(Boolean)));
+          for (const category of categories.length > 0 ? categories : ["Uncategorized"]) {
+            const key = category.trim().toLowerCase();
+            if (!key) continue;
+            acc[key] = {
+              label: acc[key]?.label ?? category.trim(),
+              count: (acc[key]?.count ?? 0) + 1,
+            };
+          }
           return acc;
         }, {});
 
-        const favoriteGenre = Object.entries(genreCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "N/A";
+        const favoriteGenre = Object.values(genreCounts).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))[0]?.label ?? "N/A";
 
         const physicalCount = booksData.filter((b) => b.format === "Physical").length;
         const ebookCount = booksData.filter((b) => b.format === "E-Book").length;
@@ -425,10 +432,35 @@ export default function ProfilePage() {
 
       for (const b of parsedBooks) {
         try {
+          let importBook = b;
+          if (b.genre === "General Fiction") {
+            try {
+              const searchQuery = b.isbn || `${b.title} ${b.author}`;
+              const metadataResponse = await fetch(`/api/books/search?q=${encodeURIComponent(searchQuery)}`);
+              if (metadataResponse.ok) {
+                const metadataPayload = await metadataResponse.json();
+                const metadataItem = metadataPayload.items?.find((item: { volumeInfo?: { categories?: string[] } }) =>
+                  Array.isArray(item.volumeInfo?.categories) && item.volumeInfo.categories.length > 0,
+                );
+                const metadataCategories = metadataItem?.volumeInfo?.categories ?? [];
+                if (metadataCategories.length > 0) {
+                  const metadataGenre = normalizeImportedGenre(metadataCategories);
+                  importBook = {
+                    ...b,
+                    genre: metadataGenre,
+                    categories: Array.from(new Set([metadataGenre, ...metadataCategories])).slice(0, 8),
+                  };
+                }
+              }
+            } catch {
+              // Preserve the parser fallback when catalog metadata is unavailable.
+            }
+          }
+
           const res = await fetch("/api/books", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...b, upsert: true }),
+            body: JSON.stringify({ ...importBook, upsert: true }),
           });
           if (res.ok) {
             const result = await res.json();

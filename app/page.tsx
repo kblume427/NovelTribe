@@ -27,6 +27,7 @@ const defaultForm = {
   title: "",
   author: "",
   genre: "Fantasy",
+  genres: ["Fantasy"] as string[],
   status: "Read" as BookStatus,
   rating: 5,
   review: "",
@@ -301,6 +302,7 @@ export default function Home() {
       title: trimmedTitle,
       author: trimmedAuthor,
       genre: form.genre,
+      categories: Array.from(new Set([form.genre, ...form.genres])).filter(Boolean),
       status: form.status,
       rating: form.rating,
       review: form.review?.trim() || null,
@@ -379,6 +381,7 @@ export default function Home() {
       title: book.title,
       author: book.author,
       genre: book.genre,
+      genres: getBookCategories(book),
       status: book.status,
       rating: book.rating,
       review: book.review ?? "",
@@ -719,7 +722,11 @@ export default function Home() {
                   <span className="mb-2 block text-sm text-zinc-300">Genre</span>
                   <select
                     value={form.genre}
-                    onChange={(e) => setForm((current) => ({ ...current, genre: e.target.value }))}
+                    onChange={(e) => setForm((current) => ({
+                      ...current,
+                      genre: e.target.value,
+                      genres: Array.from(new Set([e.target.value, ...current.genres])),
+                    }))}
                     className="w-full rounded-2xl border border-white/10 bg-[#0b1120] px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-violet-500/60"
                   >
                     {availableGenres.map((genre) => (
@@ -728,6 +735,34 @@ export default function Home() {
                       </option>
                     ))}
                   </select>
+                  <span className="mt-2 block text-xs text-zinc-500">Select every genre that applies.</span>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {availableGenres.map((genre) => {
+                      const selected = form.genres.includes(genre);
+                      return (
+                        <label key={genre} className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition ${selected ? "border-cyan-400/50 bg-cyan-500/20 text-cyan-100" : "border-white/10 bg-white/5 text-zinc-400 hover:bg-white/10"}`}>
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            onChange={(event) => {
+                              setForm((current) => {
+                                const nextGenres = event.target.checked
+                                  ? Array.from(new Set([...current.genres, genre]))
+                                  : current.genres.filter((value) => value !== genre);
+                                return {
+                                  ...current,
+                                  genres: nextGenres.length > 0 ? nextGenres : [current.genre],
+                                  genre: nextGenres.length > 0 ? nextGenres[0] : current.genre,
+                                };
+                              });
+                            }}
+                            className="sr-only"
+                          />
+                          {genre}
+                        </label>
+                      );
+                    })}
+                  </div>
                 </label>
 
                 <label className="block">

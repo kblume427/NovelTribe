@@ -84,6 +84,7 @@ export type ParsedImportBook = {
   title: string;
   author: string;
   genre: string;
+  categories?: string[];
   status: BookStatus;
   rating: number;
   review?: string | null;
@@ -92,6 +93,51 @@ export type ParsedImportBook = {
   format?: "Physical" | "E-Book" | "Audiobook" | null;
   custom_shelves?: string[];
 };
+
+const IMPORT_GENRE_RULES: Array<{ genre: string; patterns: RegExp[] }> = [
+  { genre: "Dark Romance", patterns: [/dark romance/i] },
+  { genre: "Romantasy", patterns: [/romantasy/i] },
+  { genre: "Science Fiction", patterns: [/science fiction/i, /sci[ -]?fi/i, /space opera/i, /dystopian/i] },
+  { genre: "Historical Fiction", patterns: [/historical/i, /historical fiction/i] },
+  { genre: "Nonfiction", patterns: [/nonfiction/i, /non-fiction/i, /biography/i, /memoir/i, /self[- ]help/i, /business/i] },
+  { genre: "Mystery", patterns: [/mystery/i, /cozy mystery/i, /detective/i, /crime/i] },
+  { genre: "Thriller", patterns: [/thriller/i, /psychological thriller/i] },
+  { genre: "Suspense", patterns: [/suspense/i] },
+  { genre: "Horror", patterns: [/horror/i, /paranormal/i, /gothic/i] },
+  { genre: "Fantasy", patterns: [/fantasy/i, /high fantasy/i, /urban fantasy/i] },
+  { genre: "Romance", patterns: [/romance/i, /romantic/i] },
+  { genre: "Adventure", patterns: [/adventure/i, /action/i] },
+  { genre: "Contemporary", patterns: [/contemporary/i, /literary fiction/i, /general fiction/i, /^fiction$/i] },
+];
+
+function cleanImportedValue(value: string): string {
+  return value.replace(/^\s*["']|["']\s*$/g, "").replace(/\s+/g, " ").trim();
+}
+
+function splitImportedGenres(value: string): string[] {
+  return value
+    .split(/[|;,/]/)
+    .map(cleanImportedValue)
+    .filter(Boolean);
+}
+
+export function normalizeImportedGenre(values: string[]): string {
+  for (const rule of IMPORT_GENRE_RULES) {
+    if (values.some((value) => rule.patterns.some((pattern) => pattern.test(value)))) {
+      return rule.genre;
+    }
+  }
+  return "General Fiction";
+}
+
+function getImportedGenres(values: string[]): string[] {
+  const categories = values.flatMap(splitImportedGenres);
+  const canonicalGenres = categories
+    .map((category) => normalizeImportedGenre([category]))
+    .filter((genre) => genre !== "General Fiction");
+  const originalCategories = categories.filter((category) => !/^fiction$/i.test(category));
+  return Array.from(new Set([...canonicalGenres, ...originalCategories])).slice(0, 8);
+}
 
 /**
  * Parses a standard Goodreads library export CSV or NovelTribe CSV export.
@@ -135,6 +181,12 @@ export function parseGoodreadsCSV(csvText: string): ParsedImportBook[] {
   const isbnIdx = headerRow.findIndex((h) => h === "isbn13" || h === "isbn");
   const dateReadIdx = headerRow.findIndex((h) => h === "dateread" || h === "finisheddate");
   const bindingIdx = headerRow.findIndex((h) => h === "binding" || h === "format");
+  const genreIndices = headerRow.reduce<number[]>((indices, header, index) => {
+    if (["genre", "genres", "category", "categories", "subjects", "bookgenre"].includes(header)) {
+      indices.push(index);
+    }
+    return indices;
+  }, []);
 
   if (titleIdx === -1 || authorIdx === -1) {
     return [];
@@ -154,6 +206,12 @@ export function parseGoodreadsCSV(csvText: string): ParsedImportBook[] {
     const rating = isNaN(rawRating) ? 0 : Math.max(0, Math.min(5, rawRating));
 
     const rawShelf = (row[shelvesIdx] ?? "").toLowerCase();
+    const importedGenreValues = [
+      ...genreIndices.flatMap((index) => splitImportedGenres(row[index] ?? "")),
+      ...splitImportedGenres(row[shelvesIdx] ?? ""),
+    ];
+    const importedCategories = getImportedGenres(importedGenreValues);
+    const genre = normalizeImportedGenre(importedGenreValues);
     let status: BookStatus = "Read";
     if (rawShelf.includes("currently-reading") || rawShelf.includes("currently reading")) {
       status = "Currently Reading";
@@ -205,7 +263,8 @@ export function parseGoodreadsCSV(csvText: string): ParsedImportBook[] {
     books.push({
       title,
       author,
-      genre: "General Fiction",
+      genre,
+      categories: importedCategories.length > 0 ? importedCategories : undefined,
       status,
       rating,
       review: review ? review.slice(0, 1000) : null,

@@ -429,6 +429,8 @@ The SEO enhancements and initial handoff documentation were verified, committed,
 - **Deduplication Strategy**: Added intelligent upsert support in `/api/books` for library imports. Matches incoming records against existing library entries by clean ISBN (primary) and case-insensitive Title + Author (secondary).
 - **Non-Destructive Attribute Merging**: Preserves existing user data while backfilling missing fields (e.g., status changes to `Read`, missing ratings, reviews, format, page counts) and merging `mood_tags`, `custom_shelves`, and `quotes` with `Set` deduplication.
 - **Granular Import Feedback**: Profile import UI (`/profile`) now reports detailed import metrics: added new, updated existing, and already up to date.
+- **Multi-Genre Books**: Books retain a primary `genre` plus multiple `categories`; Goodreads genre/category metadata and catalog fallback classification are normalized into the supported genre vocabulary.
+- **Weighted Top Genre**: Profile statistics count every distinct category attached to each book when determining the reader's top genre, with primary-genre fallback for legacy records.
 
 ### Quick Import Search & ASIN / Kindle Support
 - **Bibliographic Search Query**: Quick import input on the tracker page supports Title, Author, and ISBN-10/13 through Google Books and Open Library. Helper text clarifies that Amazon `B0...` Kindle ASINs (which are proprietary to Amazon and absent from open bibliographic databases) are auto-detected and imported with their full title/author metadata during Goodreads CSV import.
@@ -514,6 +516,21 @@ The core application, privacy controls, social follows, reading habits, and full
 - [ ] Duplicate-book detection and merge utility for large library imports
 - [ ] Additional category landing pages once user-generated public content grows
 - [ ] Submit sitemap to Google Search Console for production tracking
+
+### Product Experience & Onboarding
+- [x] Fix genre classification on Goodreads imports, including reliable fallback and category normalization.
+- [ ] Allow editing all information on Goodreads-imported books, including manual and automatic genre adjustments.
+- [ ] Add an onboarding getting-started, welcome, and how-to page covering first steps and library import guidance.
+- [ ] Optimize landing page calls to action with benefit-driven text and clearer conversion paths.
+- [ ] Add a public updates or changelog page for shipped product improvements.
+- [ ] Add a dedicated FAQ page covering privacy, imports, recommendations, accounts, and common workflows.
+- [ ] Add a bug report and feedback mechanism with privacy-conscious submission handling.
+- [ ] Make visual changes that give the product a warmer, more inviting "curl up with a good book" feeling.
+
+### Search, Commerce & Privacy
+- [ ] Update affiliate links to search and link by book ISBN instead of title and author name when an ISBN is available.
+- [ ] Add user search with explicit privacy and opt-in controls for discoverability.
+- [ ] Fix session persistence and public profile link authentication drops on iOS Safari PWA.
 
 ## Handoff Update Rule
 
