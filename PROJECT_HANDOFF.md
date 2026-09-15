@@ -439,6 +439,8 @@ The SEO enhancements and initial handoff documentation were verified, committed,
 - **Complete Imported-Book Editing**: Goodreads-imported titles, authors, ISBNs, genres/categories, status, ratings, reviews, finish dates, formats, and custom shelves can be edited and saved from the Tracker.
 - **Goodreads Import Alert**: Tracker and Profile show a dismissible import-repair notice that automatically expires at September 17, 2026, 12:00 AM CST.
 - **Cross-Platform Auth Persistence**: Magic-link callbacks preserve the requesting host and Supabase auth cookies remain host-scoped, preventing session and public-profile auth drops across Safari PWA, desktop browsers, and preview domains.
+- **ISBN-First Affiliate Links**: Amazon links use a cleaned ISBN or ASIN search when available, with title/author search retained only as a fallback for books without identifiers.
+- **Getting Started Onboarding**: Added public `/getting-started` guidance covering first steps, Goodreads CSV import, ISBN-based classification, safe re-imports, and editing imported books.
 - **Weighted Top Genre**: Profile statistics count every distinct category attached to each book when determining the reader's top genre, with primary-genre fallback for legacy records.
 
 ### Quick Import Search & ASIN / Kindle Support
@@ -529,7 +531,7 @@ The core application, privacy controls, social follows, reading habits, and full
 ### Product Experience & Onboarding
 - [x] Fix genre classification on Goodreads imports, including reliable fallback and category normalization.
 - [x] Allow editing all information on Goodreads-imported books, including manual and automatic genre adjustments.
-- [ ] Add an onboarding getting-started, welcome, and how-to page covering first steps and library import guidance.
+- [x] Add an onboarding getting-started, welcome, and how-to page covering first steps and library import guidance.
 - [ ] Optimize landing page calls to action with benefit-driven text and clearer conversion paths.
 - [ ] Add a public updates or changelog page for shipped product improvements.
 - [ ] Add a dedicated FAQ page covering privacy, imports, recommendations, accounts, and common workflows.
@@ -537,7 +539,7 @@ The core application, privacy controls, social follows, reading habits, and full
 - [ ] Make visual changes that give the product a warmer, more inviting "curl up with a good book" feeling.
 
 ### Search, Commerce & Privacy
-- [ ] Update affiliate links to search and link by book ISBN instead of title and author name when an ISBN is available.
+- [x] Update affiliate links to search and link by book ISBN instead of title and author name when an ISBN is available.
 - [ ] Add user search with explicit privacy and opt-in controls for discoverability.
 - [x] Fix session persistence and public profile link authentication drops across iOS Safari PWA and other browsers.
 

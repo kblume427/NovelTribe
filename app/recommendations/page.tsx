@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { allGenres, getBookCategories, starterBooks, type BookRecord, type Recommendation } from "@/lib/recommendations";
+import { buildAmazonBookUrl } from "@/lib/affiliate";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics";
 import RecommendedReaders from "@/components/recommended-readers";
@@ -336,7 +337,7 @@ export default function RecommendationsPage() {
                   </div>
                 )}
                 <div className="mt-5 flex items-center justify-between gap-3">
-                  <a href={`https://www.amazon.com/s?k=${encodeURIComponent(`${book.title} ${book.author}`)}&tag=${encodeURIComponent(amazonAssociateTag)}`} onClick={() => { trackEvent("recommendation_clicked", { category: book.genre }); trackEvent("affiliate_link_clicked", { category: book.genre, source: "recommendation" }); }} target="_blank" rel="sponsored noopener noreferrer" className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-900">Buy on Amazon</a>
+                  <a href={buildAmazonBookUrl({ title: book.title, author: book.author, isbn: book.isbn, associateTag: amazonAssociateTag })} onClick={() => { trackEvent("recommendation_clicked", { category: book.genre }); trackEvent("affiliate_link_clicked", { category: book.genre, source: "recommendation" }); }} target="_blank" rel="sponsored noopener noreferrer" className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-900">Buy on Amazon</a>
                   <span className="text-xs text-zinc-500">#ad</span>
                 </div>
               </article>

@@ -87,13 +87,14 @@ async function getGoogleBookRecommendations(books: BookRecord[], category: strin
     .filter((item: { volumeInfo?: { categories?: string[] } }) =>
       item.volumeInfo?.categories?.some((value) => matchesCategory(value, category)),
     )
-    .map((item: { id: string; volumeInfo?: { title?: string; authors?: string[]; categories?: string[]; imageLinks?: { thumbnail?: string; smallThumbnail?: string } } }) => {
+    .map((item: { id: string; volumeInfo?: { title?: string; authors?: string[]; categories?: string[]; imageLinks?: { thumbnail?: string; smallThumbnail?: string }; industryIdentifiers?: Array<{ identifier?: string }> } }) => {
       const title = item.volumeInfo?.title ?? "Untitled";
       const rawCover = item.volumeInfo?.imageLinks?.thumbnail ?? item.volumeInfo?.imageLinks?.smallThumbnail ?? null;
       return {
         id: item.id,
         title,
         author: item.volumeInfo?.authors?.join(", ") ?? "Unknown author",
+        isbn: item.volumeInfo?.industryIdentifiers?.find((identifier) => identifier.identifier)?.identifier ?? null,
         genre: category,
         status: "Want to Read" as const,
         rating: 0,
@@ -141,6 +142,7 @@ async function getOpenLibraryRecommendations(books: BookRecord[], category: stri
         id: item.key ?? item.title ?? crypto.randomUUID(),
         title: item.title ?? "Untitled",
         author: item.author_name?.join(", ") ?? "Unknown author",
+        isbn: item.isbn?.[0] ?? null,
         genre: category,
         status: "Want to Read" as const,
         rating: 0,

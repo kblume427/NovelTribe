@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import ShareNovelTribe from "@/components/share-noveltribe";
 import GoodreadsImportAlert from "@/components/goodreads-import-alert";
+import { buildAmazonBookUrl } from "@/lib/affiliate";
 import { trackEvent } from "@/lib/analytics";
 import { allGenres, getBookCategories, starterBooks, type BookRecord } from "@/lib/recommendations";
 import { createSupabaseClient } from "@/lib/supabase/client";
@@ -528,6 +529,7 @@ export default function Home() {
             <a href="/reading" className="rounded-full px-2 py-1 whitespace-nowrap transition hover:bg-white/5 hover:text-white">Reading</a>
             <a href="/recommendations" className="rounded-full px-2 py-1 whitespace-nowrap transition hover:bg-white/5 hover:text-white">Recommendations</a>
             <a href="/features" className="rounded-full px-2 py-1 whitespace-nowrap transition hover:bg-white/5 hover:text-white">Features</a>
+            <a href="/getting-started" className="rounded-full px-2 py-1 whitespace-nowrap transition hover:bg-white/5 hover:text-white">Getting started</a>
             <a href="/profile" className="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 whitespace-nowrap text-violet-100 transition hover:bg-violet-500/15 hover:text-white">Profile</a>
           </nav>
         </header>
@@ -1351,7 +1353,7 @@ export default function Home() {
                     <span className="text-sm font-medium text-amber-300">{book.rating}/5</span>
                     {book.status === "Want to Read" && (
                       <a
-                        href={`https://www.amazon.com/s?k=${encodeURIComponent(`${book.title} ${book.author}`)}&tag=${encodeURIComponent(amazonAssociateTag)}`}
+                        href={buildAmazonBookUrl({ title: book.title, author: book.author, isbn: book.isbn, associateTag: amazonAssociateTag })}
                         onClick={() => trackEvent("affiliate_link_clicked", { category: book.genre, source: "library" })}
                         target="_blank"
                         rel="sponsored noopener noreferrer"
