@@ -1004,11 +1004,11 @@ export default function Home() {
                     void handleGoogleSearch();
                   }
                 }}
-                placeholder="Search by Title, Author, ISBN, or ASIN..."
+                placeholder="Search by Title, Author, or ISBN..."
                 className="w-full rounded-2xl border border-white/10 bg-[#101827] px-3 py-2.5 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/60"
               />
               <div className="mt-1.5 px-1 text-[11px] text-zinc-400">
-                Supports Title, Author, ISBN-10/13, or Amazon Kindle ASIN (e.g. <span className="font-mono text-cyan-300">B0...</span>)
+                Supports Title, Author, or ISBN-10/13 (Kindle <span className="font-mono text-cyan-300">B0...</span> ASINs are auto-detected via Goodreads CSV import)
               </div>
 
               {searchQuery.trim() && !isSearching && searchError && (

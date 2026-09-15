@@ -422,7 +422,7 @@ The SEO enhancements and initial handoff documentation were verified, committed,
 - **Granular Import Feedback**: Profile import UI (`/profile`) now reports detailed import metrics: added new, updated existing, and already up to date.
 
 ### Quick Import Search & ASIN / Kindle Support
-- **Universal Search Query**: Quick import input on the tracker page updated to clearly indicate support for Title, Author, ISBN-10/13, and Amazon Kindle ASINs (`B0...`), backed by the Google Books and Open Library search proxy with automatic Kindle e-book binding detection.
+- **Bibliographic Search Query**: Quick import input on the tracker page supports Title, Author, and ISBN-10/13 through Google Books and Open Library. Helper text clarifies that Amazon `B0...` Kindle ASINs (which are proprietary to Amazon and absent from open bibliographic databases) are auto-detected and imported with their full title/author metadata during Goodreads CSV import.
 
 ### Recommendations Reliability & UX Polish
 
