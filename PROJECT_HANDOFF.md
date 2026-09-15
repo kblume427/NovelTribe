@@ -416,6 +416,14 @@ The SEO enhancements and initial handoff documentation were verified, committed,
 - Generated social preview image added via `app/opengraph-image.tsx`
 - Project handoff documentation created and committed to the repository
 
+### Library Import Upsert & Smart Deduplication
+- **Deduplication Strategy**: Added intelligent upsert support in `/api/books` for library imports. Matches incoming records against existing library entries by clean ISBN (primary) and case-insensitive Title + Author (secondary).
+- **Non-Destructive Attribute Merging**: Preserves existing user data while backfilling missing fields (e.g., status changes to `Read`, missing ratings, reviews, format, page counts) and merging `mood_tags`, `custom_shelves`, and `quotes` with `Set` deduplication.
+- **Granular Import Feedback**: Profile import UI (`/profile`) now reports detailed import metrics: added new, updated existing, and already up to date.
+
+### Quick Import Search & ASIN / Kindle Support
+- **Universal Search Query**: Quick import input on the tracker page updated to clearly indicate support for Title, Author, ISBN-10/13, and Amazon Kindle ASINs (`B0...`), backed by the Google Books and Open Library search proxy with automatic Kindle e-book binding detection.
+
 ### Recommendations Reliability & UX Polish
 
 - **Refresh suggestions action**: Added a button on `/recommendations` allowing readers to bypass cached recommendations and fetch fresh suggestions on demand.
@@ -464,6 +472,7 @@ The SEO enhancements and initial handoff documentation were verified, committed,
 - [x] **Private reading milestones**: 11 badge achievements evaluated in `lib/milestones.ts` on profile and dashboard.
 - [x] **Reading reminders**: Dismissible daily streak habit reminder banner on tracker.
 - [x] **Data ownership**: One-click CSV and JSON library export plus Goodreads CSV import parser (`lib/importExport.ts`).
+- [x] **Smart Library Upsert & Deduplication**: Intelligent matching by ISBN and Title+Author during import to update records rather than creating duplicates.
 - [x] **PWA / Mobile App**: Standalone fullscreen mobile configuration and web manifest.
 
 ### Growth & Platform Polish (Completed in Full)

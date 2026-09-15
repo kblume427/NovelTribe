@@ -1004,9 +1004,12 @@ export default function Home() {
                     void handleGoogleSearch();
                   }
                 }}
-                placeholder="Search Google Books..."
+                placeholder="Search by Title, Author, ISBN, or ASIN..."
                 className="w-full rounded-2xl border border-white/10 bg-[#101827] px-3 py-2.5 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/60"
               />
+              <div className="mt-1.5 px-1 text-[11px] text-zinc-400">
+                Supports Title, Author, ISBN-10/13, or Amazon Kindle ASIN (e.g. <span className="font-mono text-cyan-300">B0...</span>)
+              </div>
 
               {searchQuery.trim() && !isSearching && searchError && (
                 <div className="mt-4 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-sm text-amber-100">
