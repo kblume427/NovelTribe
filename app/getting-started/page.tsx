@@ -104,6 +104,9 @@ export default function GettingStartedPage() {
               <li><span className="font-semibold text-white">Discovery:</span> enable personalized recommendations and strict peer genre matching.</li>
               <li><span className="font-semibold text-white">Dashboard:</span> show or hide progress widgets, milestones, and session timelines.</li>
             </ul>
+            <p className="mt-5 rounded-xl border border-amber-300/30 bg-amber-300/10 px-3 py-2.5 text-sm font-bold leading-6 text-amber-100">
+              Important: click <span className="uppercase tracking-wide">Save profile</span> at the bottom of Profile to apply your feature changes.
+            </p>
             <a href="/profile" className="mt-6 inline-flex rounded-full bg-cyan-500/20 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/30">Open Profile settings</a>
           </div>
         </section>
