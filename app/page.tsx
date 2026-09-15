@@ -261,6 +261,28 @@ export default function Home() {
     }
   };
 
+  const approveAllMissingCovers = async () => {
+    const toApprove = [...coverCandidates];
+    for (const candidate of toApprove) {
+      try {
+        const response = await fetch("/api/books", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...candidate.book, cover_url: candidate.coverUrl }),
+        });
+        if (response.ok) {
+          const payload = await response.json();
+          if (payload.book) {
+            setBooks((current) => current.map((b) => String(b.id) === String(candidate.book.id) ? payload.book : b));
+          }
+        }
+      } catch {
+        // continue approving rest
+      }
+    }
+    setCoverCandidates([]);
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -1122,7 +1144,49 @@ export default function Home() {
               </div>
             </div>
 
-            {coverCandidates.length > 0 && <div className="mb-5 space-y-3 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-4"><div className="text-sm font-semibold text-white">Review cover matches</div>{coverCandidates.map((candidate) => <div key={candidate.book.id} className="flex flex-col gap-3 rounded-xl border border-white/10 bg-[#0b1120] p-3 sm:flex-row sm:items-center"><img src={candidate.coverUrl} alt="" className="h-20 w-14 rounded-lg bg-[#111827] object-contain" /><div className="min-w-0 flex-1"><div className="font-medium text-white">{candidate.book.title}</div><div className="text-sm text-zinc-400">{candidate.book.author}</div></div><button type="button" onClick={() => void approveMissingCover(candidate)} className="rounded-full bg-cyan-500/20 px-3 py-2 text-xs font-medium text-cyan-100 hover:bg-cyan-500/30">Use cover</button></div>)}</div>}
+            {coverCandidates.length > 0 && (
+              <div className="mb-5 space-y-3 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm font-semibold text-white">Review cover matches ({coverCandidates.length} found)</div>
+                  <div className="flex items-center gap-2">
+                    {coverCandidates.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => void approveAllMissingCovers()}
+                        className="rounded-full bg-cyan-500 px-3 py-1.5 text-xs font-semibold text-slate-950 transition hover:brightness-110"
+                      >
+                        Approve all ({coverCandidates.length})
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setCoverCandidates([])}
+                      className="rounded-full border border-white/10 px-2.5 py-1 text-xs text-zinc-400 hover:text-white"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {coverCandidates.map((candidate) => (
+                    <div key={candidate.book.id} className="flex flex-col gap-3 rounded-xl border border-white/10 bg-[#0b1120] p-3 sm:flex-row sm:items-center">
+                      <img src={candidate.coverUrl} alt="" className="h-20 w-14 shrink-0 rounded-lg bg-[#111827] object-contain" />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-medium text-white">{candidate.book.title}</div>
+                        <div className="truncate text-xs text-zinc-400">{candidate.book.author}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => void approveMissingCover(candidate)}
+                        className="shrink-0 rounded-full bg-cyan-500/20 px-3 py-1.5 text-xs font-medium text-cyan-100 hover:bg-cyan-500/30"
+                      >
+                        Use cover
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-4">
               {visibleBooks.map((book) => (

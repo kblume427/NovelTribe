@@ -424,6 +424,12 @@ The SEO enhancements and initial handoff documentation were verified, committed,
 ### Quick Import Search & ASIN / Kindle Support
 - **Bibliographic Search Query**: Quick import input on the tracker page supports Title, Author, and ISBN-10/13 through Google Books and Open Library. Helper text clarifies that Amazon `B0...` Kindle ASINs (which are proprietary to Amazon and absent from open bibliographic databases) are auto-detected and imported with their full title/author metadata during Goodreads CSV import.
 
+### High-Resolution Cover Art & Auto-Resolution Pipeline
+- **Dedicated Cover Resolution Engine (`lib/covers.ts`)**: Created a waterfall resolver combining Open Library Direct ISBN CDN (`-L.jpg`), Open Library work/author search, and Google Books volumes fallback.
+- **Image URL Sanitization**: Enforces HTTPS, removes curl/border distortions, and upgrades low-res `-M.jpg` thumbnails to high-res `-L.jpg` format across all search, recommendation, and catalog routes.
+- **Automated Import Cover Enrichment**: When books are added or imported from Goodreads CSVs without cover URLs, `/api/books` automatically resolves high-res covers in the background.
+- **Batch Missing Cover Resolution**: Enhanced the "Find missing covers" workflow on the tracker dashboard with direct ISBN detection, grid preview, and one-click "Approve all" batch saving.
+
 ### Recommendations Reliability & UX Polish
 
 - **Refresh suggestions action**: Added a button on `/recommendations` allowing readers to bypass cached recommendations and fetch fresh suggestions on demand.

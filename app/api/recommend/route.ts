@@ -9,6 +9,7 @@ import {
 import { openai } from "@/lib/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isFeatureEnabled, resolveFeatureFlags } from "@/lib/featureFlags";
+import { sanitizeCoverUrl } from "@/lib/covers";
 
 const categoryCache = new Map<string, { expiresAt: number; recommendations: Recommendation[] }>();
 const CATEGORY_CACHE_TTL = 5 * 60 * 1000;
@@ -38,11 +39,16 @@ async function enrichCovers(recommendations: Recommendation[]) {
       url.searchParams.set("title", recommendation.title);
       url.searchParams.set("author", recommendation.author);
       url.searchParams.set("limit", "1");
-      url.searchParams.set("fields", "cover_i");
+      url.searchParams.set("fields", "cover_i,isbn");
       const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(5000) });
       const payload = response.ok ? await response.json() : null;
-      const coverId = payload?.docs?.[0]?.cover_i;
-      const coverUrl = coverId ? `https://covers.openlibrary.org/b/id/${coverId}-M.jpg` : null;
+      const doc = payload?.docs?.[0];
+      let coverUrl: string | null = null;
+      if (doc?.cover_i) {
+        coverUrl = `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`;
+      } else if (doc?.isbn?.[0]) {
+        coverUrl = `https://covers.openlibrary.org/b/isbn/${doc.isbn[0]}-L.jpg`;
+      }
       coverCache.set(cacheKey, coverUrl);
       return { ...recommendation, cover_url: coverUrl };
     } catch {
@@ -83,6 +89,7 @@ async function getGoogleBookRecommendations(books: BookRecord[], category: strin
     )
     .map((item: { id: string; volumeInfo?: { title?: string; authors?: string[]; categories?: string[]; imageLinks?: { thumbnail?: string; smallThumbnail?: string } } }) => {
       const title = item.volumeInfo?.title ?? "Untitled";
+      const rawCover = item.volumeInfo?.imageLinks?.thumbnail ?? item.volumeInfo?.imageLinks?.smallThumbnail ?? null;
       return {
         id: item.id,
         title,
@@ -92,7 +99,7 @@ async function getGoogleBookRecommendations(books: BookRecord[], category: strin
         rating: 0,
         score: 5,
         reason: `A ${category.toLowerCase()} title from Google Books`,
-        cover_url: item.volumeInfo?.imageLinks?.thumbnail ?? item.volumeInfo?.imageLinks?.smallThumbnail ?? null,
+        cover_url: sanitizeCoverUrl(rawCover),
       };
     })
     .filter((book: Recommendation) => book.title !== "Untitled");
@@ -113,7 +120,7 @@ async function getOpenLibraryRecommendations(books: BookRecord[], category: stri
   url.searchParams.set("subject", category);
   url.searchParams.set("limit", "12");
   url.searchParams.set("offset", String(offset));
-  url.searchParams.set("fields", "key,title,author_name,subject");
+  url.searchParams.set("fields", "key,title,author_name,subject,cover_i,isbn");
 
   const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(8000) });
   if (!response.ok) return [];
@@ -123,17 +130,25 @@ async function getOpenLibraryRecommendations(books: BookRecord[], category: stri
     .filter((item: { subject?: string[] }) =>
       item.subject?.some((value) => matchesCategory(value, category)),
     )
-    .map((item: { key?: string; title?: string; author_name?: string[]; cover_i?: number }) => ({
-      id: item.key ?? item.title ?? crypto.randomUUID(),
-      title: item.title ?? "Untitled",
-      author: item.author_name?.join(", ") ?? "Unknown author",
-      genre: category,
-      status: "Want to Read" as const,
-      rating: 0,
-      score: 4,
-      reason: `A ${category.toLowerCase()} title from Open Library`,
-      cover_url: item.cover_i ? `https://covers.openlibrary.org/b/id/${item.cover_i}-M.jpg` : null,
-    }))
+    .map((item: { key?: string; title?: string; author_name?: string[]; cover_i?: number; isbn?: string[] }) => {
+      let coverUrl: string | null = null;
+      if (item.cover_i) {
+        coverUrl = `https://covers.openlibrary.org/b/id/${item.cover_i}-L.jpg`;
+      } else if (item.isbn?.[0]) {
+        coverUrl = `https://covers.openlibrary.org/b/isbn/${item.isbn[0]}-L.jpg`;
+      }
+      return {
+        id: item.key ?? item.title ?? crypto.randomUUID(),
+        title: item.title ?? "Untitled",
+        author: item.author_name?.join(", ") ?? "Unknown author",
+        genre: category,
+        status: "Want to Read" as const,
+        rating: 0,
+        score: 4,
+        reason: `A ${category.toLowerCase()} title from Open Library`,
+        cover_url: coverUrl,
+      };
+    })
     .filter((book: Recommendation) => book.title !== "Untitled");
 
   categoryCache.set(`open-library:${category.toLowerCase()}`, {

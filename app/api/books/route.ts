@@ -1,5 +1,6 @@
 import { starterBooks } from "@/lib/recommendations";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { sanitizeCoverUrl, resolveCoverUrl } from "@/lib/covers";
 
 async function recordActivity(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
@@ -132,6 +133,18 @@ export async function POST(request: Request) {
       if (payload.current_page && !matchedBook.current_page) {
         updateData.current_page = Number(payload.current_page);
       }
+      if (!matchedBook.cover_url) {
+        if (payload.cover_url) {
+          updateData.cover_url = sanitizeCoverUrl(payload.cover_url);
+        } else {
+          const autoCover = await resolveCoverUrl({
+            isbn: payload.isbn || matchedBook.isbn,
+            title: payload.title,
+            author: payload.author,
+          });
+          if (autoCover) updateData.cover_url = autoCover;
+        }
+      }
 
       // If there are fields to update, apply them
       if (Object.keys(updateData).length > 0) {
@@ -149,6 +162,15 @@ export async function POST(request: Request) {
 
       return Response.json({ ok: true, book: matchedBook, updated: false, alreadyExisted: true });
     }
+  }
+
+  let finalCoverUrl = sanitizeCoverUrl(payload.cover_url);
+  if (!finalCoverUrl) {
+    finalCoverUrl = await resolveCoverUrl({
+      isbn: payload.isbn,
+      title: payload.title,
+      author: payload.author,
+    });
   }
 
   const { data, error } = await supabase
@@ -171,7 +193,7 @@ export async function POST(request: Request) {
       current_page: payload.current_page !== undefined && payload.current_page !== null && payload.current_page !== "" ? Number(payload.current_page) : null,
       categories: payload.categories ?? [payload.genre],
       review: payload.review?.trim().slice(0, 1000) || null,
-      cover_url: payload.cover_url ?? null,
+      cover_url: finalCoverUrl ?? null,
       finished_at: payload.status === "Read" ? new Date().toISOString() : null,
     })
     .select()
@@ -238,7 +260,7 @@ export async function PATCH(request: Request) {
       isbn: payload.isbn ?? existingBook.isbn ?? null,
       categories: payload.categories ?? existingBook.categories ?? [payload.genre],
       review: payload.review?.trim().slice(0, 1000) || null,
-      cover_url: payload.cover_url ?? existingBook.cover_url ?? null,
+      cover_url: payload.cover_url !== undefined ? sanitizeCoverUrl(payload.cover_url) : (existingBook.cover_url ?? null),
       finished_at:
         payload.status === "Read"
           ? existingBook.status === "Read" && existingBook.finished_at
