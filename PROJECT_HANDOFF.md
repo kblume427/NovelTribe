@@ -116,6 +116,7 @@ Rules:
 
 - **One-Click Export**: Full library backup to CSV or JSON format from Profile.
 - **Goodreads CSV Import**: High-fidelity parser (`lib/importExport.ts`) reading `goodreads_library_export.csv` with automated shelf, status, rating, review, and finish date mapping.
+- **Protected Library Clearing**: Profile data-ownership controls require typing `DELETE` before permanently removing all books owned by the signed-in user.
 - **PWA / Mobile Home Screen**: Web App Manifest (`manifest.webmanifest`), apple-web-app configuration, and mobile viewport optimizations for standalone native-like installation.
 
 ### Social & Peer Matching
@@ -228,7 +229,7 @@ Rules:
   - **Library Management**: `book_added` (manual / recommendation), `book_status_changed`, `book_finished`, `book_rated`, `review_saved`, `book_edit_opened`, `book_deleted`
   - **Library Navigation**: `library_sorted`, `shelf_filter_selected`, `quick_import_searched`
   - **Cover Art Pipeline**: `missing_covers_searched`, `missing_cover_approved`, `missing_covers_approved_all`
-  - **Data Ownership**: `library_exported` (CSV/JSON), `library_import_started`, `library_imported` (breakdown of inserted, updated, unchanged), `book_imported` (Google Books)
+  - **Data Ownership**: `library_exported` (CSV/JSON), `library_import_started`, `library_imported` (breakdown of inserted, updated, unchanged), `library_cleared`, `book_imported` (Google Books)
   - **Habits & Goals**: `reading_session_logged`, `reading_progress_updated`, `reading_goal_updated`, `reminder_clicked`, `reminder_dismissed`, `currently_reading_viewed`
   - **Settings & Preferences**: `profile_updated`, `avatar_uploaded`, `feature_flag_toggled`
   - **Recommendations & Affiliate**: `recommendations_viewed`, `recommendation_source_used`, `recommendation_filter_selected`, `recommendations_refresh_clicked`, `recommendation_dismissed`, `affiliate_link_clicked`, `recommendation_clicked`

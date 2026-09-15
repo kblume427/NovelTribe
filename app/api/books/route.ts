@@ -224,6 +224,19 @@ export async function PATCH(request: Request) {
   }
 
   const payload = await request.json();
+  if (payload.clear_library === true) {
+    const { error } = await supabase
+      .from("books")
+      .delete()
+      .eq("user_id", user.id);
+
+    if (!error) {
+      return Response.json({ ok: true });
+    }
+
+    return Response.json({ ok: false, error: error.message }, { status: 500 });
+  }
+
   const bookId = payload.id;
 
   if (!bookId) {
