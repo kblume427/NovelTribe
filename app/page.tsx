@@ -230,6 +230,7 @@ export default function Home() {
 
   const findMissingCovers = async () => {
     setIsFindingMissingCovers(true);
+    trackEvent("missing_covers_searched", { count: missingCoverBooks.length });
     const candidates: Array<{ book: Book; coverUrl: string }> = [];
     for (const book of missingCoverBooks) {
       const query = book.isbn || `${book.title} ${book.author}`;
@@ -258,11 +259,13 @@ export default function Home() {
       const payload = await response.json();
       if (payload.book) setBooks((current) => current.map((book) => String(book.id) === String(candidate.book.id) ? payload.book : book));
       setCoverCandidates((current) => current.filter((item) => item.book.id !== candidate.book.id));
+      trackEvent("missing_cover_approved", { category: candidate.book.genre });
     }
   };
 
   const approveAllMissingCovers = async () => {
     const toApprove = [...coverCandidates];
+    trackEvent("missing_covers_approved_all", { count: toApprove.length });
     for (const candidate of toApprove) {
       try {
         const response = await fetch("/api/books", {
@@ -370,6 +373,7 @@ export default function Home() {
   };
 
   const handleEdit = (book: Book) => {
+    trackEvent("book_edit_opened", { category: book.genre, status: book.status });
     setEditingBookId(book.id);
     setForm({
       title: book.title,
@@ -392,6 +396,7 @@ export default function Home() {
   };
 
   const handleDelete = async (bookId: string | number) => {
+    const targetBook = books.find((b) => b.id === bookId);
     const response = await fetch("/api/books", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -399,6 +404,7 @@ export default function Home() {
     });
 
     if (response.ok) {
+      trackEvent("book_deleted", { category: targetBook?.genre, status: targetBook?.status });
       setBooks((current) => current.filter((book) => book.id !== bookId));
       if (editingBookId === bookId) {
         setForm(defaultForm);
@@ -415,6 +421,7 @@ export default function Home() {
 
     setIsSearching(true);
     setSearchError(null);
+    trackEvent("quick_import_searched", { query_length: query.length });
 
     try {
       const response = await fetch(`/api/books/search?q=${encodeURIComponent(query)}`);
@@ -531,13 +538,17 @@ export default function Home() {
             <div className="flex items-center gap-2">
               <a
                 href="/reading"
+                onClick={() => trackEvent("reminder_clicked")}
                 className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-4 py-1.5 text-xs font-semibold text-slate-900 shadow-md transition hover:brightness-110"
               >
                 Log today&apos;s session →
               </a>
               <button
                 type="button"
-                onClick={() => setReminderDismissed(true)}
+                onClick={() => {
+                  setReminderDismissed(true);
+                  trackEvent("reminder_dismissed");
+                }}
                 className="rounded-full border border-white/10 px-2.5 py-1.5 text-xs text-zinc-400 hover:text-white"
                 aria-label="Dismiss reading reminder"
               >
@@ -1096,7 +1107,11 @@ export default function Home() {
                 />
                 <select
                   value={librarySort}
-                  onChange={(event) => setLibrarySort(event.target.value)}
+                  onChange={(event) => {
+                    const newSort = event.target.value;
+                    setLibrarySort(newSort);
+                    trackEvent("library_sorted", { sort_by: newSort });
+                  }}
                   className="rounded-full border border-white/10 bg-[#0b1120] px-4 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/60"
                 >
                   <option value="newest">Newest added</option>
@@ -1112,7 +1127,10 @@ export default function Home() {
                   <span className="text-xs uppercase tracking-wider text-zinc-400">Shelf:</span>
                   <button
                     type="button"
-                    onClick={() => setSelectedShelfFilter("All")}
+                    onClick={() => {
+                      setSelectedShelfFilter("All");
+                      trackEvent("shelf_filter_selected", { shelf: "All" });
+                    }}
                     className={`rounded-full px-3 py-1 text-xs transition ${
                       selectedShelfFilter === "All"
                         ? "bg-cyan-500/30 text-cyan-200 border border-cyan-400/40"
@@ -1125,7 +1143,10 @@ export default function Home() {
                     <button
                       key={shelf}
                       type="button"
-                      onClick={() => setSelectedShelfFilter(shelf)}
+                      onClick={() => {
+                        setSelectedShelfFilter(shelf);
+                        trackEvent("shelf_filter_selected", { shelf });
+                      }}
                       className={`rounded-full px-3 py-1 text-xs transition ${
                         selectedShelfFilter === shelf
                           ? "bg-cyan-500/30 text-cyan-200 border border-cyan-400/40"

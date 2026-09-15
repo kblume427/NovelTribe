@@ -230,7 +230,10 @@ export default function RecommendationsPage() {
                 )}
                 <button
                   type="button"
-                  onClick={() => fetchRecommendations(true)}
+                  onClick={() => {
+                    trackEvent("recommendations_refresh_clicked", { category: exploreGenre });
+                    void fetchRecommendations(true);
+                  }}
                   disabled={loading || isRefreshing}
                   className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-200 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                   title="Bypass cache and generate fresh suggestions"

@@ -113,6 +113,11 @@ export default function CurrentlyReadingPage() {
         // refresh streak
         const updatedDates = [data.session.session_date, ...sessions.map((s) => s.session_date)];
         setStreak(calculateStreak(updatedDates));
+        trackEvent("reading_session_logged", {
+          duration_minutes: payload.duration_minutes ?? 0,
+          pages_read: payload.pages_read ?? 0,
+          has_notes: payload.notes ? 1 : 0,
+        });
       }
 
       setLoggingBookId(null);
@@ -140,6 +145,10 @@ export default function CurrentlyReadingPage() {
         const payload = await res.json();
         if (payload.book) {
           setBooks((current) => current.map((b) => (String(b.id) === String(book.id) ? payload.book : b)));
+          trackEvent("reading_progress_updated", {
+            current_page: curr,
+            total_pages: total ?? undefined,
+          });
         }
       }
     } finally {

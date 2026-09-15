@@ -359,7 +359,18 @@ export default function ProfilePage() {
     if (error) {
       setStatus(error.message);
     } else {
-      trackEvent("profile_updated", { is_public: profile.is_public ? 1 : 0 });
+      trackEvent("profile_updated", {
+        is_public: profile.is_public ? 1 : 0,
+        public_library: profile.public_library ? 1 : 0,
+        public_ratings: profile.public_ratings ? 1 : 0,
+        public_reviews: profile.public_reviews ? 1 : 0,
+        public_activity: profile.public_activity ? 1 : 0,
+        has_reading_goal: profile.reading_goal ? 1 : 0,
+        preferred_categories_count: profile.preferred_categories?.length ?? 0,
+      });
+      if (profile.reading_goal) {
+        trackEvent("reading_goal_updated", { goal: profile.reading_goal });
+      }
       setStatus("Profile saved.");
     }
 
@@ -384,6 +395,7 @@ export default function ProfilePage() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    trackEvent("library_exported", { format, book_count: profileBooks.length });
     setImportStatus(`Exported ${profileBooks.length} books as ${format.toUpperCase()}.`);
   };
 
@@ -394,6 +406,7 @@ export default function ProfilePage() {
 
     setImporting(true);
     setImportStatus("Reading file...");
+    trackEvent("library_import_started", { format: "csv" });
 
     try {
       const text = await file.text();
@@ -438,6 +451,13 @@ export default function ProfilePage() {
       if (unchangedCount > 0) summaryParts.push(`${unchangedCount} already up to date`);
 
       const summaryStr = summaryParts.length > 0 ? summaryParts.join(", ") : "0 books processed";
+      trackEvent("library_imported", {
+        source: "goodreads_csv",
+        total: parsedBooks.length,
+        inserted: insertedCount,
+        updated: updatedCount,
+        unchanged: unchangedCount,
+      });
       setImportStatus(`Finished processing ${parsedBooks.length} books (${summaryStr})!`);
       // refresh stats
       const { data: refreshed } = await createSupabaseClient()
@@ -464,6 +484,7 @@ export default function ProfilePage() {
     }
 
     setSigningOut(true);
+    trackEvent("user_signed_out");
     await createSupabaseClient().auth.signOut();
     router.push("/login");
     setSigningOut(false);
@@ -845,12 +866,14 @@ export default function ProfilePage() {
                             <input
                               type="checkbox"
                               checked={profile.feature_flags[key]}
-                              onChange={(event) =>
+                              onChange={(event) => {
+                                const isChecked = event.target.checked;
+                                trackEvent("feature_flag_toggled", { flag: key, enabled: isChecked ? 1 : 0 });
                                 setProfile((current) => ({
                                   ...current,
-                                  feature_flags: { ...current.feature_flags, [key]: event.target.checked },
-                                }))
-                              }
+                                  feature_flags: { ...current.feature_flags, [key]: isChecked },
+                                }));
+                              }}
                               className="mt-0.5 h-4 w-4 accent-violet-500"
                             />
                             <span>

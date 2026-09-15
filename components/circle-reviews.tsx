@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { trackEvent } from "@/lib/analytics";
 
 type CircleReview = {
   title: string;
@@ -46,7 +47,17 @@ export default function CircleReviews() {
                 <p className="text-sm text-zinc-400">{item.author}</p>
                 <div className="mt-2 text-sm text-amber-300">{item.rating ? `${item.rating}/5` : "Reviewed"} <span className="text-zinc-500">by {item.reviewer}</span></div>
                 <p className={`mt-2 text-sm leading-6 text-zinc-300 ${isExpanded ? "" : "line-clamp-2"}`}>{item.review}</p>
-                <button type="button" onClick={() => setExpanded(isExpanded ? null : key)} className="mt-2 text-xs text-cyan-200 underline hover:text-white">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextState = !isExpanded;
+                    setExpanded(nextState ? key : null);
+                    if (nextState) {
+                      trackEvent("circle_review_expanded", { category: item.genre });
+                    }
+                  }}
+                  className="mt-2 text-xs text-cyan-200 underline hover:text-white"
+                >
                   {isExpanded ? "Hide review" : "Read full review"}
                 </button>
               </div>

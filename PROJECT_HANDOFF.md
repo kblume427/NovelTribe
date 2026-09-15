@@ -223,8 +223,17 @@ Rules:
 - Homepage share section with native share sheet or copy fallback
 - Shares use canonical URL `https://novel-tribe.com`
 - GA4 page tracking with measurement ID `G-213KRMC0KT`
-- Product events for sign-in, book lifecycle, import, ratings, reviews, avatars, recommendations, provider source, sharing, currently-reading views, and affiliate clicks
-- No email addresses or review text sent to Analytics
+- Comprehensive product telemetry with privacy-safe parameters (no email addresses, review text, or private identifiers):
+  - **Auth & Lifecycle**: `sign_in_started`, `sign_in_completed`, `user_signed_out`
+  - **Library Management**: `book_added` (manual / recommendation), `book_status_changed`, `book_finished`, `book_rated`, `review_saved`, `book_edit_opened`, `book_deleted`
+  - **Library Navigation**: `library_sorted`, `shelf_filter_selected`, `quick_import_searched`
+  - **Cover Art Pipeline**: `missing_covers_searched`, `missing_cover_approved`, `missing_covers_approved_all`
+  - **Data Ownership**: `library_exported` (CSV/JSON), `library_import_started`, `library_imported` (breakdown of inserted, updated, unchanged), `book_imported` (Google Books)
+  - **Habits & Goals**: `reading_session_logged`, `reading_progress_updated`, `reading_goal_updated`, `reminder_clicked`, `reminder_dismissed`, `currently_reading_viewed`
+  - **Settings & Preferences**: `profile_updated`, `avatar_uploaded`, `feature_flag_toggled`
+  - **Recommendations & Affiliate**: `recommendations_viewed`, `recommendation_source_used`, `recommendation_filter_selected`, `recommendations_refresh_clicked`, `recommendation_dismissed`, `affiliate_link_clicked`, `recommendation_clicked`
+  - **Community & Social**: `user_followed`, `user_unfollowed`, `recommended_reader_clicked`, `social_tab_changed`, `notifications_marked_read`, `circle_review_expanded`
+  - **Sharing**: `share_clicked`, `share_completed`, `share_link_copied`
 - Amazon affiliate links with disclosure
 - Canonical URL metadata
 - Page titles, descriptions, keywords, Open Graph, and Twitter metadata

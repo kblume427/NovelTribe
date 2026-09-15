@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { trackEvent } from "@/lib/analytics";
 
 import FollowButton from "@/components/follow-button";
 
@@ -45,7 +46,11 @@ export default function RecommendedReaders() {
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <a href={`/u/${encodeURIComponent(reader.username)}`} className="block truncate font-semibold text-white hover:text-cyan-200">
+                <a
+                  href={`/u/${encodeURIComponent(reader.username)}`}
+                  onClick={() => trackEvent("recommended_reader_clicked")}
+                  className="block truncate font-semibold text-white hover:text-cyan-200"
+                >
                   {reader.full_name || `@${reader.username}`}
                 </a>
                 <div className="truncate text-xs text-zinc-500">@{reader.username}</div>
