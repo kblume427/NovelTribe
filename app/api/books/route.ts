@@ -224,20 +224,6 @@ export async function PATCH(request: Request) {
   }
 
   const payload = await request.json();
-  if (payload.clear_read_books === true) {
-    const { error } = await supabase
-      .from("books")
-      .delete()
-      .eq("user_id", user.id)
-      .eq("status", "Read");
-
-    if (!error) {
-      return Response.json({ ok: true });
-    }
-
-    return Response.json({ ok: false, error: error.message }, { status: 500 });
-  }
-
   const bookId = payload.id;
 
   if (!bookId) {
@@ -315,6 +301,20 @@ export async function DELETE(request: Request) {
   }
 
   const payload = await request.json();
+  if (payload.clear_read_books === true) {
+    const { error } = await supabase
+      .from("books")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("status", "Read");
+
+    if (!error) {
+      return Response.json({ ok: true });
+    }
+
+    return Response.json({ ok: false, error: error.message }, { status: 500 });
+  }
+
   const bookId = payload.id;
 
   if (!bookId) {
