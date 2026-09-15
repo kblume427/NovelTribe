@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import ShareNovelTribe from "@/components/share-noveltribe";
 import GoodreadsImportAlert from "@/components/goodreads-import-alert";
+import { UpdatesCta } from "@/components/updates-cta";
 import { buildAmazonBookUrl } from "@/lib/affiliate";
 import { trackEvent } from "@/lib/analytics";
 import { allGenres, getBookCategories, starterBooks, type BookRecord } from "@/lib/recommendations";
@@ -535,6 +536,7 @@ export default function Home() {
         </header>
 
         <GoodreadsImportAlert />
+        <UpdatesCta />
 
         {profileFlags && isFeatureEnabled(profileFlags, "reading_reminders") && !loggedToday && !reminderDismissed && (
           <aside aria-label="Daily reading reminder" className="mb-6 flex flex-col gap-3 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/15 via-violet-500/10 to-cyan-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
