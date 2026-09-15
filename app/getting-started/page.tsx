@@ -58,7 +58,8 @@ export default function GettingStartedPage() {
             <p className="mt-6 max-w-2xl text-lg leading-8 text-zinc-300">Start with the books already on your shelf, then shape NovelTribe around the way you actually read.</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <a href="/#tracker" className="rounded-full bg-gradient-to-r from-cyan-400 to-violet-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-500/15">Open my tracker</a>
-              <a href="/profile" className="rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-zinc-200 transition hover:bg-white/10">Import from Goodreads</a>
+              <a href="/profile" className="rounded-full border border-violet-400/30 bg-violet-500/15 px-5 py-3 text-sm font-semibold text-violet-100 transition hover:bg-violet-500/25">Import Goodreads</a>
+              <a href="/profile" className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-5 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/20">Import Libby</a>
             </div>
           </div>
           <div className="rounded-[28px] border border-amber-400/20 bg-gradient-to-br from-amber-400/15 via-[#111827] to-cyan-500/10 p-6">

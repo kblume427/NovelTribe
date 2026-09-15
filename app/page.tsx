@@ -603,6 +603,15 @@ export default function Home() {
               >
                 {isSignedIn === false ? "See how it works" : "Bring in my Goodreads shelf"}
               </a>
+              {isSignedIn !== false && (
+                <a
+                  href="/profile"
+                  onClick={() => trackEvent("landing_cta_clicked", { action: "import_libby" })}
+                  className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-5 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/20"
+                >
+                  Bring in my Libby shelf
+                </a>
+              )}
             </div>
 
             {(!profileFlags || isFeatureEnabled(profileFlags, "show_stats_widgets")) && (

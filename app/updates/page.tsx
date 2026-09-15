@@ -12,6 +12,13 @@ export const metadata: Metadata = {
 const updates = [
   {
     date: "September 15, 2026",
+    label: "Imports",
+    title: "Bring in Goodreads or Libby",
+    summary: "Profile and onboarding now make both library sources explicit, with separate import buttons and support for Libby/OverDrive tag spreadsheets.",
+    details: ["Goodreads CSV import button", "Libby spreadsheet import button", "ISBN, tags, formats, dates, and duplicate-safe syncing"],
+  },
+  {
+    date: "September 15, 2026",
     label: "Library & onboarding",
     title: "A smoother Goodreads library reset",
     summary: "Goodreads imports now classify books from ISBN metadata, preserve multiple categories, support full editing after import, and avoid duplicate shelf entries on re-import.",

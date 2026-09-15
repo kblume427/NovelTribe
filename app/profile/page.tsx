@@ -453,7 +453,7 @@ export default function ProfilePage() {
 
     setImporting(true);
     setImportStatus("Reading file...");
-    const importSource = /libby|overdrive/i.test(file.name) ? "libby" : "goodreads_csv";
+    const importSource = event.target.dataset.importSource === "libby" || /libby|overdrive/i.test(file.name) ? "libby" : "goodreads_csv";
     trackEvent("library_import_started", { format: importSource });
 
     try {
@@ -773,11 +773,23 @@ export default function ProfilePage() {
                   📥 Export JSON
                 </button>
                 <label className="cursor-pointer rounded-xl bg-violet-600/30 border border-violet-500/40 px-3 py-1.5 text-xs font-semibold text-violet-200 hover:bg-violet-600/50">
-                  <span>{importing ? "Importing..." : "📤 Import Goodreads or Libby"}</span>
+                  <span>{importing ? "Importing..." : "📤 Import Goodreads"}</span>
                   <input
                     type="file"
                     accept=".csv,.tsv,.txt"
                     disabled={importing}
+                    data-import-source="goodreads_csv"
+                    onChange={handleImportCSV}
+                    className="hidden"
+                  />
+                </label>
+                <label className="cursor-pointer rounded-xl border border-cyan-500/40 bg-cyan-500/15 px-3 py-1.5 text-xs font-semibold text-cyan-100 hover:bg-cyan-500/25">
+                  <span>{importing ? "Importing..." : "📚 Import Libby"}</span>
+                  <input
+                    type="file"
+                    accept=".csv,.tsv,.txt"
+                    disabled={importing}
+                    data-import-source="libby"
                     onChange={handleImportCSV}
                     className="hidden"
                   />

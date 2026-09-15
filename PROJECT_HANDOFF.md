@@ -236,6 +236,7 @@ Rules:
   - **Community & Social**: `user_followed`, `user_unfollowed`, `recommended_reader_clicked`, `social_tab_changed`, `notifications_marked_read`, `circle_review_expanded`
   - **Sharing**: `share_clicked`, `share_completed`, `share_link_copied`
   - **Updates**: `updates_cta_clicked`, `updates_viewed`
+  - **Reader Search**: `public_reader_search`
 - Amazon affiliate links with disclosure
 - Canonical URL metadata
 - Page titles, descriptions, keywords, Open Graph, and Twitter metadata
@@ -446,6 +447,7 @@ The SEO enhancements and initial handoff documentation were verified, committed,
 - **Updates Changelog**: Added public `/updates` with dated product improvements, fixes, and reliability notes.
 - **Unseen Updates CTA**: Tracker and Profile show a versioned local-storage CTA until the reader visits `/updates`; changing `LATEST_UPDATES_VERSION` makes the notice visible again without storing user data server-side.
 - **Libby Import**: Profile accepts Libby/OverDrive tag spreadsheets alongside Goodreads exports, mapping titles, authors, ISBNs, formats, tags, loan status, and dates through the same duplicate-safe upsert flow.
+- **Privacy-Controlled Reader Search**: Recommendations includes public reader search by name or username; only profiles with `is_public = true` are searchable, and the signed-in user is excluded.
 - **Weighted Top Genre**: Profile statistics count every distinct category attached to each book when determining the reader's top genre, with primary-genre fallback for legacy records.
 
 ### Quick Import Search & ASIN / Kindle Support
@@ -545,12 +547,12 @@ The core application, privacy controls, social follows, reading habits, and full
 
 ### Search, Commerce & Privacy
 - [x] Update affiliate links to search and link by book ISBN instead of title and author name when an ISBN is available.
-- [ ] Add user search with explicit privacy and opt-in controls for discoverability.
+- [x] Add user search with explicit privacy and opt-in controls for discoverability.
 - [x] Fix session persistence and public profile link authentication drops across iOS Safari PWA and other browsers.
 
 ## Handoff Update Rule
 
-Every future code update must include a corresponding update to this document in the same change. Keep the following current:
+Every future code update must include a corresponding update to this document in the same change. Every user-facing enhancement must also add an entry to `/updates`; update `/getting-started` when the change affects onboarding, imports, profile setup, privacy, or feature configuration. Keep the following current:
 
 - Latest pushed commit and repository state
 - Completed features and recently shipped changes
