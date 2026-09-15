@@ -556,7 +556,7 @@ export default function ProfilePage() {
               type="button"
               onClick={handleSignOut}
               disabled={signingOut}
-              className="rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:brightness-110 disabled:opacity-60"
+              className="rounded-full bg-gradient-to-r from-amber-300 to-orange-500 px-4 py-2 text-sm font-semibold text-[#20130d] shadow-lg shadow-amber-900/25 transition hover:brightness-110 disabled:opacity-60"
             >
               {signingOut ? "Signing out..." : "Sign out"}
             </button>
@@ -571,7 +571,7 @@ export default function ProfilePage() {
         <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
           <aside className="rounded-[30px] border border-white/10 bg-white/5 p-6">
             <div className="mb-4 flex items-center gap-4">
-              <div className="relative h-20 w-20 overflow-hidden rounded-full bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-500 text-2xl font-bold text-white shadow-lg shadow-violet-500/20">
+              <div className="relative h-20 w-20 overflow-hidden rounded-full bg-gradient-to-br from-amber-400 via-orange-600 to-[#392027] text-2xl font-bold text-white shadow-lg shadow-amber-900/20">
                 {profile.avatar_url ? (
                   <img src={profile.avatar_url} alt="Your avatar" className="h-full w-full object-cover" />
                 ) : (
@@ -656,7 +656,7 @@ export default function ProfilePage() {
                   <div className="mt-3">
                     <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-500"
+                        className="h-full rounded-full bg-gradient-to-r from-amber-300 to-orange-500"
                         style={{ width: `${Math.min(100, Math.round((stats.finished / profile.reading_goal) * 100))}%` }}
                       />
                     </div>
@@ -766,7 +766,7 @@ export default function ProfilePage() {
             </div>
           </aside>
 
-          <section className="rounded-[30px] border border-white/10 bg-[#0f172a] p-6">
+          <section className="rounded-[30px] border border-amber-100/10 bg-[#1c1614] p-6">
             <div className="mb-6">
               <div className="text-xs uppercase tracking-[0.24em] text-emerald-200">Profile settings</div>
               <h2 className="mt-2 text-3xl font-bold text-white">Your reading identity</h2>
@@ -989,7 +989,7 @@ export default function ProfilePage() {
               <button
                 type="submit"
                 disabled={saving || loading || uploadingAvatar}
-                className="w-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-4 py-3 font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-full bg-gradient-to-r from-amber-300 to-orange-500 px-4 py-3 font-semibold text-[#20130d] shadow-lg shadow-amber-900/25 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {saving ? "Saving..." : "Save profile"}
               </button>

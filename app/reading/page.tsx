@@ -178,7 +178,7 @@ export default function CurrentlyReadingPage() {
           </nav>
         </header>
 
-        <section className="rounded-[32px] border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 via-[#111827] to-violet-500/10 p-6 shadow-2xl shadow-cyan-500/5 md:p-8">
+        <section className="rounded-[32px] border border-amber-400/20 bg-gradient-to-br from-amber-500/10 via-[#1b1514] to-[#191922] p-6 shadow-2xl shadow-amber-950/20 md:p-8">
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="text-xs uppercase tracking-[0.25em] text-cyan-200">Your active shelf</div>
@@ -221,7 +221,7 @@ export default function CurrentlyReadingPage() {
                 const isTimelineExpanded = expandedTimelineBookId === book.id;
 
                 return (
-                  <article key={book.id} className="flex flex-col justify-between rounded-[26px] border border-white/10 bg-[#0f172a] p-5">
+                  <article key={book.id} className="flex flex-col justify-between rounded-[26px] border border-amber-100/10 bg-[#1c1614] p-5">
                     <div>
                       {book.cover_url ? (
                         <img src={book.cover_url} alt="" className="mb-5 h-36 w-full rounded-2xl bg-[#0b1120] object-contain" />
@@ -345,7 +345,7 @@ export default function CurrentlyReadingPage() {
                                 setLoggingBookId(isLogging ? null : book.id);
                                 setSessionError(null);
                               }}
-                              className="rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-3.5 py-1.5 text-xs font-semibold text-white shadow-md transition hover:brightness-110"
+                              className="rounded-full bg-gradient-to-r from-amber-300 to-orange-500 px-3.5 py-1.5 text-xs font-semibold text-[#20130d] shadow-md transition hover:brightness-110"
                             >
                               {isLogging ? "Cancel" : "⏱️ Log session"}
                             </button>

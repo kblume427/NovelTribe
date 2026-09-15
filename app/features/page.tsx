@@ -289,7 +289,7 @@ export default function FeaturesPage() {
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <a
               href="/#tracker"
-              className="rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:brightness-110"
+              className="rounded-full bg-gradient-to-r from-amber-300 to-orange-500 px-6 py-2.5 text-sm font-semibold text-[#20130d] shadow-lg shadow-amber-900/25 transition hover:brightness-110"
             >
               Open Your Tracker →
             </a>
@@ -349,7 +349,7 @@ export default function FeaturesPage() {
           <div className="mt-8 flex justify-center gap-4">
             <a
               href="/profile"
-              className="rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-6 py-3 font-semibold text-white shadow-lg shadow-violet-500/30 transition hover:brightness-110"
+              className="rounded-full bg-gradient-to-r from-amber-300 to-orange-500 px-6 py-3 font-semibold text-[#20130d] shadow-lg shadow-amber-900/25 transition hover:brightness-110"
             >
               Go to Profile Toggles
             </a>

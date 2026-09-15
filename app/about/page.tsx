@@ -23,7 +23,7 @@ export default function AboutPage() {
             <div className="rounded-2xl border border-white/10 bg-white/5 p-5"><h2 className="font-semibold">Reflect</h2><p className="mt-2 text-sm leading-6 text-zinc-400">Save short reviews and a private timeline of your reading life.</p></div>
           </section>
           <p className="leading-7 text-zinc-300">NovelTribe is free to use and supported through clearly disclosed affiliate links when readers choose to shop for recommended books.</p>
-          <a href="/login" className="inline-flex rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-5 py-3 font-semibold">Start tracking your books</a>
+          <a href="/login" className="inline-flex rounded-full bg-gradient-to-r from-amber-300 to-orange-500 px-5 py-3 font-semibold text-[#20130d]">Start tracking your books</a>
         </article>
       </div>
     </main>

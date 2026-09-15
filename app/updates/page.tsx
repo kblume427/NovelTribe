@@ -12,6 +12,13 @@ export const metadata: Metadata = {
 const updates = [
   {
     date: "September 15, 2026",
+    label: "Reading atmosphere",
+    title: "A warmer reading room, sitewide",
+    summary: "The Tracker, reading views, profile, public pages, and sign-in surfaces now share a warmer ink, amber, and wood-toned visual language designed to feel more like settling in with a good book.",
+    details: ["Warm structural surfaces across core pages", "Amber/orange primary actions", "Subtle paper texture and bookish typography"],
+  },
+  {
+    date: "September 15, 2026",
     label: "Imports",
     title: "Bring in Goodreads or Libby",
     summary: "Profile and onboarding now make both library sources explicit, with separate import buttons and support for Libby/OverDrive tag spreadsheets.",

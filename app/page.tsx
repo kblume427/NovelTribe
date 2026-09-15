@@ -910,7 +910,7 @@ export default function Home() {
                         onClick={() => setForm((curr) => ({ ...curr, format: fmt }))}
                         className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
                           form.format === fmt
-                            ? "bg-gradient-to-r from-violet-500 to-cyan-500 text-white"
+                            ? "bg-gradient-to-r from-amber-300 to-orange-500 text-[#20130d]"
                             : "border border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10"
                         }`}
                       >
@@ -1107,7 +1107,7 @@ export default function Home() {
 
               <button
                 type="submit"
-                className="w-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-4 py-3 font-semibold text-white shadow-lg shadow-violet-500/30 transition hover:brightness-110"
+                className="w-full rounded-full bg-gradient-to-r from-amber-300 to-orange-500 px-4 py-3 font-semibold text-[#20130d] shadow-lg shadow-amber-900/25 transition hover:brightness-110"
               >
                 {editingBookId !== null ? "Save changes" : "Save to my shelf"}
               </button>

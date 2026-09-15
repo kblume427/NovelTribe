@@ -109,7 +109,7 @@ export default async function PublicProfilePage({ params }: PublicProfileProps) 
           <div className="flex items-center gap-3">
             <Link
               href="/login"
-              className="rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:brightness-110"
+              className="rounded-full bg-gradient-to-r from-amber-300 to-orange-500 px-4 py-2 text-sm font-semibold text-[#20130d] shadow-lg shadow-amber-900/25 transition hover:brightness-110"
             >
               Join NovelTribe
             </Link>
@@ -117,9 +117,9 @@ export default async function PublicProfilePage({ params }: PublicProfileProps) 
         </header>
 
         {/* Profile Card */}
-        <div className="rounded-[32px] border border-white/10 bg-[#0f172a] p-8 shadow-2xl">
+        <div className="rounded-[32px] border border-amber-100/10 bg-[#1c1614] p-8 shadow-2xl shadow-amber-950/20">
           <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left sm:gap-6">
-            <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-500 text-3xl font-bold text-white shadow-xl shadow-violet-500/30">
+            <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-amber-400 via-orange-600 to-[#392027] text-3xl font-bold text-white shadow-xl shadow-amber-900/30">
               {profile.avatar_url ? (
                 <img src={profile.avatar_url} alt={profile.full_name || profile.username} className="h-full w-full object-cover" />
               ) : (
