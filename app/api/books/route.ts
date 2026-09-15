@@ -59,6 +59,98 @@ export async function POST(request: Request) {
 
   const payload = await request.json();
 
+  // If upsert is requested, check if a matching book already exists for this user
+  if (payload.upsert) {
+    let existingBookQuery = supabase
+      .from("books")
+      .select("id, status, rating, review, isbn, format, quotes, mood_tags, custom_shelves, total_pages, current_page, finished_at, cover_url")
+      .eq("user_id", user.id);
+
+    // Prefer matching on clean ISBN if provided, else match on title and author (case-insensitive)
+    const cleanIsbn = payload.isbn ? String(payload.isbn).trim() : null;
+    let matchedBook = null;
+
+    if (cleanIsbn) {
+      const { data: isbnMatches } = await existingBookQuery.eq("isbn", cleanIsbn).limit(1);
+      if (isbnMatches && isbnMatches.length > 0) {
+        matchedBook = isbnMatches[0];
+      }
+    }
+
+    if (!matchedBook && payload.title && payload.author) {
+      const { data: titleAuthorMatches } = await supabase
+        .from("books")
+        .select("id, status, rating, review, isbn, format, quotes, mood_tags, custom_shelves, total_pages, current_page, finished_at, cover_url")
+        .eq("user_id", user.id)
+        .ilike("title", String(payload.title).trim())
+        .ilike("author", String(payload.author).trim())
+        .limit(1);
+
+      if (titleAuthorMatches && titleAuthorMatches.length > 0) {
+        matchedBook = titleAuthorMatches[0];
+      }
+    }
+
+    if (matchedBook) {
+      // Merge / update existing entry
+      const updateData: Record<string, unknown> = {};
+
+      if (payload.status && payload.status !== matchedBook.status) {
+        updateData.status = payload.status;
+        if (payload.status === "Read" && !matchedBook.finished_at) {
+          updateData.finished_at = payload.finished_at || new Date().toISOString();
+        }
+      }
+      if (payload.rating !== undefined && payload.rating !== null && payload.rating > 0 && matchedBook.rating === 0) {
+        updateData.rating = payload.rating;
+      }
+      if (payload.review && !matchedBook.review) {
+        updateData.review = payload.review.trim().slice(0, 1000);
+      }
+      if (payload.isbn && !matchedBook.isbn) {
+        updateData.isbn = payload.isbn;
+      }
+      if (payload.format && !matchedBook.format) {
+        updateData.format = payload.format;
+      }
+      if (Array.isArray(payload.custom_shelves) && payload.custom_shelves.length > 0) {
+        const mergedShelves = Array.from(new Set([...(matchedBook.custom_shelves || []), ...payload.custom_shelves]));
+        updateData.custom_shelves = mergedShelves;
+      }
+      if (Array.isArray(payload.mood_tags) && payload.mood_tags.length > 0) {
+        const mergedMoods = Array.from(new Set([...(matchedBook.mood_tags || []), ...payload.mood_tags]));
+        updateData.mood_tags = mergedMoods;
+      }
+      if (Array.isArray(payload.quotes) && payload.quotes.length > 0) {
+        const existingQuotes = matchedBook.quotes || [];
+        const combinedQuotes = [...existingQuotes, ...payload.quotes.filter((q: string) => !existingQuotes.includes(q))];
+        updateData.quotes = combinedQuotes;
+      }
+      if (payload.total_pages && !matchedBook.total_pages) {
+        updateData.total_pages = Number(payload.total_pages);
+      }
+      if (payload.current_page && !matchedBook.current_page) {
+        updateData.current_page = Number(payload.current_page);
+      }
+
+      // If there are fields to update, apply them
+      if (Object.keys(updateData).length > 0) {
+        const { data: updated, error: updateError } = await supabase
+          .from("books")
+          .update(updateData)
+          .eq("id", matchedBook.id)
+          .select()
+          .single();
+
+        if (!updateError && updated) {
+          return Response.json({ ok: true, book: updated, updated: true });
+        }
+      }
+
+      return Response.json({ ok: true, book: matchedBook, updated: false, alreadyExisted: true });
+    }
+  }
+
   const { data, error } = await supabase
     .from("books")
     .insert({

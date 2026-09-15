@@ -405,23 +405,40 @@ export default function ProfilePage() {
         return;
       }
 
-      setImportStatus(`Importing ${parsedBooks.length} books...`);
-      let successCount = 0;
+      setImportStatus(`Importing and syncing ${parsedBooks.length} books...`);
+      let insertedCount = 0;
+      let updatedCount = 0;
+      let unchangedCount = 0;
 
       for (const b of parsedBooks) {
         try {
           const res = await fetch("/api/books", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(b),
+            body: JSON.stringify({ ...b, upsert: true }),
           });
-          if (res.ok) successCount++;
+          if (res.ok) {
+            const result = await res.json();
+            if (result.updated) {
+              updatedCount++;
+            } else if (result.alreadyExisted) {
+              unchangedCount++;
+            } else {
+              insertedCount++;
+            }
+          }
         } catch {
           // continue importing remaining items
         }
       }
 
-      setImportStatus(`Successfully imported ${successCount} of ${parsedBooks.length} books to your shelf!`);
+      const summaryParts = [];
+      if (insertedCount > 0) summaryParts.push(`${insertedCount} new added`);
+      if (updatedCount > 0) summaryParts.push(`${updatedCount} updated`);
+      if (unchangedCount > 0) summaryParts.push(`${unchangedCount} already up to date`);
+
+      const summaryStr = summaryParts.length > 0 ? summaryParts.join(", ") : "0 books processed";
+      setImportStatus(`Finished processing ${parsedBooks.length} books (${summaryStr})!`);
       // refresh stats
       const { data: refreshed } = await createSupabaseClient()
         .from("books")
