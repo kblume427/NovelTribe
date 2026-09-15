@@ -227,7 +227,7 @@ Rules:
 - Comprehensive product telemetry with privacy-safe parameters (no email addresses, review text, or private identifiers):
   - **Auth & Lifecycle**: `sign_in_started`, `sign_in_completed`, `user_signed_out`
   - **Library Management**: `book_added` (manual / recommendation), `book_status_changed`, `book_finished`, `book_rated`, `review_saved`, `book_edit_opened`, `book_deleted`
-  - **Library Navigation**: `library_sorted`, `shelf_filter_selected`, `quick_import_searched`
+  - **Library Navigation**: `library_sorted`, `shelf_filter_selected`, `quick_import_searched`, `landing_cta_clicked`
   - **Cover Art Pipeline**: `missing_covers_searched`, `missing_cover_approved`, `missing_covers_approved_all`
   - **Data Ownership**: `library_exported` (CSV/JSON), `library_import_started`, `library_imported` (breakdown of inserted, updated, unchanged), `read_books_cleared`, `book_imported` (Google Books)
   - **Habits & Goals**: `reading_session_logged`, `reading_progress_updated`, `reading_goal_updated`, `reminder_clicked`, `reminder_dismissed`, `currently_reading_viewed`
@@ -532,7 +532,7 @@ The core application, privacy controls, social follows, reading habits, and full
 - [x] Fix genre classification on Goodreads imports, including reliable fallback and category normalization.
 - [x] Allow editing all information on Goodreads-imported books, including manual and automatic genre adjustments.
 - [x] Add an onboarding getting-started, welcome, and how-to page covering first steps and library import guidance.
-- [ ] Optimize landing page calls to action with benefit-driven text and clearer conversion paths.
+- [x] Optimize landing page calls to action with benefit-driven text and clearer conversion paths.
 - [ ] Add a public updates or changelog page for shipped product improvements.
 - [ ] Add a dedicated FAQ page covering privacy, imports, recommendations, accounts, and common workflows.
 - [ ] Add a bug report and feedback mechanism with privacy-conscious submission handling.

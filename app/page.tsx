@@ -583,6 +583,22 @@ export default function Home() {
             <p className="mt-4 max-w-xl text-base leading-7 text-zinc-300">
               Log the books you’ve finished, keep tabs on your current reads, and let NovelTribe suggest titles based on the genres and stories you already love.
             </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <a
+                href="#tracker"
+                onClick={() => trackEvent("landing_cta_clicked", { action: "start_library" })}
+                className="rounded-full bg-gradient-to-r from-cyan-400 to-violet-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-500/15 transition hover:brightness-110"
+              >
+                Start building my library
+              </a>
+              <a
+                href="/profile"
+                onClick={() => trackEvent("landing_cta_clicked", { action: "import_goodreads" })}
+                className="rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-zinc-200 transition hover:bg-white/10"
+              >
+                Bring in my Goodreads shelf
+              </a>
+            </div>
 
             {(!profileFlags || isFeatureEnabled(profileFlags, "show_stats_widgets")) && (
               <div className="mt-8 grid gap-4 sm:grid-cols-3">
