@@ -719,7 +719,7 @@ export default function Home() {
         </section>
 
         <section id="tracker" className="grid gap-8 pb-16 lg:grid-cols-[0.8fr_1.2fr]">
-          <form onSubmit={handleSubmit} className="rounded-[28px] border border-white/10 bg-white/4 p-6">
+          <form onSubmit={handleSubmit} className="rounded-[28px] border border-amber-100/10 bg-[#171312] p-6 shadow-[0_20px_50px_rgba(50,28,18,0.2)]">
             <div className="mb-6 flex items-center justify-between gap-3">
               <div className="text-xs uppercase tracking-[0.25em] text-violet-200">
                 {editingBookId !== null ? "Edit book" : "Add a book"}
@@ -927,7 +927,7 @@ export default function Home() {
                           value={form.audiobook_narrator}
                           onChange={(e) => setForm((curr) => ({ ...curr, audiobook_narrator: e.target.value }))}
                           placeholder="e.g. Stephen Fry"
-                          className="w-full rounded-xl border border-white/10 bg-[#111827] px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500/60"
+                          className="w-full rounded-xl border border-amber-100/10 bg-[#211817] px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-amber-500/60"
                         />
                       </label>
                       <label className="block">
@@ -936,7 +936,7 @@ export default function Home() {
                           value={form.audiobook_duration}
                           onChange={(e) => setForm((curr) => ({ ...curr, audiobook_duration: e.target.value }))}
                           placeholder="e.g. 11h 45m"
-                          className="w-full rounded-xl border border-white/10 bg-[#111827] px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500/60"
+                          className="w-full rounded-xl border border-amber-100/10 bg-[#211817] px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-amber-500/60"
                         />
                       </label>
                     </div>
@@ -981,7 +981,7 @@ export default function Home() {
                         }
                       }}
                       placeholder="Add shelf (e.g. Favorites, Book Club, DNF)..."
-                      className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#111827] px-3 py-2 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/60"
+                      className="min-w-0 flex-1 rounded-xl border border-amber-100/10 bg-[#211817] px-3 py-2 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/60"
                     />
                     <button
                       type="button"
@@ -1009,7 +1009,7 @@ export default function Home() {
                   {form.quotes.length > 0 && (
                     <div className="mb-3 space-y-2">
                       {form.quotes.map((q, idx) => (
-                        <div key={idx} className="flex items-start justify-between gap-2 rounded-xl border border-white/5 bg-[#111827] p-2.5 text-xs text-zinc-300">
+                        <div key={idx} className="flex items-start justify-between gap-2 rounded-xl border border-amber-100/5 bg-[#211817] p-2.5 text-xs text-zinc-300">
                           <span className="italic leading-relaxed">“{q}”</span>
                           <button
                             type="button"
@@ -1036,7 +1036,7 @@ export default function Home() {
                         }
                       }}
                       placeholder="Add a memorable passage or line..."
-                      className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#111827] px-3 py-2 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/60"
+                      className="min-w-0 flex-1 rounded-xl border border-amber-100/10 bg-[#211817] px-3 py-2 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/60"
                     />
                     <button
                       type="button"
@@ -1066,7 +1066,7 @@ export default function Home() {
                         value={form.total_pages}
                         onChange={(e) => setForm((curr) => ({ ...curr, total_pages: e.target.value }))}
                         placeholder="e.g. 400"
-                        className="w-full rounded-xl border border-white/10 bg-[#111827] px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/60"
+                        className="w-full rounded-xl border border-amber-100/10 bg-[#211817] px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-amber-500/60"
                       />
                     </label>
                     <label className="block">
@@ -1077,7 +1077,7 @@ export default function Home() {
                         value={form.current_page}
                         onChange={(e) => setForm((curr) => ({ ...curr, current_page: e.target.value }))}
                         placeholder="e.g. 120"
-                        className="w-full rounded-xl border border-white/10 bg-[#111827] px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/60"
+                        className="w-full rounded-xl border border-amber-100/10 bg-[#211817] px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-amber-500/60"
                       />
                     </label>
                   </div>
@@ -1121,7 +1121,7 @@ export default function Home() {
                   type="button"
                   onClick={handleGoogleSearch}
                   disabled={isSearching || !searchQuery.trim()}
-                  className="rounded-full bg-gradient-to-r from-cyan-500 to-violet-500 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-full bg-gradient-to-r from-amber-300 to-orange-500 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#20130d] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isSearching ? "Searching..." : "Search"}
                 </button>
@@ -1162,7 +1162,7 @@ export default function Home() {
                       {result.thumbnail ? (
                         <img src={result.thumbnail} alt={result.title} className="h-16 w-12 shrink-0 rounded-lg object-cover" />
                       ) : (
-                        <div className="flex h-16 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500/30 to-cyan-500/30 text-[10px] uppercase tracking-[0.2em] text-violet-100">
+                        <div className="flex h-16 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500/30 to-orange-700/30 text-[10px] uppercase tracking-[0.2em] text-amber-100">
                           Book
                         </div>
                       )}
@@ -1191,7 +1191,7 @@ export default function Home() {
             </div>
           </form>
 
-          <div className="rounded-[28px] border border-white/10 bg-[#0f172a] p-6">
+          <div className="rounded-[28px] border border-amber-100/10 bg-[#1c1614] p-6 shadow-[0_20px_50px_rgba(50,28,18,0.25)]">
             <div className="mb-6 flex flex-col gap-4">
               <div>
                 <div className="text-xs uppercase tracking-[0.25em] text-emerald-200">Your library</div>
@@ -1290,7 +1290,7 @@ export default function Home() {
                 <div className="grid gap-3 sm:grid-cols-2">
                   {coverCandidates.map((candidate) => (
                     <div key={candidate.book.id} className="flex flex-col gap-3 rounded-xl border border-white/10 bg-[#0b1120] p-3 sm:flex-row sm:items-center">
-                      <img src={candidate.coverUrl} alt="" className="h-20 w-14 shrink-0 rounded-lg bg-[#111827] object-contain" />
+                      <img src={candidate.coverUrl} alt="" className="h-20 w-14 shrink-0 rounded-lg bg-[#211817] object-contain" />
                       <div className="min-w-0 flex-1">
                         <div className="truncate font-medium text-white">{candidate.book.title}</div>
                         <div className="truncate text-xs text-zinc-400">{candidate.book.author}</div>

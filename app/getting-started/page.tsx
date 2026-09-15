@@ -64,7 +64,7 @@ export default function GettingStartedPage() {
               <a href="/profile" className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-5 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/20">Import Libby</a>
             </div>
           </div>
-          <div className="rounded-[28px] border border-amber-400/20 bg-gradient-to-br from-amber-400/15 via-[#111827] to-cyan-500/10 p-6">
+          <div className="rounded-[28px] border border-amber-400/20 bg-gradient-to-br from-amber-400/15 via-[#1c1614] to-[#20191d] p-6">
             <div className="text-4xl">📚</div>
             <p className="mt-6 text-xl font-semibold leading-8 text-white">Your library can be detailed without feeling like work.</p>
             <p className="mt-3 text-sm leading-6 text-zinc-300">Use only the fields and habits that make reading feel more inviting. Everything optional stays private and off until you choose it.</p>
@@ -127,7 +127,7 @@ export default function GettingStartedPage() {
               <li>Open Edit on the Tracker to change title, author, ISBN, genres, status, rating, review, finish date, format, or shelves.</li>
             </ul>
           </div>
-          <div className="rounded-[24px] border border-white/10 bg-[#111827] p-6">
+          <div className="rounded-[24px] border border-amber-100/10 bg-[#1c1614] p-6">
             <div className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">After setup</div>
             <h2 className="mt-3 text-2xl font-bold text-white">Keep the next read close.</h2>
             <p className="mt-3 leading-7 text-zinc-300">Set a book to Currently Reading, log a short session, or open Recommendations when you want something new. Your reading rhythm can stay small and private.</p>

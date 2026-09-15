@@ -269,7 +269,7 @@ export default function RecommendationsPage() {
                 }}
                 className={`rounded-full px-4 py-2 text-sm font-medium transition ${
                   exploreGenre === genre
-                    ? "bg-gradient-to-r from-cyan-500 to-violet-500 text-white shadow-lg shadow-cyan-500/20"
+                    ? "bg-gradient-to-r from-amber-300 to-orange-500 text-[#20130d] shadow-lg shadow-amber-900/25"
                     : "border border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10"
                 }`}
               >

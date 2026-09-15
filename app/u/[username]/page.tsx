@@ -210,7 +210,7 @@ export default async function PublicProfilePage({ params }: PublicProfileProps) 
           )}
 
           {/* Community Teaser & Call to Action */}
-          <div className="mt-8 rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/10 via-cyan-500/10 to-transparent p-6 text-center sm:text-left sm:flex sm:items-center sm:justify-between sm:gap-6">
+          <div className="mt-8 rounded-2xl border border-amber-500/20 bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent p-6 text-center sm:text-left sm:flex sm:items-center sm:justify-between sm:gap-6">
             <div>
               <h3 className="font-semibold text-white">Track your reading with NovelTribe</h3>
               <p className="mt-1 text-xs leading-5 text-zinc-300">

@@ -341,7 +341,7 @@ export default function FeaturesPage() {
           ))}
         </div>
 
-        <section className="mt-16 rounded-[32px] border border-white/10 bg-gradient-to-r from-violet-500/10 via-[#111827] to-cyan-500/10 p-8 text-center sm:p-12">
+        <section className="mt-16 rounded-[32px] border border-amber-200/15 bg-gradient-to-r from-amber-500/10 via-[#1c1614] to-[#20191d] p-8 text-center sm:p-12">
           <h2 className="text-3xl font-bold text-white sm:text-4xl">Ready to customize your reading experience?</h2>
           <p className="mx-auto mt-3 max-w-xl text-zinc-300 text-sm sm:text-base">
             Every feature on this page can be toggled in your profile settings. Keep your tracker minimal, or activate reading streaks, pace estimators, and custom shelves.

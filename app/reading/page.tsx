@@ -308,7 +308,7 @@ export default function CurrentlyReadingPage() {
                                   value={tempCurrentPage}
                                   onChange={(e) => setTempCurrentPage(e.target.value)}
                                   placeholder="e.g. 150"
-                                  className="w-full rounded-lg border border-white/10 bg-[#111827] px-2 py-1 text-xs text-white"
+                                  className="w-full rounded-lg border border-amber-100/10 bg-[#211817] px-2 py-1 text-xs text-white"
                                 />
                               </div>
                               <div>
@@ -319,7 +319,7 @@ export default function CurrentlyReadingPage() {
                                   value={tempTotalPages}
                                   onChange={(e) => setTempTotalPages(e.target.value)}
                                   placeholder="e.g. 380"
-                                  className="w-full rounded-lg border border-white/10 bg-[#111827] px-2 py-1 text-xs text-white"
+                                  className="w-full rounded-lg border border-amber-100/10 bg-[#211817] px-2 py-1 text-xs text-white"
                                 />
                               </div>
                               <button
@@ -374,7 +374,7 @@ export default function CurrentlyReadingPage() {
                                     max="1440"
                                     value={sessionDuration}
                                     onChange={(e) => setSessionDuration(e.target.value)}
-                                    className="w-full rounded-xl border border-white/10 bg-[#111827] px-2.5 py-1.5 text-white focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                    className="w-full rounded-xl border border-amber-100/10 bg-[#211817] px-2.5 py-1.5 text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
                                     placeholder="30"
                                   />
                                 </label>
@@ -386,7 +386,7 @@ export default function CurrentlyReadingPage() {
                                     max="5000"
                                     value={sessionPages}
                                     onChange={(e) => setSessionPages(e.target.value)}
-                                    className="w-full rounded-xl border border-white/10 bg-[#111827] px-2.5 py-1.5 text-white focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                                    className="w-full rounded-xl border border-amber-100/10 bg-[#211817] px-2.5 py-1.5 text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
                                     placeholder="e.g. 25"
                                   />
                                 </label>
@@ -397,7 +397,7 @@ export default function CurrentlyReadingPage() {
                                   type="text"
                                   value={sessionNotes}
                                   onChange={(e) => setSessionNotes(e.target.value)}
-                                  className="w-full rounded-xl border border-white/10 bg-[#111827] px-2.5 py-1.5 text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                    className="w-full rounded-xl border border-amber-100/10 bg-[#211817] px-2.5 py-1.5 text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-amber-500"
                                   placeholder="Chapters 4-6, thrilling plot twist..."
                                 />
                               </label>
@@ -424,7 +424,7 @@ export default function CurrentlyReadingPage() {
                               ) : (
                                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                                   {bookSessions.map((s) => (
-                                    <div key={s.id} className="rounded-xl border border-white/5 bg-[#111827] p-2.5 text-zinc-300">
+                                    <div key={s.id} className="rounded-xl border border-amber-100/5 bg-[#211817] p-2.5 text-zinc-300">
                                       <div className="flex items-center justify-between font-medium text-white">
                                         <span>📅 {s.session_date}</span>
                                         <span>

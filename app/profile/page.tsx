@@ -686,7 +686,7 @@ export default function ProfilePage() {
                         className={`rounded-xl border p-2.5 transition ${
                           m.unlocked
                             ? "border-violet-500/40 bg-violet-500/10 shadow-sm"
-                            : "border-white/5 bg-[#111827]/60 opacity-60"
+                            : "border-amber-100/5 bg-[#211817]/60 opacity-60"
                         }`}
                       >
                         <div className="flex items-center gap-2">

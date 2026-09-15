@@ -12,6 +12,20 @@ export const metadata: Metadata = {
 const updates = [
   {
     date: "September 15, 2026",
+    label: "Sitewide polish",
+    title: "Every corner joins the reading room",
+    summary: "Inputs, timelines, search states, public pages, social surfaces, empty states, and shareable artwork now follow the same warm ink, amber, and walnut visual language.",
+    details: ["Warm embedded controls and timelines", "Consistent public-page actions", "Matching social preview atmosphere"],
+  },
+  {
+    date: "September 15, 2026",
+    label: "Tracker polish",
+    title: "The shelf feels warmer up close",
+    summary: "The Add a Book form and Recent Reads library now use distinct walnut-toned surfaces and softer shadows, making the core tracking workflow feel less like a dashboard and more like a reading nook.",
+    details: ["Warm Add a Book panel", "Wood-toned Recent Reads surface", "Clearer separation between working areas"],
+  },
+  {
+    date: "September 15, 2026",
     label: "Reading atmosphere",
     title: "A warmer reading room, sitewide",
     summary: "The Tracker, reading views, profile, public pages, and sign-in surfaces now share a warmer ink, amber, and wood-toned visual language designed to feel more like settling in with a good book.",

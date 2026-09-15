@@ -15,7 +15,7 @@ export default function OpenGraphImage() {
         justifyContent: "center",
         padding: "80px",
         color: "white",
-        background: "linear-gradient(120deg, #09090b 0%, #111827 55%, #164e63 100%)",
+        background: "linear-gradient(120deg, #100e0d 0%, #241916 55%, #5b3a2d 100%)",
       }}
     >
       <div style={{ fontSize: 28, letterSpacing: 8, color: "#a5f3fc" }}>NOVELTRIBE</div>
