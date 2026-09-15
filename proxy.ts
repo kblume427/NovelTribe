@@ -19,15 +19,12 @@ export async function proxy(request: NextRequest) {
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set(name, value);
-            response.cookies.set(name, value, useCanonicalCookie
-              ? { ...options, domain: ".novel-tribe.com", secure: true, sameSite: "lax" }
-              : options);
+            response.cookies.set(name, value, options);
           });
         },
       },
     },
   );
-  const useCanonicalCookie = request.nextUrl.hostname.endsWith("novel-tribe.com");
 
   const {
     data: { user },

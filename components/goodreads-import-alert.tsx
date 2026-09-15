@@ -1,13 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { trackEvent } from "@/lib/analytics";
 
+const GOODREADS_ALERT_EXPIRES_AT = Date.parse("2026-09-17T06:00:00.000Z");
+
 export default function GoodreadsImportAlert() {
   const [dismissed, setDismissed] = useState(false);
+  const [expired, setExpired] = useState(false);
 
-  if (dismissed) return null;
+  useEffect(() => {
+    const remainingMs = GOODREADS_ALERT_EXPIRES_AT - Date.now();
+    if (remainingMs <= 0) {
+      setExpired(true);
+      return;
+    }
+
+    const timeout = window.setTimeout(() => setExpired(true), remainingMs);
+    return () => window.clearTimeout(timeout);
+  }, []);
+
+  if (dismissed || expired) return null;
 
   return (
     <aside className="mb-6 flex flex-col gap-3 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-amber-50 shadow-[0_10px_30px_rgba(245,158,11,0.08)] sm:flex-row sm:items-start sm:justify-between">

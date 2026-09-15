@@ -269,7 +269,9 @@ export async function PATCH(request: Request) {
       cover_url: payload.cover_url !== undefined ? sanitizeCoverUrl(payload.cover_url) : (existingBook.cover_url ?? null),
       finished_at:
         payload.status === "Read"
-          ? existingBook.status === "Read" && existingBook.finished_at
+          ? payload.finished_at
+            ? new Date(payload.finished_at).toISOString()
+            : existingBook.status === "Read" && existingBook.finished_at
             ? existingBook.finished_at
             : new Date().toISOString()
           : null,

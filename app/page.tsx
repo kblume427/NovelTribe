@@ -27,6 +27,8 @@ type GoogleBookResult = {
 const defaultForm = {
   title: "",
   author: "",
+  isbn: "",
+  finished_at: "",
   genre: "Fantasy",
   genres: ["Fantasy"] as string[],
   status: "Read" as BookStatus,
@@ -302,6 +304,8 @@ export default function Home() {
       id: editingBookId ?? Date.now(),
       title: trimmedTitle,
       author: trimmedAuthor,
+      isbn: form.isbn.trim() || null,
+      finished_at: form.status === "Read" && form.finished_at ? new Date(form.finished_at).toISOString() : null,
       genre: form.genre,
       categories: Array.from(new Set([form.genre, ...form.genres])).filter(Boolean),
       status: form.status,
@@ -381,6 +385,8 @@ export default function Home() {
     setForm({
       title: book.title,
       author: book.author,
+      isbn: book.isbn ?? "",
+      finished_at: book.finished_at ? new Date(book.finished_at).toISOString().slice(0, 10) : "",
       genre: book.genre,
       genres: getBookCategories(book),
       status: book.status,
@@ -719,6 +725,28 @@ export default function Home() {
                   placeholder="Ursula K. Le Guin"
                 />
               </label>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block">
+                  <span className="mb-2 block text-sm text-zinc-300">ISBN</span>
+                  <input
+                    value={form.isbn}
+                    onChange={(e) => setForm((current) => ({ ...current, isbn: e.target.value }))}
+                    className="w-full rounded-2xl border border-white/10 bg-[#0b1120] px-3 py-3 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/60"
+                    placeholder="ISBN-10 or ISBN-13"
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-sm text-zinc-300">Finished date</span>
+                  <input
+                    type="date"
+                    value={form.finished_at}
+                    onChange={(e) => setForm((current) => ({ ...current, finished_at: e.target.value }))}
+                    disabled={form.status !== "Read"}
+                    className="w-full rounded-2xl border border-white/10 bg-[#0b1120] px-3 py-3 text-white disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-violet-500/60"
+                  />
+                </label>
+              </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block">

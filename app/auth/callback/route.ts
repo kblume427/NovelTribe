@@ -7,7 +7,6 @@ export async function GET(request: NextRequest) {
   const requestedNext = searchParams.get("next") ?? "/";
   const next = requestedNext.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : "/";
   const callbackOrigin = origin;
-  const useCanonicalCookie = new URL(origin).hostname.endsWith("novel-tribe.com");
 
   if (code) {
     const response = NextResponse.redirect(`${callbackOrigin}${next}`, { status: 303 });
@@ -22,9 +21,7 @@ export async function GET(request: NextRequest) {
           setAll(cookiesToSet) {
             cookiesToSet.forEach(({ name, value, options }) => {
               request.cookies.set(name, value);
-                  response.cookies.set(name, value, useCanonicalCookie
-                    ? { ...options, domain: ".novel-tribe.com", secure: true, sameSite: "lax" }
-                    : options);
+              response.cookies.set(name, value, options);
             });
           },
         },

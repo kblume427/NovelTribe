@@ -23,11 +23,7 @@ export default function LoginPage() {
     trackEvent("sign_in_started", { method: "magic_link" });
 
     const supabase = createSupabaseClient();
-    const isProduction =
-      process.env.NODE_ENV === "production" ||
-      window.location.hostname === "novel-tribe.com" ||
-      window.location.hostname.endsWith(".vercel.app");
-    const redirectOrigin = isProduction ? "https://novel-tribe.com" : window.location.origin;
+    const redirectOrigin = window.location.origin;
 
     const { error } = await supabase.auth.signInWithOtp({
       email,

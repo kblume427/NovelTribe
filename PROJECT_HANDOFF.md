@@ -436,6 +436,9 @@ The SEO enhancements and initial handoff documentation were verified, committed,
 - **Genre Normalization Map**: Raw Goodreads and catalog labels are normalized through a keyword map into the existing UI genres; generic labels such as `Fiction` are ignored rather than treated as useful classifications.
 - **Standard Goodreads Export Fallback**: Standard Goodreads exports may contain no genre column, as in the supplied library export; ISBN-based catalog enrichment therefore uses expanded Open Library subject metadata and the normalization map for classification.
 - **Manual Imported-Book Genre Editing**: The tracker’s primary genre field is directly editable for imported books, with suggestions from the existing genre vocabulary and multi-category preservation on save.
+- **Complete Imported-Book Editing**: Goodreads-imported titles, authors, ISBNs, genres/categories, status, ratings, reviews, finish dates, formats, and custom shelves can be edited and saved from the Tracker.
+- **Goodreads Import Alert**: Tracker and Profile show a dismissible import-repair notice that automatically expires at September 17, 2026, 12:00 AM CST.
+- **Cross-Platform Auth Persistence**: Magic-link callbacks preserve the requesting host and Supabase auth cookies remain host-scoped, preventing session and public-profile auth drops across Safari PWA, desktop browsers, and preview domains.
 - **Weighted Top Genre**: Profile statistics count every distinct category attached to each book when determining the reader's top genre, with primary-genre fallback for legacy records.
 
 ### Quick Import Search & ASIN / Kindle Support
@@ -524,8 +527,8 @@ The core application, privacy controls, social follows, reading habits, and full
 - [ ] Submit sitemap to Google Search Console for production tracking
 
 ### Product Experience & Onboarding
-- [ ] Fix genre classification on Goodreads imports, including reliable fallback and category normalization.
-- [ ] Allow editing all information on Goodreads-imported books, including manual and automatic genre adjustments.
+- [x] Fix genre classification on Goodreads imports, including reliable fallback and category normalization.
+- [x] Allow editing all information on Goodreads-imported books, including manual and automatic genre adjustments.
 - [ ] Add an onboarding getting-started, welcome, and how-to page covering first steps and library import guidance.
 - [ ] Optimize landing page calls to action with benefit-driven text and clearer conversion paths.
 - [ ] Add a public updates or changelog page for shipped product improvements.
@@ -536,7 +539,7 @@ The core application, privacy controls, social follows, reading habits, and full
 ### Search, Commerce & Privacy
 - [ ] Update affiliate links to search and link by book ISBN instead of title and author name when an ISBN is available.
 - [ ] Add user search with explicit privacy and opt-in controls for discoverability.
-- [ ] Fix session persistence and public profile link authentication drops on iOS Safari PWA.
+- [x] Fix session persistence and public profile link authentication drops across iOS Safari PWA and other browsers.
 
 ## Handoff Update Rule
 
