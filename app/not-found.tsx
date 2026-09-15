@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function NotFound() {
   return (
-    <main className="min-h-screen bg-[#09090b] flex flex-col items-center justify-center px-6 py-20 text-white text-center">
+    <main className="reading-canvas min-h-screen flex flex-col items-center justify-center px-6 py-20 text-white text-center">
       <div className="text-xs uppercase tracking-[0.25em] text-violet-400">404 Error</div>
       <h1 className="mt-4 text-4xl font-bold md:text-5xl">Reader or Page Not Found</h1>
       <p className="mt-4 max-w-md text-sm text-zinc-400">

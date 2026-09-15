@@ -160,7 +160,7 @@ export default function CurrentlyReadingPage() {
   const dailyPace = calculateDailyPace(sessions);
 
   return (
-    <main className="min-h-screen bg-[#09090b] text-white">
+    <main className="reading-canvas min-h-screen text-white">
       <div className="mx-auto max-w-5xl px-6 pb-20 pt-6 lg:px-8">
         <header className="mb-10 flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm md:flex-row md:items-center md:justify-between md:rounded-full">
           <div className="flex items-center gap-3">

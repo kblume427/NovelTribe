@@ -12,6 +12,13 @@ export const metadata: Metadata = {
 const updates = [
   {
     date: "September 15, 2026",
+    label: "Reading atmosphere",
+    title: "More light around the page",
+    summary: "The sitewide background now uses a lighter espresso, amber, and paper-toned canvas so the reading-room atmosphere carries beyond the individual cards.",
+    details: ["Shared lighter page canvas", "Warm ambient gradients", "Cards remain readable with clear contrast"],
+  },
+  {
+    date: "September 15, 2026",
     label: "Sitewide polish",
     title: "Every corner joins the reading room",
     summary: "Inputs, timelines, search states, public pages, social surfaces, empty states, and shareable artwork now follow the same warm ink, amber, and walnut visual language.",
@@ -63,7 +70,7 @@ const updates = [
 
 export default function UpdatesPage() {
   return (
-    <main className="min-h-screen bg-[#09090b] text-white">
+    <main className="reading-canvas min-h-screen text-white">
       <MarkUpdatesVisited />
       <div className="mx-auto max-w-5xl px-6 pb-24 pt-6 lg:px-8">
         <header className="mb-12 flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm md:flex-row md:items-center md:justify-between md:rounded-full">

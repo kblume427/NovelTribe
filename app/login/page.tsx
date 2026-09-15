@@ -43,7 +43,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#09090b] px-6">
+    <main className="reading-canvas flex min-h-screen items-center justify-center px-6">
       <div className="w-full max-w-md rounded-[28px] border border-white/10 bg-white/5 p-8 shadow-2xl shadow-violet-500/10">
         <div className="mb-6 text-xs uppercase tracking-[0.25em] text-violet-200">NovelTribe</div>
         <h1 className="text-3xl font-bold text-white">Sign in</h1>

@@ -103,7 +103,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-[#09090b] text-white">
+      <body className="min-h-full text-white">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
         {children}
         <Script

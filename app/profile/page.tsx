@@ -526,7 +526,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#09090b] px-6 py-10 text-white">
+    <main className="reading-canvas min-h-screen px-6 py-10 text-white">
       <div className="mx-auto max-w-4xl">
         <header className="mb-8 flex items-center justify-between rounded-full border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-sm">
           <div className="flex items-center gap-3">

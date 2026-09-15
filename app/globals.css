@@ -43,6 +43,13 @@ body::before {
   z-index: 10;
 }
 
+.reading-canvas {
+  background:
+    radial-gradient(circle at 16% 0%, rgba(238, 190, 115, 0.22), transparent 30%),
+    radial-gradient(circle at 92% 82%, rgba(151, 91, 57, 0.22), transparent 34%),
+    linear-gradient(135deg, #3a2a22 0%, #211815 52%, #30211d 100%);
+}
+
 * {
   box-sizing: border-box;
 }

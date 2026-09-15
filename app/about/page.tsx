@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen bg-[#09090b] px-6 py-10 text-white">
+    <main className="reading-canvas min-h-screen px-6 py-10 text-white">
       <div className="mx-auto max-w-3xl">
         <a href="/" className="text-sm font-semibold tracking-[0.22em] text-violet-200 uppercase">NovelTribe</a>
         <article className="mt-12 space-y-8">

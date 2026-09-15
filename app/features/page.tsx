@@ -235,7 +235,7 @@ export default function FeaturesPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-[#09090b] text-white">
+    <main className="reading-canvas min-h-screen text-white">
       <div className="mx-auto max-w-6xl px-6 pb-24 pt-6 lg:px-8">
         <header className="mb-12 flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 px-4 py-3 shadow-[0_0_0_1px_rgba(255,255,255,0.03)] backdrop-blur-sm md:flex-row md:items-center md:justify-between md:rounded-full">
           <div className="flex items-center gap-3">

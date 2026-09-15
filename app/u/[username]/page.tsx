@@ -95,7 +95,7 @@ export default async function PublicProfilePage({ params }: PublicProfileProps) 
   const finishedCount = visibleBooks.filter((book) => book.status === "Read").length;
 
   return (
-    <main className="min-h-screen bg-[#09090b] px-6 py-10 text-white">
+    <main className="reading-canvas min-h-screen px-6 py-10 text-white">
       <div className="mx-auto max-w-3xl">
         {/* Navigation Bar */}
         <header className="mb-10 flex items-center justify-between rounded-full border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-sm">
