@@ -8,6 +8,7 @@ import { allGenres, getBookCategories, type BookRecord } from "@/lib/recommendat
 import { trackEvent } from "@/lib/analytics";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import SocialInbox from "@/components/social-inbox";
+import GoodreadsImportAlert from "@/components/goodreads-import-alert";
 import { DEFAULT_FEATURE_FLAGS, resolveFeatureFlags, type FeatureFlagKey, type FeatureFlags } from "@/lib/featureFlags";
 import { evaluateMilestones } from "@/lib/milestones";
 import { exportBooksToCSV, exportBooksToJSON, normalizeImportedCategories, normalizeImportedGenre, parseGoodreadsCSV } from "@/lib/importExport";
@@ -597,6 +598,8 @@ export default function ProfilePage() {
             </button>
           </div>
         </header>
+
+        <GoodreadsImportAlert />
 
         <SocialInbox />
 

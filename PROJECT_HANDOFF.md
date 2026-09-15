@@ -435,6 +435,7 @@ The SEO enhancements and initial handoff documentation were verified, committed,
 - **Goodreads-First Classification**: Explicit genre/category values in a Goodreads CSV are authoritative; Google Books and Open Library are queried only when the CSV does not provide genre data.
 - **Genre Normalization Map**: Raw Goodreads and catalog labels are normalized through a keyword map into the existing UI genres; generic labels such as `Fiction` are ignored rather than treated as useful classifications.
 - **Standard Goodreads Export Fallback**: Standard Goodreads exports may contain no genre column, as in the supplied library export; ISBN-based catalog enrichment therefore uses expanded Open Library subject metadata and the normalization map for classification.
+- **Manual Imported-Book Genre Editing**: The tracker’s primary genre field is directly editable for imported books, with suggestions from the existing genre vocabulary and multi-category preservation on save.
 - **Weighted Top Genre**: Profile statistics count every distinct category attached to each book when determining the reader's top genre, with primary-genre fallback for legacy records.
 
 ### Quick Import Search & ASIN / Kindle Support

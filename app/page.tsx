@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
 import ShareNovelTribe from "@/components/share-noveltribe";
+import GoodreadsImportAlert from "@/components/goodreads-import-alert";
 import { trackEvent } from "@/lib/analytics";
 import { allGenres, getBookCategories, starterBooks, type BookRecord } from "@/lib/recommendations";
 import { createSupabaseClient } from "@/lib/supabase/client";
@@ -525,6 +526,8 @@ export default function Home() {
           </nav>
         </header>
 
+        <GoodreadsImportAlert />
+
         {profileFlags && isFeatureEnabled(profileFlags, "reading_reminders") && !loggedToday && !reminderDismissed && (
           <aside aria-label="Daily reading reminder" className="mb-6 flex flex-col gap-3 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/15 via-violet-500/10 to-cyan-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
@@ -719,22 +722,23 @@ export default function Home() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block">
-                  <span className="mb-2 block text-sm text-zinc-300">Genre</span>
-                  <select
+                  <span className="mb-2 block text-sm text-zinc-300">Primary genre</span>
+                  <input
                     value={form.genre}
                     onChange={(e) => setForm((current) => ({
                       ...current,
                       genre: e.target.value,
-                      genres: Array.from(new Set([e.target.value, ...current.genres])),
+                      genres: e.target.value.trim()
+                        ? Array.from(new Set([e.target.value.trim(), ...current.genres]))
+                        : current.genres,
                     }))}
-                    className="w-full rounded-2xl border border-white/10 bg-[#0b1120] px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-violet-500/60"
-                  >
-                    {availableGenres.map((genre) => (
-                      <option key={genre} value={genre}>
-                        {genre}
-                      </option>
-                    ))}
-                  </select>
+                    list="genre-suggestions"
+                    className="w-full rounded-2xl border border-white/10 bg-[#0b1120] px-3 py-3 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/60"
+                    placeholder="Fantasy, Romance, or your own genre"
+                  />
+                  <datalist id="genre-suggestions">
+                    {availableGenres.map((genre) => <option key={genre} value={genre} />)}
+                  </datalist>
                   <span className="mt-2 block text-xs text-zinc-500">Select every genre that applies.</span>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {availableGenres.map((genre) => {
