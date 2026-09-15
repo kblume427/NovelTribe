@@ -448,6 +448,7 @@ The SEO enhancements and initial handoff documentation were verified, committed,
 - **Unseen Updates CTA**: Tracker and Profile show a versioned local-storage CTA until the reader visits `/updates`; changing `LATEST_UPDATES_VERSION` makes the notice visible again without storing user data server-side.
 - **Libby Import**: Profile accepts Libby/OverDrive tag spreadsheets alongside Goodreads exports, mapping titles, authors, ISBNs, formats, tags, loan status, and dates through the same duplicate-safe upsert flow.
 - **Privacy-Controlled Reader Search**: Recommendations includes public reader search by name or username; only profiles with `is_public = true` are searchable, and the signed-in user is excluded.
+- **FAQ Page**: Added public `/faq` answers for privacy, Goodreads/Libby imports, duplicate handling, editing, recommendations, feature toggles, mobile use, and exports.
 - **Weighted Top Genre**: Profile statistics count every distinct category attached to each book when determining the reader's top genre, with primary-genre fallback for legacy records.
 
 ### Quick Import Search & ASIN / Kindle Support
@@ -541,7 +542,7 @@ The core application, privacy controls, social follows, reading habits, and full
 - [x] Add an onboarding getting-started, welcome, and how-to page covering first steps and library import guidance.
 - [x] Optimize landing page calls to action with benefit-driven text and clearer conversion paths.
 - [x] Add a public updates or changelog page for shipped product improvements.
-- [ ] Add a dedicated FAQ page covering privacy, imports, recommendations, accounts, and common workflows.
+- [x] Add a dedicated FAQ page covering privacy, imports, recommendations, accounts, and common workflows.
 - [ ] Add a bug report and feedback mechanism with privacy-conscious submission handling.
 - [ ] Make visual changes that give the product a warmer, more inviting "curl up with a good book" feeling.
 
