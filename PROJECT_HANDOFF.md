@@ -432,6 +432,9 @@ The SEO enhancements and initial handoff documentation were verified, committed,
 - **Granular Import Feedback**: Profile import UI (`/profile`) now reports detailed import metrics: added new, updated existing, and already up to date.
 - **Multi-Genre Books**: Books retain a primary `genre` plus multiple `categories`; Goodreads genre/category metadata and catalog fallback classification are normalized into the supported genre vocabulary.
 - **Goodreads Genre Correction**: Imports use all available catalog categories, recognize common Goodreads/Google Books/Open Library genre labels, and correct existing `General Fiction` records during re-import when better metadata is found.
+- **Goodreads-First Classification**: Explicit genre/category values in a Goodreads CSV are authoritative; Google Books and Open Library are queried only when the CSV does not provide genre data.
+- **Genre Normalization Map**: Raw Goodreads and catalog labels are normalized through a keyword map into the existing UI genres; generic labels such as `Fiction` are ignored rather than treated as useful classifications.
+- **Standard Goodreads Export Fallback**: Standard Goodreads exports may contain no genre column, as in the supplied library export; ISBN-based catalog enrichment therefore uses expanded Open Library subject metadata and the normalization map for classification.
 - **Weighted Top Genre**: Profile statistics count every distinct category attached to each book when determining the reader's top genre, with primary-genre fallback for legacy records.
 
 ### Quick Import Search & ASIN / Kindle Support
@@ -520,7 +523,7 @@ The core application, privacy controls, social follows, reading habits, and full
 - [ ] Submit sitemap to Google Search Console for production tracking
 
 ### Product Experience & Onboarding
-- [x] Fix genre classification on Goodreads imports, including reliable fallback and category normalization.
+- [ ] Fix genre classification on Goodreads imports, including reliable fallback and category normalization.
 - [ ] Allow editing all information on Goodreads-imported books, including manual and automatic genre adjustments.
 - [ ] Add an onboarding getting-started, welcome, and how-to page covering first steps and library import guidance.
 - [ ] Optimize landing page calls to action with benefit-driven text and clearer conversion paths.

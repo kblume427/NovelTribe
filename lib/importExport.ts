@@ -85,6 +85,7 @@ export type ParsedImportBook = {
   author: string;
   genre: string;
   categories?: string[];
+  genre_source?: "goodreads" | "catalog_fallback";
   status: BookStatus;
   rating: number;
   review?: string | null;
@@ -94,20 +95,20 @@ export type ParsedImportBook = {
   custom_shelves?: string[];
 };
 
-const IMPORT_GENRE_RULES: Array<{ genre: string; patterns: RegExp[] }> = [
-  { genre: "Dark Romance", patterns: [/dark romance/i] },
-  { genre: "Romantasy", patterns: [/romantasy/i] },
-  { genre: "Science Fiction", patterns: [/science fiction/i, /sci[ -]?fi/i, /space opera/i, /dystopian/i, /cyberpunk/i, /time travel/i] },
-  { genre: "Historical Fiction", patterns: [/historical/i, /historical fiction/i, /historical romance/i] },
-  { genre: "Nonfiction", patterns: [/nonfiction/i, /non-fiction/i, /biography/i, /memoir/i, /self[- ]help/i, /business/i, /true crime/i, /health/i] },
-  { genre: "Mystery", patterns: [/mystery/i, /cozy mystery/i, /detective/i, /crime/i] },
-  { genre: "Thriller", patterns: [/thriller/i, /psychological thriller/i] },
-  { genre: "Suspense", patterns: [/suspense/i] },
-  { genre: "Horror", patterns: [/horror/i, /paranormal/i, /gothic/i] },
-  { genre: "Fantasy", patterns: [/fantasy/i, /high fantasy/i, /urban fantasy/i, /fairy tale/i, /mythology/i, /magic/i] },
-  { genre: "Romance", patterns: [/romance/i, /romantic/i] },
-  { genre: "Adventure", patterns: [/adventure/i, /action/i, /travel/i, /exploration/i] },
-  { genre: "Contemporary", patterns: [/contemporary/i, /literary fiction/i, /literary collections/i, /general fiction/i, /juvenile fiction/i, /young adult/i, /^fiction$/i] },
+const IMPORT_GENRE_MAP: Array<{ genre: string; keywords: string[] }> = [
+  { genre: "Dark Romance", keywords: ["dark romance"] },
+  { genre: "Romantasy", keywords: ["romantasy"] },
+  { genre: "Science Fiction", keywords: ["science fiction", "sci-fi", "sci fi", "space opera", "dystopian", "dystopias", "cyberpunk", "time travel"] },
+  { genre: "Historical Fiction", keywords: ["historical"] },
+  { genre: "Nonfiction", keywords: ["nonfiction", "non-fiction", "biography", "memoir", "self-help", "self help", "business", "true crime", "health"] },
+  { genre: "Mystery", keywords: ["mystery", "cozy mystery", "detective", "crime", "police procedural"] },
+  { genre: "Thriller", keywords: ["thriller", "psychological thriller", "psychological fiction", "suspense fiction"] },
+  { genre: "Suspense", keywords: ["suspense"] },
+  { genre: "Horror", keywords: ["horror", "paranormal", "gothic"] },
+  { genre: "Fantasy", keywords: ["fantasy", "high fantasy", "urban fantasy", "fairy tale", "mythology", "magic", "witches", "vampires"] },
+  { genre: "Romance", keywords: ["romance", "romantic", "fiction romance", "romantic fiction"] },
+  { genre: "Adventure", keywords: ["adventure", "action", "travel", "exploration"] },
+  { genre: "Contemporary", keywords: ["contemporary", "literary fiction", "literary collections", "general fiction", "fiction general", "juvenile fiction", "young adult", "women's fiction"] },
 ];
 
 function cleanImportedValue(value: string): string {
@@ -122,22 +123,23 @@ function splitImportedGenres(value: string): string[] {
 }
 
 export function normalizeImportedGenre(values: string[]): string {
-  const matches = IMPORT_GENRE_RULES.flatMap((rule) =>
-    values.flatMap((value) => rule.patterns.filter((pattern) => pattern.test(value)).map(() => rule.genre)),
-  );
-  if (matches.length > 0) {
-    return matches[0];
+  for (const value of values) {
+    const normalizedValue = cleanImportedValue(value).toLowerCase().replace(/[&_/]/g, " ").replace(/\s+/g, " ");
+    const match = IMPORT_GENRE_MAP.find((entry) => entry.keywords.some((keyword) => normalizedValue.includes(keyword)));
+    if (match) {
+      return match.genre;
+    }
   }
   return "General Fiction";
 }
 
-function getImportedGenres(values: string[]): string[] {
+export function normalizeImportedCategories(values: string[]): string[] {
   const categories = values.flatMap(splitImportedGenres);
-  const canonicalGenres = categories
-    .map((category) => normalizeImportedGenre([category]))
-    .filter((genre) => genre !== "General Fiction");
-  const originalCategories = categories.filter((category) => !/^fiction$/i.test(category));
-  return Array.from(new Set([...canonicalGenres, ...originalCategories])).slice(0, 8);
+  const normalizedCategories = categories.map((category) => {
+    const canonical = normalizeImportedGenre([category]);
+    return canonical === "General Fiction" ? cleanImportedValue(category) : canonical;
+  });
+  return Array.from(new Set(normalizedCategories.filter((category) => !/^(fiction|general fiction)$/i.test(category)))).slice(0, 8);
 }
 
 /**
@@ -211,7 +213,8 @@ export function parseGoodreadsCSV(csvText: string): ParsedImportBook[] {
       ...genreIndices.flatMap((index) => splitImportedGenres(row[index] ?? "")),
       ...splitImportedGenres(row[shelvesIdx] ?? ""),
     ];
-    const importedCategories = getImportedGenres(importedGenreValues);
+    const explicitGoodreadsGenres = genreIndices.flatMap((index) => splitImportedGenres(row[index] ?? ""));
+    const importedCategories = normalizeImportedCategories(importedGenreValues);
     const genre = normalizeImportedGenre(importedGenreValues);
     let status: BookStatus = "Read";
     if (rawShelf.includes("currently-reading") || rawShelf.includes("currently reading")) {
@@ -266,6 +269,7 @@ export function parseGoodreadsCSV(csvText: string): ParsedImportBook[] {
       author,
       genre,
       categories: importedCategories.length > 0 ? importedCategories : undefined,
+      genre_source: explicitGoodreadsGenres.length > 0 ? "goodreads" : "catalog_fallback",
       status,
       rating,
       review: review ? review.slice(0, 1000) : null,

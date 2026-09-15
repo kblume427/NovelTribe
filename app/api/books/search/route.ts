@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
             volumeInfo: {
               title: item.title ?? "Untitled",
               authors: item.author_name ?? ["Unknown Author"],
-              categories: item.subject?.slice(0, 5),
+              categories: item.subject?.slice(0, 20),
               imageLinks: coverUrl ? { thumbnail: coverUrl, smallThumbnail: coverUrl } : undefined,
               industryIdentifiers: item.isbn?.[0] ? [{ type: "ISBN_13", identifier: item.isbn[0] }] : (cleanIsbn ? [{ type: "ISBN_13", identifier: cleanIsbn }] : undefined),
             },

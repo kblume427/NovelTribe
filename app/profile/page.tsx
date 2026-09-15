@@ -10,7 +10,7 @@ import { createSupabaseClient } from "@/lib/supabase/client";
 import SocialInbox from "@/components/social-inbox";
 import { DEFAULT_FEATURE_FLAGS, resolveFeatureFlags, type FeatureFlagKey, type FeatureFlags } from "@/lib/featureFlags";
 import { evaluateMilestones } from "@/lib/milestones";
-import { exportBooksToCSV, exportBooksToJSON, normalizeImportedGenre, parseGoodreadsCSV } from "@/lib/importExport";
+import { exportBooksToCSV, exportBooksToJSON, normalizeImportedCategories, normalizeImportedGenre, parseGoodreadsCSV } from "@/lib/importExport";
 
 type ProfileState = {
   full_name: string;
@@ -471,7 +471,7 @@ export default function ProfilePage() {
       for (const b of parsedBooks) {
         try {
           let importBook = b;
-          if (b.genre === "General Fiction") {
+          if (b.genre_source === "catalog_fallback") {
             try {
               const searchQuery = b.isbn || `${b.title} ${b.author}`;
               const metadataResponse = await fetch(`/api/books/search?q=${encodeURIComponent(searchQuery)}`);
@@ -482,10 +482,11 @@ export default function ProfilePage() {
                 );
                 if (metadataCategories.length > 0) {
                   const metadataGenre = normalizeImportedGenre(metadataCategories);
+                  const normalizedCategories = normalizeImportedCategories(metadataCategories);
                   importBook = {
                     ...b,
                     genre: metadataGenre,
-                    categories: Array.from(new Set([metadataGenre, ...metadataCategories])).slice(0, 8),
+                    categories: Array.from(new Set([metadataGenre, ...normalizedCategories])).slice(0, 8),
                   };
                 }
               }
