@@ -15,8 +15,8 @@ const steps = [
   },
   {
     number: "02",
-    title: "Import Goodreads",
-    body: "From Profile, choose Import Goodreads CSV and select your Goodreads library export. NovelTribe matches existing books instead of creating duplicates.",
+    title: "Import your library",
+    body: "From Profile, choose Import Goodreads or Libby and select a Goodreads CSV or Libby/OverDrive tag spreadsheet. NovelTribe matches existing books instead of creating duplicates.",
   },
   {
     number: "03",
@@ -114,12 +114,13 @@ export default function GettingStartedPage() {
 
         <section className="mt-16 grid gap-8 border-t border-white/10 pt-16 lg:grid-cols-2">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-200">Goodreads import notes</div>
-            <h2 className="mt-3 text-3xl font-bold text-white">A clean import, with room to adjust.</h2>
+            <div className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-200">Library import notes</div>
+            <h2 className="mt-3 text-3xl font-bold text-white">Bring your library in, with room to adjust.</h2>
             <ul className="mt-5 space-y-3 text-sm leading-6 text-zinc-300">
-              <li>Use the CSV export from Goodreads, not a spreadsheet you have manually reformatted.</li>
+              <li>Use the CSV export from Goodreads, or export a Libby tag as a spreadsheet from Tags → Actions → Export Tag → Spreadsheet → Titles.</li>
               <li>ISBNs are used to improve covers and category classification, including Kindle editions when metadata is available.</li>
               <li>Re-importing is safe: matching books are updated instead of duplicated.</li>
+              <li>NovelTribe detects Goodreads and Libby/OverDrive files automatically and maps Libby tags, loan status, dates, and formats.</li>
               <li>Open Edit on the Tracker to change title, author, ISBN, genres, status, rating, review, finish date, format, or shelves.</li>
             </ul>
           </div>

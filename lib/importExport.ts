@@ -282,3 +282,98 @@ export function parseGoodreadsCSV(csvText: string): ParsedImportBook[] {
 
   return books;
 }
+
+/**
+ * Parses a Libby tag or borrowed-history spreadsheet export.
+ * Libby exports vary by library and export type, so columns are matched by aliases.
+ */
+export function parseLibbyCSV(csvText: string): ParsedImportBook[] {
+  const lines = csvText.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  if (lines.length < 2) return [];
+
+  const delimiter = lines[0].includes("\t") ? "\t" : ",";
+  const parseRow = (line: string): string[] => {
+    const result: string[] = [];
+    let insideQuotes = false;
+    let current = "";
+    for (let index = 0; index < line.length; index++) {
+      const char = line[index];
+      if (char === '"') {
+        if (insideQuotes && line[index + 1] === '"') {
+          current += '"';
+          index++;
+        } else {
+          insideQuotes = !insideQuotes;
+        }
+      } else if (char === delimiter && !insideQuotes) {
+        result.push(cleanImportedValue(current));
+        current = "";
+      } else {
+        current += char;
+      }
+    }
+    result.push(cleanImportedValue(current));
+    return result;
+  };
+
+  const headers = parseRow(lines[0]).map((header) => header.toLowerCase().replace(/[^a-z0-9]/g, ""));
+  const findIndex = (...aliases: string[]) => headers.findIndex((header) => aliases.includes(header));
+  const titleIdx = findIndex("title", "name");
+  const authorIdx = findIndex("author", "creator");
+  if (titleIdx === -1 || authorIdx === -1) return [];
+
+  const isbnIdx = findIndex("isbn", "isbn10", "isbn13", "isbn13identifier");
+  const formatIdx = findIndex("format", "binding", "mediatype", "type");
+  const tagsIdx = findIndex("tags", "tag", "shelf", "shelves", "collection");
+  const statusIdx = findIndex("status", "loanstatus", "availability");
+  const dateIdx = findIndex("datereturned", "dateborrowed", "datecompleted", "dateread", "date");
+
+  return lines.slice(1).flatMap((line) => {
+    const row = parseRow(line);
+    const title = row[titleIdx] ?? "";
+    const author = row[authorIdx] ?? "Unknown author";
+    if (!title) return [];
+
+    const rawTags = row[tagsIdx] ?? "";
+    const rawStatus = `${row[statusIdx] ?? ""} ${rawTags}`.toLowerCase();
+    const status: BookStatus = /borrowed|returned|completed|finished|read/.test(rawStatus)
+      ? "Read"
+      : "Want to Read";
+    const rawFormat = (row[formatIdx] ?? "").toLowerCase();
+    const format = /audio/.test(rawFormat)
+      ? "Audiobook"
+      : /ebook|e-book|kindle|overdrive read/.test(rawFormat)
+      ? "E-Book"
+      : /hardcover|paperback|print|book/.test(rawFormat)
+      ? "Physical"
+      : null;
+    const rawIsbn = (row[isbnIdx] ?? "").replace(/[^0-9X]/gi, "").toUpperCase();
+    const isbn = rawIsbn.length === 10 || rawIsbn.length === 13 ? rawIsbn : null;
+    const rawDate = row[dateIdx] ?? "";
+    const finishedAt = status === "Read" && rawDate && !Number.isNaN(Date.parse(rawDate))
+      ? new Date(rawDate).toISOString()
+      : null;
+    const customShelves = splitImportedGenres(rawTags).filter((tag) => !/^(borrowed|returned|completed|finished|read)$/i.test(tag));
+
+    return [{
+      title,
+      author,
+      genre: "General Fiction",
+      categories: undefined,
+      genre_source: "catalog_fallback",
+      status,
+      rating: 0,
+      isbn,
+      finished_at: finishedAt,
+      format,
+      custom_shelves: customShelves.length > 0 ? customShelves : undefined,
+    }];
+  });
+}
+
+export function parseLibraryCSV(csvText: string, filename = ""): ParsedImportBook[] {
+  const header = csvText.split(/\r?\n/, 1)[0]?.toLowerCase() ?? "";
+  const looksLikeLibby = /libby|overdrive/.test(filename.toLowerCase()) ||
+    /\b(tags?|loan status|date returned|date borrowed|media type)\b/i.test(header);
+  return looksLikeLibby ? parseLibbyCSV(csvText) : parseGoodreadsCSV(csvText);
+}

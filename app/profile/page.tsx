@@ -12,7 +12,7 @@ import GoodreadsImportAlert from "@/components/goodreads-import-alert";
 import { UpdatesCta } from "@/components/updates-cta";
 import { DEFAULT_FEATURE_FLAGS, resolveFeatureFlags, type FeatureFlagKey, type FeatureFlags } from "@/lib/featureFlags";
 import { evaluateMilestones } from "@/lib/milestones";
-import { exportBooksToCSV, exportBooksToJSON, normalizeImportedCategories, normalizeImportedGenre, parseGoodreadsCSV } from "@/lib/importExport";
+import { exportBooksToCSV, exportBooksToJSON, normalizeImportedCategories, normalizeImportedGenre, parseLibraryCSV } from "@/lib/importExport";
 
 type ProfileState = {
   full_name: string;
@@ -453,19 +453,20 @@ export default function ProfilePage() {
 
     setImporting(true);
     setImportStatus("Reading file...");
-    trackEvent("library_import_started", { format: "csv" });
+    const importSource = /libby|overdrive/i.test(file.name) ? "libby" : "goodreads_csv";
+    trackEvent("library_import_started", { format: importSource });
 
     try {
       const text = await file.text();
-      const parsedBooks = parseGoodreadsCSV(text);
+      const parsedBooks = parseLibraryCSV(text, file.name);
 
       if (!parsedBooks.length) {
-        setImportStatus("Could not find any books in that file. Please ensure it is a valid Goodreads or NovelTribe CSV export.");
+        setImportStatus("Could not find any books in that file. Please ensure it is a valid Goodreads or Libby spreadsheet export.");
         setImporting(false);
         return;
       }
 
-      setImportStatus(`Importing and syncing ${parsedBooks.length} books...`);
+      setImportStatus(`Importing and syncing ${parsedBooks.length} ${importSource === "libby" ? "Libby" : "Goodreads"} books...`);
       let insertedCount = 0;
       let updatedCount = 0;
       let unchangedCount = 0;
@@ -524,7 +525,7 @@ export default function ProfilePage() {
 
       const summaryStr = summaryParts.length > 0 ? summaryParts.join(", ") : "0 books processed";
       trackEvent("library_imported", {
-        source: "goodreads_csv",
+        source: importSource,
         total: parsedBooks.length,
         inserted: insertedCount,
         updated: updatedCount,
@@ -753,7 +754,7 @@ export default function ProfilePage() {
             <div className="mt-4 rounded-2xl border border-white/10 bg-[#0b1120] p-4">
               <div className="text-[10px] uppercase tracking-[0.2em] text-cyan-300">Data ownership</div>
               <p className="mt-1 text-xs text-zinc-400">
-                Your data belongs to you. Export your entire library at any time or import your books from Goodreads.
+                Your data belongs to you. Export your entire library at any time or import books from Goodreads or Libby.
               </p>
 
               <div className="mt-3 flex flex-wrap gap-2">
@@ -772,10 +773,10 @@ export default function ProfilePage() {
                   📥 Export JSON
                 </button>
                 <label className="cursor-pointer rounded-xl bg-violet-600/30 border border-violet-500/40 px-3 py-1.5 text-xs font-semibold text-violet-200 hover:bg-violet-600/50">
-                  <span>{importing ? "Importing..." : "📤 Import Goodreads CSV"}</span>
+                  <span>{importing ? "Importing..." : "📤 Import Goodreads or Libby"}</span>
                   <input
                     type="file"
-                    accept=".csv"
+                    accept=".csv,.tsv,.txt"
                     disabled={importing}
                     onChange={handleImportCSV}
                     className="hidden"

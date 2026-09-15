@@ -20,7 +20,7 @@ export function UpdatesCta() {
     <aside className="mb-6 flex flex-col gap-3 rounded-2xl border border-cyan-400/25 bg-cyan-400/10 p-4 text-cyan-50 shadow-[0_10px_30px_rgba(34,211,238,0.08)] sm:flex-row sm:items-center sm:justify-between">
       <div>
         <div className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">New in NovelTribe</div>
-        <p className="mt-1 text-sm leading-6 text-cyan-50/90">Goodreads imports, cover art, onboarding, and sign-in reliability just got better.</p>
+        <p className="mt-1 text-sm leading-6 text-cyan-50/90">Goodreads and Libby imports, cover art, onboarding, and sign-in reliability just got better.</p>
       </div>
       <a
         href="/updates"

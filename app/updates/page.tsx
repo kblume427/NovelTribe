@@ -57,10 +57,11 @@ export default function UpdatesPage() {
         <section className="mb-14 border-b border-white/10 pb-12">
           <div className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-200">Product journal</div>
           <h1 className="mt-4 max-w-3xl text-5xl font-black tracking-tight text-white sm:text-6xl">What’s getting better.</h1>
-          <p className="mt-5 max-w-2xl text-lg leading-8 text-zinc-300">A quiet record of the fixes, features, and small quality-of-life improvements shaping NovelTribe.</p>
+          <p className="mt-5 max-w-2xl text-lg leading-8 text-zinc-300">A quiet record of the fixes, features, and small quality-of-life improvements shaping NovelTribe. New entries from the last seven days appear first, with this opening set preserved as the beginning of the history.</p>
         </section>
 
         <section className="space-y-6">
+          <div className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-200">Last 7 days</div>
           {updates.map((update) => (
             <article key={update.title} className="grid gap-6 rounded-[28px] border border-white/10 bg-white/5 p-6 md:grid-cols-[180px_1fr] md:p-8">
               <div>

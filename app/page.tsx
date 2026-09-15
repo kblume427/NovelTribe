@@ -53,6 +53,7 @@ export default function Home() {
   const [books, setBooks] = useState<Book[]>(starterBooks);
   const [form, setForm] = useState(defaultForm);
   const [profileFlags, setProfileFlags] = useState<FeatureFlags | null>(null);
+  const [isSignedIn, setIsSignedIn] = useState<boolean | null>(null);
   const [readingGoal, setReadingGoal] = useState<number | null>(null);
   const [streak, setStreak] = useState<number>(0);
   const [loggedToday, setLoggedToday] = useState<boolean>(false);
@@ -139,7 +140,9 @@ export default function Home() {
 
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!active || !user) return;
+      if (!active) return;
+      setIsSignedIn(Boolean(user));
+      if (!user) return;
       const { data: profileRow } = await supabase
         .from("profiles")
         .select("feature_flags, reading_goal")
@@ -587,18 +590,18 @@ export default function Home() {
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <a
-                href="#tracker"
-                onClick={() => trackEvent("landing_cta_clicked", { action: "start_library" })}
+                href={isSignedIn === false ? "/login" : "#tracker"}
+                onClick={() => trackEvent("landing_cta_clicked", { action: isSignedIn === false ? "sign_in_to_start" : "start_library" })}
                 className="rounded-full bg-gradient-to-r from-cyan-400 to-violet-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-500/15 transition hover:brightness-110"
               >
-                Start building my library
+                {isSignedIn === false ? "Start my private library" : "Start building my library"}
               </a>
               <a
-                href="/profile"
-                onClick={() => trackEvent("landing_cta_clicked", { action: "import_goodreads" })}
+                href={isSignedIn === false ? "/getting-started" : "/profile"}
+                onClick={() => trackEvent("landing_cta_clicked", { action: isSignedIn === false ? "learn_how_it_works" : "import_goodreads" })}
                 className="rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-zinc-200 transition hover:bg-white/10"
               >
-                Bring in my Goodreads shelf
+                {isSignedIn === false ? "See how it works" : "Bring in my Goodreads shelf"}
               </a>
             </div>
 

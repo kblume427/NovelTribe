@@ -207,9 +207,9 @@ export default function FeaturesPage() {
           flag: "milestones",
         },
         {
-          title: "Goodreads CSV Import (with Kindle Detection)",
+          title: "Goodreads & Libby Library Import",
           icon: "📤",
-          desc: "Seamlessly import your Goodreads library export CSV with read dates, ratings, reviews, Kindle binding detection, and custom shelves.",
+          desc: "Import Goodreads CSVs or Libby/OverDrive tag spreadsheets with ISBNs, dates, formats, tags, Kindle detection, and duplicate-safe syncing.",
           flag: "Data Ownership",
         },
         {

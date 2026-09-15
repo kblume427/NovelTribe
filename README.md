@@ -1,24 +1,32 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## NovelTribe
 
-## Getting Started
+NovelTribe is a private-first reading tracker built with Next.js, Supabase, React, and TypeScript.
 
-First, run the development server:
+Install dependencies and run the development server:
 
-```bash
+```powershell
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Before committing changes, run:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```powershell
+npm run build
+npm run lint
+git diff --check
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Library Imports
+
+From Profile, users can import a Goodreads library CSV or a Libby/OverDrive tag spreadsheet. In Libby, export a tag from **Tags → Actions → Export Tag → Spreadsheet → Titles**, then upload the file in Profile.
+
+Imports use ISBN metadata for covers and genre classification, preserve formats and tags, and safely upsert matching books instead of creating duplicates. Goodreads and Libby/OverDrive files are detected automatically; CSV, TSV, and TXT files are accepted.
+
+Onboarding instructions are available at `/getting-started`, and product history is available at `/updates`.
+
+## Environment Variables
+
+Configure the Supabase and optional provider variables described in `PROJECT_HANDOFF.md`. Never commit secrets or service-role keys.
 
 ## Learn More
 
