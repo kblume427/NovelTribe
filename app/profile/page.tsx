@@ -112,9 +112,9 @@ export default function ProfilePage() {
   const [totalUsers, setTotalUsers] = useState<number | null>(null);
   const [importing, setImporting] = useState(false);
   const [importStatus, setImportStatus] = useState<string | null>(null);
-  const [clearLibraryOpen, setClearLibraryOpen] = useState(false);
-  const [clearLibraryText, setClearLibraryText] = useState("");
-  const [clearingLibrary, setClearingLibrary] = useState(false);
+  const [clearReadBooksOpen, setClearReadBooksOpen] = useState(false);
+  const [clearReadBooksText, setClearReadBooksText] = useState("");
+  const [clearingReadBooks, setClearingReadBooks] = useState(false);
 
   useEffect(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -409,31 +409,39 @@ export default function ProfilePage() {
     setImportStatus(`Exported ${profileBooks.length} books as ${format.toUpperCase()}.`);
   };
 
-  const handleClearLibrary = async () => {
-    if (clearLibraryText !== "DELETE" || clearingLibrary) return;
+  const handleClearReadBooks = async () => {
+    if (clearReadBooksText !== "DELETE" || clearingReadBooks) return;
 
-    setClearingLibrary(true);
+    setClearingReadBooks(true);
     const response = await fetch("/api/books", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ clear_library: true }),
+      body: JSON.stringify({ clear_read_books: true }),
     });
 
     if (response.ok) {
-      trackEvent("library_cleared", { book_count: profileBooks.length });
-      setProfileBooks([]);
-      setStats({ total: 0, finished: 0, averageRating: 0, favoriteGenre: "N/A" });
-      setFormatCounts({ physical: 0, ebook: 0, audiobook: 0 });
-      setCategoryOptions(allGenres);
-      setClearLibraryOpen(false);
-      setClearLibraryText("");
-      setImportStatus("Your entire library was cleared.");
+      const remainingBooks = profileBooks.filter((book) => book.status !== "Read");
+      trackEvent("read_books_cleared", { book_count: profileBooks.length - remainingBooks.length });
+      setProfileBooks(remainingBooks);
+      setStats((current) => ({ ...current, total: remainingBooks.length, finished: 0, favoriteGenre: "N/A" }));
+      setFormatCounts({
+        physical: remainingBooks.filter((book) => book.format === "Physical").length,
+        ebook: remainingBooks.filter((book) => book.format === "E-Book").length,
+        audiobook: remainingBooks.filter((book) => book.format === "Audiobook").length,
+      });
+      setCategoryOptions(Array.from(new Set([
+        ...allGenres,
+        ...remainingBooks.flatMap((book) => Array.isArray(book.categories) && book.categories.length > 0 ? book.categories : [book.genre]).filter(Boolean),
+      ])));
+      setClearReadBooksOpen(false);
+      setClearReadBooksText("");
+      setImportStatus("All books marked Read were cleared. Other books remain in your library.");
     } else {
       const payload = await response.json().catch(() => null);
       setImportStatus(payload?.error ?? "Could not clear your library. Please try again.");
     }
 
-    setClearingLibrary(false);
+    setClearingReadBooks(false);
   };
 
   const handleImportCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -771,27 +779,27 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setClearLibraryOpen(true);
-                    setClearLibraryText("");
+                    setClearReadBooksOpen(true);
+                    setClearReadBooksText("");
                   }}
-                  disabled={profileBooks.length === 0 || clearingLibrary}
+                  disabled={!profileBooks.some((book) => book.status === "Read") || clearingReadBooks}
                   className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-200 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Clear entire library
+                  Clear read books
                 </button>
               </div>
 
-              {clearLibraryOpen && (
+              {clearReadBooksOpen && (
                 <div className="mt-3 rounded-2xl border border-red-500/30 bg-red-500/10 p-4">
-                  <div className="text-sm font-semibold text-red-100">Delete all {profileBooks.length} books?</div>
+                  <div className="text-sm font-semibold text-red-100">Delete all {profileBooks.filter((book) => book.status === "Read").length} read books?</div>
                   <p className="mt-1 text-xs leading-5 text-red-200/80">
-                    This permanently removes every book from your library. Export a backup first if you may need this data later.
+                    This permanently removes books marked Read. Currently Reading and Want to Read books will remain. Export a backup first if you may need this data later.
                   </p>
                   <label className="mt-3 block text-xs text-red-100">
                     Type <span className="font-mono font-bold">DELETE</span> to confirm.
                     <input
-                      value={clearLibraryText}
-                      onChange={(event) => setClearLibraryText(event.target.value)}
+                      value={clearReadBooksText}
+                      onChange={(event) => setClearReadBooksText(event.target.value)}
                       autoComplete="off"
                       className="mt-1.5 w-full rounded-xl border border-red-400/30 bg-[#0b1120] px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-red-400/50"
                       placeholder="DELETE"
@@ -801,8 +809,8 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setClearLibraryOpen(false);
-                        setClearLibraryText("");
+                        setClearReadBooksOpen(false);
+                        setClearReadBooksText("");
                       }}
                       className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-zinc-200 hover:bg-white/10"
                     >
@@ -810,11 +818,11 @@ export default function ProfilePage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => void handleClearLibrary()}
-                      disabled={clearLibraryText !== "DELETE" || clearingLibrary}
+                      onClick={() => void handleClearReadBooks()}
+                      disabled={clearReadBooksText !== "DELETE" || clearingReadBooks}
                       className="rounded-xl bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {clearingLibrary ? "Clearing..." : "Permanently clear library"}
+                      {clearingReadBooks ? "Clearing..." : "Permanently clear read books"}
                     </button>
                   </div>
                 </div>

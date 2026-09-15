@@ -224,11 +224,12 @@ export async function PATCH(request: Request) {
   }
 
   const payload = await request.json();
-  if (payload.clear_library === true) {
+  if (payload.clear_read_books === true) {
     const { error } = await supabase
       .from("books")
       .delete()
-      .eq("user_id", user.id);
+      .eq("user_id", user.id)
+      .eq("status", "Read");
 
     if (!error) {
       return Response.json({ ok: true });
