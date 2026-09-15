@@ -84,6 +84,31 @@ export default function GettingStartedPage() {
         </section>
 
         <section className="mt-16 grid gap-8 border-t border-white/10 pt-16 lg:grid-cols-2">
+          <div className="rounded-[24px] border border-white/10 bg-white/5 p-6">
+            <div className="text-xs font-semibold uppercase tracking-[0.25em] text-violet-200">Profile setup</div>
+            <h2 className="mt-3 text-3xl font-bold text-white">Make your home base yours.</h2>
+            <ol className="mt-5 space-y-4 text-sm leading-6 text-zinc-300">
+              <li><span className="font-semibold text-white">1.</span> Open <a href="/profile" className="text-cyan-200 underline">Profile</a> and add your display name, username, avatar, and favorite categories.</li>
+              <li><span className="font-semibold text-white">2.</span> Set an annual reading goal if you want a gentle progress target.</li>
+              <li><span className="font-semibold text-white">3.</span> Keep your profile private by default. Public profile, library, ratings, reviews, and activity controls are separate choices.</li>
+              <li><span className="font-semibold text-white">4.</span> Save your profile changes before leaving the page.</li>
+            </ol>
+          </div>
+          <div className="rounded-[24px] border border-cyan-400/20 bg-cyan-400/5 p-6">
+            <div className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-200">Feature controls</div>
+            <h2 className="mt-3 text-3xl font-bold text-white">Turn on only what helps.</h2>
+            <p className="mt-3 text-sm leading-6 text-zinc-300">In Profile, scroll to Optional features. Every toggle starts off, so your tracker stays simple until you choose more.</p>
+            <ul className="mt-5 space-y-3 text-sm leading-6 text-zinc-300">
+              <li><span className="font-semibold text-white">Reading habits:</span> enable sessions, reminders, streaks, goals, and finish-date estimates.</li>
+              <li><span className="font-semibold text-white">Book details:</span> enable moods, quotes, custom shelves, and format or audiobook tracking.</li>
+              <li><span className="font-semibold text-white">Discovery:</span> enable personalized recommendations and strict peer genre matching.</li>
+              <li><span className="font-semibold text-white">Dashboard:</span> show or hide progress widgets, milestones, and session timelines.</li>
+            </ul>
+            <a href="/profile" className="mt-6 inline-flex rounded-full bg-cyan-500/20 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/30">Open Profile settings</a>
+          </div>
+        </section>
+
+        <section className="mt-16 grid gap-8 border-t border-white/10 pt-16 lg:grid-cols-2">
           <div>
             <div className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-200">Goodreads import notes</div>
             <h2 className="mt-3 text-3xl font-bold text-white">A clean import, with room to adjust.</h2>

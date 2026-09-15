@@ -440,7 +440,7 @@ The SEO enhancements and initial handoff documentation were verified, committed,
 - **Goodreads Import Alert**: Tracker and Profile show a dismissible import-repair notice that automatically expires at September 17, 2026, 12:00 AM CST.
 - **Cross-Platform Auth Persistence**: Magic-link callbacks preserve the requesting host and Supabase auth cookies remain host-scoped, preventing session and public-profile auth drops across Safari PWA, desktop browsers, and preview domains.
 - **ISBN-First Affiliate Links**: Amazon links use a cleaned ISBN or ASIN search when available, with title/author search retained only as a fallback for books without identifiers.
-- **Getting Started Onboarding**: Added public `/getting-started` guidance covering first steps, Goodreads CSV import, ISBN-based classification, safe re-imports, and editing imported books.
+- **Getting Started Onboarding**: Added public `/getting-started` guidance covering first steps, profile setup, privacy controls, optional feature toggles, Goodreads CSV import, ISBN-based classification, safe re-imports, and editing imported books.
 - **Weighted Top Genre**: Profile statistics count every distinct category attached to each book when determining the reader's top genre, with primary-genre fallback for legacy records.
 
 ### Quick Import Search & ASIN / Kindle Support
