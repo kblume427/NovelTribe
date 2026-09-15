@@ -431,6 +431,7 @@ The SEO enhancements and initial handoff documentation were verified, committed,
 - **Non-Destructive Attribute Merging**: Preserves existing user data while backfilling missing fields (e.g., status changes to `Read`, missing ratings, reviews, format, page counts) and merging `mood_tags`, `custom_shelves`, and `quotes` with `Set` deduplication.
 - **Granular Import Feedback**: Profile import UI (`/profile`) now reports detailed import metrics: added new, updated existing, and already up to date.
 - **Multi-Genre Books**: Books retain a primary `genre` plus multiple `categories`; Goodreads genre/category metadata and catalog fallback classification are normalized into the supported genre vocabulary.
+- **Goodreads Genre Correction**: Imports use all available catalog categories, recognize common Goodreads/Google Books/Open Library genre labels, and correct existing `General Fiction` records during re-import when better metadata is found.
 - **Weighted Top Genre**: Profile statistics count every distinct category attached to each book when determining the reader's top genre, with primary-genre fallback for legacy records.
 
 ### Quick Import Search & ASIN / Kindle Support

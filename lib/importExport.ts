@@ -97,17 +97,17 @@ export type ParsedImportBook = {
 const IMPORT_GENRE_RULES: Array<{ genre: string; patterns: RegExp[] }> = [
   { genre: "Dark Romance", patterns: [/dark romance/i] },
   { genre: "Romantasy", patterns: [/romantasy/i] },
-  { genre: "Science Fiction", patterns: [/science fiction/i, /sci[ -]?fi/i, /space opera/i, /dystopian/i] },
-  { genre: "Historical Fiction", patterns: [/historical/i, /historical fiction/i] },
-  { genre: "Nonfiction", patterns: [/nonfiction/i, /non-fiction/i, /biography/i, /memoir/i, /self[- ]help/i, /business/i] },
+  { genre: "Science Fiction", patterns: [/science fiction/i, /sci[ -]?fi/i, /space opera/i, /dystopian/i, /cyberpunk/i, /time travel/i] },
+  { genre: "Historical Fiction", patterns: [/historical/i, /historical fiction/i, /historical romance/i] },
+  { genre: "Nonfiction", patterns: [/nonfiction/i, /non-fiction/i, /biography/i, /memoir/i, /self[- ]help/i, /business/i, /true crime/i, /health/i] },
   { genre: "Mystery", patterns: [/mystery/i, /cozy mystery/i, /detective/i, /crime/i] },
   { genre: "Thriller", patterns: [/thriller/i, /psychological thriller/i] },
   { genre: "Suspense", patterns: [/suspense/i] },
   { genre: "Horror", patterns: [/horror/i, /paranormal/i, /gothic/i] },
-  { genre: "Fantasy", patterns: [/fantasy/i, /high fantasy/i, /urban fantasy/i] },
+  { genre: "Fantasy", patterns: [/fantasy/i, /high fantasy/i, /urban fantasy/i, /fairy tale/i, /mythology/i, /magic/i] },
   { genre: "Romance", patterns: [/romance/i, /romantic/i] },
-  { genre: "Adventure", patterns: [/adventure/i, /action/i] },
-  { genre: "Contemporary", patterns: [/contemporary/i, /literary fiction/i, /general fiction/i, /^fiction$/i] },
+  { genre: "Adventure", patterns: [/adventure/i, /action/i, /travel/i, /exploration/i] },
+  { genre: "Contemporary", patterns: [/contemporary/i, /literary fiction/i, /literary collections/i, /general fiction/i, /juvenile fiction/i, /young adult/i, /^fiction$/i] },
 ];
 
 function cleanImportedValue(value: string): string {
@@ -122,10 +122,11 @@ function splitImportedGenres(value: string): string[] {
 }
 
 export function normalizeImportedGenre(values: string[]): string {
-  for (const rule of IMPORT_GENRE_RULES) {
-    if (values.some((value) => rule.patterns.some((pattern) => pattern.test(value)))) {
-      return rule.genre;
-    }
+  const matches = IMPORT_GENRE_RULES.flatMap((rule) =>
+    values.flatMap((value) => rule.patterns.filter((pattern) => pattern.test(value)).map(() => rule.genre)),
+  );
+  if (matches.length > 0) {
+    return matches[0];
   }
   return "General Fiction";
 }

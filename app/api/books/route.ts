@@ -64,7 +64,7 @@ export async function POST(request: Request) {
   if (payload.upsert) {
     let existingBookQuery = supabase
       .from("books")
-      .select("id, status, rating, review, isbn, format, quotes, mood_tags, custom_shelves, total_pages, current_page, finished_at, cover_url")
+      .select("id, status, rating, review, isbn, format, quotes, mood_tags, custom_shelves, total_pages, current_page, finished_at, cover_url, genre, categories")
       .eq("user_id", user.id);
 
     // Prefer matching on clean ISBN if provided, else match on title and author (case-insensitive)
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
     if (!matchedBook && payload.title && payload.author) {
       const { data: titleAuthorMatches } = await supabase
         .from("books")
-        .select("id, status, rating, review, isbn, format, quotes, mood_tags, custom_shelves, total_pages, current_page, finished_at, cover_url")
+        .select("id, status, rating, review, isbn, format, quotes, mood_tags, custom_shelves, total_pages, current_page, finished_at, cover_url, genre, categories")
         .eq("user_id", user.id)
         .ilike("title", String(payload.title).trim())
         .ilike("author", String(payload.author).trim())
@@ -132,6 +132,12 @@ export async function POST(request: Request) {
       }
       if (payload.current_page && !matchedBook.current_page) {
         updateData.current_page = Number(payload.current_page);
+      }
+      if (payload.genre && payload.genre !== "General Fiction" && payload.genre !== matchedBook.genre) {
+        updateData.genre = payload.genre;
+      }
+      if (Array.isArray(payload.categories) && payload.categories.length > 0) {
+        updateData.categories = Array.from(new Set([...(matchedBook.categories || []), ...payload.categories]));
       }
       if (!matchedBook.cover_url) {
         if (payload.cover_url) {

@@ -477,10 +477,9 @@ export default function ProfilePage() {
               const metadataResponse = await fetch(`/api/books/search?q=${encodeURIComponent(searchQuery)}`);
               if (metadataResponse.ok) {
                 const metadataPayload = await metadataResponse.json();
-                const metadataItem = metadataPayload.items?.find((item: { volumeInfo?: { categories?: string[] } }) =>
-                  Array.isArray(item.volumeInfo?.categories) && item.volumeInfo.categories.length > 0,
+                const metadataCategories = (metadataPayload.items ?? []).flatMap((item: { volumeInfo?: { categories?: string[] } }) =>
+                  Array.isArray(item.volumeInfo?.categories) ? item.volumeInfo.categories : [],
                 );
-                const metadataCategories = metadataItem?.volumeInfo?.categories ?? [];
                 if (metadataCategories.length > 0) {
                   const metadataGenre = normalizeImportedGenre(metadataCategories);
                   importBook = {
