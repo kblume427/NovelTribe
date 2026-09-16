@@ -167,7 +167,7 @@ export default function ProfilePage() {
 
       if (!user) {
         setLoading(false);
-        setStatus("Your sign-in session could not be verified. Refresh this page or sign in again.");
+        router.push("/login");
         profileLoadInProgress = false;
         return;
       }
