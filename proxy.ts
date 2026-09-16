@@ -6,7 +6,7 @@ const CANONICAL_HOST = "novel-tribe.com";
 export async function proxy(request: NextRequest) {
   const host = request.headers.get("host") ?? "";
 
-  if (host.endsWith(".vercel.app")) {
+  if (host.endsWith(".vercel.app") || host === `www.${CANONICAL_HOST}`) {
     const url = new URL(request.url);
     url.protocol = "https:";
     url.host = CANONICAL_HOST;
