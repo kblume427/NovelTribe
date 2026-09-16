@@ -2,11 +2,11 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const requestedNext = searchParams.get("next") ?? "/";
   const next = requestedNext.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : "/";
-  const callbackOrigin = origin;
+  const callbackOrigin = "https://novel-tribe.com";
 
   if (code) {
     const response = NextResponse.redirect(`${callbackOrigin}${next}`, { status: 303 });

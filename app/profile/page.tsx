@@ -12,7 +12,7 @@ import GoodreadsImportAlert from "@/components/goodreads-import-alert";
 import { UpdatesCta } from "@/components/updates-cta";
 import { DEFAULT_FEATURE_FLAGS, resolveFeatureFlags, type FeatureFlagKey, type FeatureFlags } from "@/lib/featureFlags";
 import { evaluateMilestones } from "@/lib/milestones";
-import { exportBooksToCSV, exportBooksToJSON, normalizeImportedCategories, normalizeImportedGenre, parseLibraryCSV } from "@/lib/importExport";
+import { exportBooksToCSV, exportBooksToJSON, normalizeImportedCategories, normalizeImportedGenre, parseKindleJSON, parseLibraryCSV } from "@/lib/importExport";
 
 type ProfileState = {
   full_name: string;
@@ -112,6 +112,7 @@ export default function ProfilePage() {
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [categoryOptions, setCategoryOptions] = useState(allGenres);
   const [totalUsers, setTotalUsers] = useState<number | null>(null);
+  const [uniqueBooks, setUniqueBooks] = useState<number | null>(null);
   const [importing, setImporting] = useState(false);
   const [importStatus, setImportStatus] = useState<string | null>(null);
 
@@ -149,6 +150,7 @@ export default function ProfilePage() {
         .then((response) => (response.ok ? response.json() : null))
         .then((payload) => {
           if (typeof payload?.totalUsers === "number") setTotalUsers(payload.totalUsers);
+          if (typeof payload?.uniqueBooks === "number") setUniqueBooks(payload.uniqueBooks);
         })
         .catch(() => undefined);
       setProfile((current) => ({
@@ -415,20 +417,25 @@ export default function ProfilePage() {
 
     setImporting(true);
     setImportStatus("Reading file...");
-    const importSource = event.target.dataset.importSource === "libby" || /libby|overdrive/i.test(file.name) ? "libby" : "goodreads_csv";
+    const importSource = event.target.dataset.importSource === "kindle" || file.name.toLowerCase().endsWith(".json")
+      ? "kindle_json"
+      : event.target.dataset.importSource === "libby" || /libby|overdrive/i.test(file.name)
+      ? "libby"
+      : "goodreads_csv";
     trackEvent("library_import_started", { format: importSource });
 
     try {
       const text = await file.text();
-      const parsedBooks = parseLibraryCSV(text, file.name);
+      const parsedBooks = importSource === "kindle_json" ? parseKindleJSON(text) : parseLibraryCSV(text, file.name);
 
       if (!parsedBooks.length) {
-        setImportStatus("Could not find any books in that file. Please ensure it is a valid Goodreads or Libby spreadsheet export.");
+        setImportStatus("Could not find any books in that file. Please ensure it is a valid Kindle JSON, Goodreads CSV, or Libby spreadsheet export.");
         setImporting(false);
         return;
       }
 
-      setImportStatus(`Importing and syncing ${parsedBooks.length} ${importSource === "libby" ? "Libby" : "Goodreads"} books...`);
+      const sourceLabel = importSource === "kindle_json" ? "Kindle" : importSource === "libby" ? "Libby" : "Goodreads";
+      setImportStatus(`Importing and syncing ${parsedBooks.length} ${sourceLabel} books...`);
       let insertedCount = 0;
       let updatedCount = 0;
       let unchangedCount = 0;
@@ -707,8 +714,18 @@ export default function ProfilePage() {
             {totalUsers !== null && (
               <div className="mt-3 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-3">
                 <div className="text-[10px] uppercase tracking-[0.2em] text-cyan-200">NovelTribe readers</div>
-                <div className="mt-2 text-2xl font-bold text-white">{totalUsers}</div>
-                <div className="mt-1 text-xs text-zinc-400">Total registered readers</div>
+                <div className="mt-2 grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-2xl font-bold text-white">{totalUsers}</div>
+                    <div className="mt-1 text-xs text-zinc-400">Registered readers</div>
+                  </div>
+                  {uniqueBooks !== null && (
+                    <div>
+                      <div className="text-2xl font-bold text-white">{uniqueBooks}</div>
+                      <div className="mt-1 text-xs text-zinc-400">Unique books tracked</div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -756,7 +773,22 @@ export default function ProfilePage() {
                     className="hidden"
                   />
                 </label>
+                <label className="cursor-pointer rounded-xl border border-amber-400/40 bg-amber-400/15 px-3 py-1.5 text-xs font-semibold text-amber-100 hover:bg-amber-400/25">
+                  <span>{importing ? "Importing..." : "📖 Import Kindle"}</span>
+                  <input
+                    type="file"
+                    accept=".json,application/json"
+                    disabled={importing}
+                    data-import-source="kindle"
+                    onChange={handleImportCSV}
+                    className="hidden"
+                  />
+                </label>
               </div>
+
+              <p className="mt-2 text-[11px] text-zinc-500">
+                Kindle users: <a href="/kindle-import" className="text-amber-200 underline">open the export instructions</a> to create your JSON file first.
+              </p>
 
               {importStatus && (
                 <div className="mt-2.5 text-[11px] text-cyan-300">

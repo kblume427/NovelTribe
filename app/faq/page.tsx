@@ -21,6 +21,10 @@ const questions = [
     answer: "Yes. In Libby, open Tags, choose a tag, then Actions → Export Tag → Spreadsheet → Titles. Upload that file with Import Libby in Profile. NovelTribe maps titles, authors, ISBNs, formats, tags, loan status, and dates.",
   },
   {
+    question: "Can I import my Kindle library?",
+    answer: "Yes. Open the Kindle export guide, preferably on a desktop or laptop, drag the NovelTribe bookmarklet to your bookmarks bar, run it on Amazon's Content and Devices Books page, then upload the downloaded kindle_library.json file with Import Kindle in Profile. On a phone, turn on Desktop site or Request desktop website; if the browser cannot create a bookmark, use a computer for the export step.",
+  },
+  {
     question: "What happens if I import the same library twice?",
     answer: "NovelTribe matches by ISBN when available, then by title and author. Existing books are updated with missing or improved information instead of creating duplicate shelf entries.",
   },

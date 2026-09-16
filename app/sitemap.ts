@@ -7,6 +7,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: "https://novel-tribe.com", lastModified, changeFrequency: "weekly", priority: 1 },
     { url: "https://novel-tribe.com/features", lastModified, changeFrequency: "weekly", priority: 0.8 },
     { url: "https://novel-tribe.com/getting-started", lastModified, changeFrequency: "monthly", priority: 0.8 },
+    { url: "https://novel-tribe.com/kindle-import", lastModified, changeFrequency: "monthly", priority: 0.7 },
     { url: "https://novel-tribe.com/updates", lastModified, changeFrequency: "weekly", priority: 0.7 },
     { url: "https://novel-tribe.com/faq", lastModified, changeFrequency: "monthly", priority: 0.7 },
     { url: "https://novel-tribe.com/feedback", lastModified, changeFrequency: "monthly", priority: 0.6 },

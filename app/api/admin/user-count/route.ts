@@ -25,5 +25,20 @@ export async function GET() {
     .select("id", { count: "exact", head: true });
   if (error) return Response.json({ error: "Count unavailable" }, { status: 503 });
 
-  return Response.json({ totalUsers: count ?? 0 });
+  const { data: books, error: booksError } = await supabaseAdmin
+    .from("books")
+    .select("title, author, isbn");
+  if (booksError) return Response.json({ error: "Count unavailable" }, { status: 503 });
+
+  const uniqueBookKeys = new Set(
+    (books ?? []).map((book) => {
+      const isbn = book.isbn?.replace(/[^0-9X]/gi, "").toUpperCase();
+      if (isbn) return `isbn:${isbn}`;
+      const title = book.title.trim().replace(/\s+/g, " ").toLowerCase();
+      const author = book.author.trim().replace(/\s+/g, " ").toLowerCase();
+      return `title-author:${title}:${author}`;
+    }),
+  );
+
+  return Response.json({ totalUsers: count ?? 0, uniqueBooks: uniqueBookKeys.size });
 }

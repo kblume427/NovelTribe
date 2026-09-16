@@ -3,7 +3,7 @@ import Image from "next/image";
 
 export const metadata: Metadata = {
   title: "Getting Started | NovelTribe",
-  description: "Set up your NovelTribe library, import Goodreads books, and start a reading rhythm in a few simple steps.",
+  description: "Set up your NovelTribe library, import Goodreads and Kindle books, and start a reading rhythm in a few simple steps.",
   alternates: { canonical: "/getting-started" },
 };
 
@@ -16,7 +16,7 @@ const steps = [
   {
     number: "02",
     title: "Import your library",
-    body: "From Profile, choose Import Goodreads or Libby and select a Goodreads CSV or Libby/OverDrive tag spreadsheet. NovelTribe matches existing books instead of creating duplicates.",
+    body: "From Profile, choose Import Goodreads, Libby, or Kindle. Kindle users can follow the export guide to create a JSON file first. NovelTribe matches existing books instead of creating duplicates.",
   },
   {
     number: "03",
@@ -62,6 +62,7 @@ export default function GettingStartedPage() {
               <a href="/#tracker" className="rounded-full bg-gradient-to-r from-cyan-400 to-violet-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-500/15">Open my tracker</a>
               <a href="/profile" className="rounded-full border border-violet-400/30 bg-violet-500/15 px-5 py-3 text-sm font-semibold text-violet-100 transition hover:bg-violet-500/25">Import Goodreads</a>
               <a href="/profile" className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-5 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/20">Import Libby</a>
+              <a href="/kindle-import" className="rounded-full border border-amber-400/30 bg-amber-500/10 px-5 py-3 text-sm font-semibold text-amber-100 transition hover:bg-amber-500/20">Import Kindle</a>
             </div>
           </div>
           <div className="rounded-[28px] border border-amber-400/20 bg-gradient-to-br from-amber-400/15 via-[#1c1614] to-[#20191d] p-6">
@@ -120,7 +121,7 @@ export default function GettingStartedPage() {
             <div className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-200">Library import notes</div>
             <h2 className="mt-3 text-3xl font-bold text-white">Bring your library in, with room to adjust.</h2>
             <ul className="mt-5 space-y-3 text-sm leading-6 text-zinc-300">
-              <li>Use the CSV export from Goodreads, or export a Libby tag as a spreadsheet from Tags → Actions → Export Tag → Spreadsheet → Titles.</li>
+              <li>Use the CSV export from Goodreads, export a Libby tag as a spreadsheet, or follow the <a href="/kindle-import" className="text-amber-200 underline">Kindle export guide</a> to create a JSON file from Amazon.</li>
               <li>ISBNs are used to improve covers and category classification, including Kindle editions when metadata is available.</li>
               <li>Re-importing is safe: matching books are updated instead of duplicated.</li>
               <li>NovelTribe detects Goodreads and Libby/OverDrive files automatically. Libby timeline Activity events are grouped by title/ISBN: returned/completed becomes Read; active loans become Currently Reading; holds become Want to Read.</li>

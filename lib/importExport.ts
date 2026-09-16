@@ -95,6 +95,48 @@ export type ParsedImportBook = {
   custom_shelves?: string[];
 };
 
+export function parseKindleJSON(jsonText: string): ParsedImportBook[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonText);
+  } catch {
+    return [];
+  }
+
+  const rawBooks = Array.isArray(parsed)
+    ? parsed
+    : parsed && typeof parsed === "object" && "books" in parsed && Array.isArray(parsed.books)
+    ? parsed.books
+    : [];
+
+  return rawBooks.flatMap((rawBook) => {
+    if (!rawBook || typeof rawBook !== "object") return [];
+    const book = rawBook as Record<string, unknown>;
+    const title = typeof book.title === "string" ? cleanImportedValue(book.title) : "";
+    const author = typeof book.author === "string" ? cleanImportedValue(book.author) : "Unknown author";
+    if (!title) return [];
+
+    const readStatus = typeof book.readStatus === "string" ? book.readStatus.toLowerCase() : "";
+    const status: BookStatus = readStatus === "read" ? "Read" : "Want to Read";
+    const acquired = typeof book.acquired === "string" && !Number.isNaN(Date.parse(book.acquired))
+      ? new Date(book.acquired).toISOString()
+      : null;
+
+    return [{
+      title,
+      author,
+      genre: "General Fiction",
+      genre_source: "catalog_fallback",
+      status,
+      rating: 0,
+      isbn: null,
+      finished_at: status === "Read" ? acquired : null,
+      format: "E-Book",
+      custom_shelves: ["Kindle"],
+    }];
+  });
+}
+
 const IMPORT_GENRE_MAP: Array<{ genre: string; keywords: string[] }> = [
   { genre: "Dark Romance", keywords: ["dark romance"] },
   { genre: "Romantasy", keywords: ["romantasy"] },

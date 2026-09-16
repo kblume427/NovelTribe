@@ -23,7 +23,7 @@ export default function LoginPage() {
     trackEvent("sign_in_started", { method: "magic_link" });
 
     const supabase = createSupabaseClient();
-    const redirectOrigin = window.location.origin;
+    const redirectOrigin = "https://novel-tribe.com";
 
     const { error } = await supabase.auth.signInWithOtp({
       email,
