@@ -136,7 +136,9 @@ export async function POST(request: Request) {
       if (payload.genre && payload.genre !== "General Fiction" && payload.genre !== matchedBook.genre) {
         updateData.genre = payload.genre;
       }
-      if (Array.isArray(payload.categories) && payload.categories.length > 0) {
+      if (payload.genre_source === "kindle") {
+        updateData.categories = [];
+      } else if (Array.isArray(payload.categories) && payload.categories.length > 0) {
         updateData.categories = Array.from(new Set([...(matchedBook.categories || []), ...payload.categories]));
       }
       if (!matchedBook.cover_url) {

@@ -85,7 +85,7 @@ export type ParsedImportBook = {
   author: string;
   genre: string;
   categories?: string[];
-  genre_source?: "goodreads" | "catalog_fallback";
+  genre_source?: "goodreads" | "catalog_fallback" | "kindle";
   status: BookStatus;
   rating: number;
   review?: string | null;
@@ -126,7 +126,8 @@ export function parseKindleJSON(jsonText: string): ParsedImportBook[] {
       title,
       author,
       genre: "General Fiction",
-      genre_source: "catalog_fallback",
+      categories: [],
+      genre_source: "kindle",
       status,
       rating: 0,
       isbn: null,
