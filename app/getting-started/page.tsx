@@ -123,7 +123,7 @@ export default function GettingStartedPage() {
               <li>Use the CSV export from Goodreads, or export a Libby tag as a spreadsheet from Tags → Actions → Export Tag → Spreadsheet → Titles.</li>
               <li>ISBNs are used to improve covers and category classification, including Kindle editions when metadata is available.</li>
               <li>Re-importing is safe: matching books are updated instead of duplicated.</li>
-              <li>NovelTribe detects Goodreads and Libby/OverDrive files automatically and maps Libby tags, loan status, dates, and formats.</li>
+              <li>NovelTribe detects Goodreads and Libby/OverDrive files automatically. Libby titles with a returned/completed event become Read; active loans become Currently Reading; holds become Want to Read.</li>
               <li>Open Edit on the Tracker to change title, author, ISBN, genres, status, rating, review, finish date, format, or shelves.</li>
             </ul>
           </div>

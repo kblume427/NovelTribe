@@ -447,6 +447,7 @@ The SEO enhancements and initial handoff documentation were verified, committed,
 - **Updates Changelog**: Added public `/updates` with dated product improvements, fixes, and reliability notes.
 - **Unseen Updates CTA**: Tracker and Profile show a versioned local-storage CTA until the reader visits `/updates`; changing `LATEST_UPDATES_VERSION` makes the notice visible again without storing user data server-side.
 - **Libby Import**: Profile accepts Libby/OverDrive tag spreadsheets alongside Goodreads exports, mapping titles, authors, ISBNs, formats, tags, loan status, and dates through the same duplicate-safe upsert flow.
+- **Libby Timeline Status Correction**: Timeline exports are grouped by title/ISBN and classified from the latest event: returned/completed becomes `Read`, an active borrowed loan becomes `Currently Reading`, and holds become `Want to Read`.
 - **Privacy-Controlled Reader Search**: Recommendations includes public reader search by name or username; only profiles with `is_public = true` are searchable, and the signed-in user is excluded.
 - **FAQ Page**: Added public `/faq` answers for privacy, Goodreads/Libby imports, duplicate handling, editing, recommendations, feature toggles, mobile use, and exports.
 - **Feedback Form**: Added public `/feedback` for bug reports, feature ideas, import issues, and general feedback with an optional reply-to email and privacy guidance.

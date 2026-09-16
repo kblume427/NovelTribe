@@ -328,17 +328,14 @@ export function parseLibbyCSV(csvText: string): ParsedImportBook[] {
   const statusIdx = findIndex("status", "loanstatus", "availability");
   const dateIdx = findIndex("datereturned", "dateborrowed", "datecompleted", "dateread", "date");
 
-  return lines.slice(1).flatMap((line) => {
+  const events = lines.slice(1).flatMap((line) => {
     const row = parseRow(line);
     const title = row[titleIdx] ?? "";
     const author = row[authorIdx] ?? "Unknown author";
     if (!title) return [];
 
     const rawTags = row[tagsIdx] ?? "";
-    const rawStatus = `${row[statusIdx] ?? ""} ${rawTags}`.toLowerCase();
-    const status: BookStatus = /borrowed|returned|completed|finished|read/.test(rawStatus)
-      ? "Read"
-      : "Want to Read";
+    const rawActivity = (row[statusIdx] ?? "").toLowerCase().trim();
     const rawFormat = (row[formatIdx] ?? "").toLowerCase();
     const format = /audio/.test(rawFormat)
       ? "Audiobook"
@@ -349,25 +346,53 @@ export function parseLibbyCSV(csvText: string): ParsedImportBook[] {
       : null;
     const rawIsbn = (row[isbnIdx] ?? "").replace(/[^0-9X]/gi, "").toUpperCase();
     const isbn = rawIsbn.length === 10 || rawIsbn.length === 13 ? rawIsbn : null;
-    const rawDate = row[dateIdx] ?? "";
-    const finishedAt = status === "Read" && rawDate && !Number.isNaN(Date.parse(rawDate))
-      ? new Date(rawDate).toISOString()
-      : null;
     const customShelves = splitImportedGenres(rawTags).filter((tag) => !/^(borrowed|returned|completed|finished|read)$/i.test(tag));
 
     return [{
       title,
       author,
+      activity: rawActivity,
+      timestamp: row[dateIdx] ?? "",
+      isbn,
+      format,
+      customShelves,
+    }];
+  });
+
+  const grouped = new Map<string, typeof events>();
+  for (const event of events) {
+    const key = event.isbn || `${event.title.toLowerCase()}::${event.author.toLowerCase()}`;
+    grouped.set(key, [...(grouped.get(key) ?? []), event]);
+  }
+
+  return Array.from(grouped.values()).map((bookEvents) => {
+    const sortedEvents = [...bookEvents].sort((left, right) => Date.parse(right.timestamp) - Date.parse(left.timestamp));
+    const latest = sortedEvents[0];
+    const latestActivity = latest.activity;
+    const status: BookStatus = /borrowed|loaned|checked out/.test(latestActivity)
+      ? "Currently Reading"
+      : /returned|completed|finished|read/.test(latestActivity)
+      ? "Read"
+      : "Want to Read";
+    const returnedEvent = sortedEvents.find((event) => /returned|completed|finished|read/.test(event.activity));
+    const finishedAt = status === "Read" && returnedEvent?.timestamp && !Number.isNaN(Date.parse(returnedEvent.timestamp))
+      ? new Date(returnedEvent.timestamp).toISOString()
+      : null;
+    const shelves = Array.from(new Set(bookEvents.flatMap((event) => event.customShelves)));
+
+    return {
+      title: latest.title,
+      author: latest.author,
       genre: "General Fiction",
       categories: undefined,
-      genre_source: "catalog_fallback",
+      genre_source: "catalog_fallback" as const,
       status,
       rating: 0,
-      isbn,
+      isbn: latest.isbn,
       finished_at: finishedAt,
-      format,
-      custom_shelves: customShelves.length > 0 ? customShelves : undefined,
-    }];
+      format: latest.format as ParsedImportBook["format"],
+      custom_shelves: shelves.length > 0 ? shelves : undefined,
+    };
   });
 }
 
