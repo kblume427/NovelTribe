@@ -130,8 +130,11 @@ export default function ProfilePage() {
     setSupabaseReady(true);
 
     let active = true;
+    let profileLoadInProgress = false;
 
     async function loadProfile() {
+      if (profileLoadInProgress) return;
+      profileLoadInProgress = true;
       let user: { id: string; email?: string; user_metadata?: Record<string, unknown> } | null = null;
 
       for (let attempt = 0; attempt < 3 && active && !user; attempt++) {
@@ -165,6 +168,7 @@ export default function ProfilePage() {
       if (!user) {
         setLoading(false);
         setStatus("Your sign-in session could not be verified. Refresh this page or sign in again.");
+        profileLoadInProgress = false;
         return;
       }
 
@@ -280,12 +284,22 @@ export default function ProfilePage() {
         .catch(() => undefined);
 
       setLoading(false);
+      profileLoadInProgress = false;
     }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) {
+        setStatus(null);
+        setLoading(true);
+        void loadProfile();
+      }
+    });
 
     void loadProfile();
 
     return () => {
       active = false;
+      subscription.unsubscribe();
     };
   }, [router]);
 
