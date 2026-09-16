@@ -30,7 +30,20 @@ export default function AuthCallbackPage() {
       if (!active) return;
 
       if (session) {
-        router.replace(next);
+        const syncResponse = await fetch("/api/auth/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+          }),
+        });
+
+        if (syncResponse.ok) {
+          router.replace(next);
+        } else {
+          setError("Your sign-in succeeded, but the session could not be synchronized. Refresh and try again.");
+        }
       } else {
         setError("That sign-in link could not be verified. Request a new one.");
       }

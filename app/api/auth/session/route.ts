@@ -13,3 +13,26 @@ export async function GET() {
     { headers: { "Cache-Control": "private, no-store" } },
   );
 }
+
+export async function POST(request: Request) {
+  const body = await request.json().catch(() => null) as {
+    access_token?: string;
+    refresh_token?: string;
+  } | null;
+
+  if (!body?.access_token || !body.refresh_token) {
+    return Response.json({ error: "Missing session tokens" }, { status: 400 });
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.auth.setSession({
+    access_token: body.access_token,
+    refresh_token: body.refresh_token,
+  });
+
+  if (error || !data.session) {
+    return Response.json({ error: "Could not synchronize session" }, { status: 401 });
+  }
+
+  return Response.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });
+}
