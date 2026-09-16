@@ -150,6 +150,11 @@ export default function ProfilePage() {
           user = browserUser;
         }
 
+        if (!user) {
+          const { data: { session } } = await supabase.auth.getSession();
+          user = session?.user ?? null;
+        }
+
         if (!user && attempt < 2) {
           await new Promise((resolve) => window.setTimeout(resolve, 500));
         }
