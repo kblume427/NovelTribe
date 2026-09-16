@@ -325,7 +325,7 @@ export function parseLibbyCSV(csvText: string): ParsedImportBook[] {
   const isbnIdx = findIndex("isbn", "isbn10", "isbn13", "isbn13identifier");
   const formatIdx = findIndex("format", "binding", "mediatype", "type");
   const tagsIdx = findIndex("tags", "tag", "shelf", "shelves", "collection");
-  const statusIdx = findIndex("status", "loanstatus", "availability");
+  const statusIdx = findIndex("status", "loanstatus", "availability", "activity", "event", "eventtype");
   const dateIdx = findIndex("datereturned", "dateborrowed", "datecompleted", "dateread", "date");
 
   const events = lines.slice(1).flatMap((line) => {

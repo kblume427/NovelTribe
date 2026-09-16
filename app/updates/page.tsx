@@ -12,6 +12,13 @@ export const metadata: Metadata = {
 const updates = [
   {
     date: "September 15, 2026",
+    label: "Libby imports",
+    title: "Timeline activity now maps correctly",
+    summary: "Libby timeline exports use an Activity column. The importer now recognizes Borrowed and Returned events from that column and groups them by title/ISBN before assigning status.",
+    details: ["Returned titles become Read", "Active Borrowed titles become Currently Reading", "Existing imports can be corrected by re-importing"],
+  },
+  {
+    date: "September 15, 2026",
     label: "Reading atmosphere",
     title: "More light around the page",
     summary: "The sitewide background now uses a lighter espresso, amber, and paper-toned canvas so the reading-room atmosphere carries beyond the individual cards.",
