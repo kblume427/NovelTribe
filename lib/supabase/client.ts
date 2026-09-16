@@ -9,6 +9,7 @@ export function createSupabaseClient() {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
+        flowType: "implicit",
       },
     },
   );
