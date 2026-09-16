@@ -132,14 +132,32 @@ export default function ProfilePage() {
     let active = true;
 
     async function loadProfile() {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+      let user: { id: string; email?: string; user_metadata?: Record<string, unknown> } | null = null;
+
+      for (let attempt = 0; attempt < 3 && active && !user; attempt++) {
+        try {
+          const sessionResponse = await fetch("/api/auth/session", { cache: "no-store" });
+          if (sessionResponse.ok) {
+            const payload = await sessionResponse.json();
+            user = payload.user ?? null;
+          }
+        } catch {
+          // Fall back to the browser client if the same-origin session request is unavailable.
+        }
+
+        if (!user) {
+          const { data: { user: browserUser } } = await supabase.auth.getUser();
+          user = browserUser;
+        }
+
+        if (!user && attempt < 2) {
+          await new Promise((resolve) => window.setTimeout(resolve, 500));
+        }
+      }
 
       if (!active) return;
 
-      if (userError || !user) {
+      if (!user) {
         setLoading(false);
         router.push("/login");
         return;
@@ -154,9 +172,9 @@ export default function ProfilePage() {
         })
         .catch(() => undefined);
       setProfile((current) => ({
-        full_name: current.full_name || user.user_metadata?.full_name || "",
+        full_name: current.full_name || (typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name : ""),
         username: current.username || "",
-        avatar_url: current.avatar_url || user.user_metadata?.avatar_url || "",
+        avatar_url: current.avatar_url || (typeof user.user_metadata?.avatar_url === "string" ? user.user_metadata.avatar_url : ""),
         preferred_categories: current.preferred_categories || [],
         is_public: current.is_public ?? false,
         public_library: current.public_library ?? false,
