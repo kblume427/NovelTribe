@@ -88,7 +88,7 @@ export default function LoginPage() {
           Save your books, build a reading profile, and keep your recommendations synced.
         </p>
         <div className="mt-5 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 px-3 py-3 text-xs leading-5 text-cyan-100">
-          We will email you a six-digit verification code. Enter it here to finish signing in, including when you are using the NovelTribe app on iPhone or iPad.
+          We will email you a verification code. Enter it here to finish signing in, including when you are using the NovelTribe app on iPhone or iPad.
         </div>
 
         <form onSubmit={handleLogin} className="mt-8 space-y-4">
@@ -111,10 +111,10 @@ export default function LoginPage() {
                 type="text"
                 inputMode="numeric"
                 autoComplete="one-time-code"
-                pattern="[0-9]{6}"
-                maxLength={6}
+                pattern="[0-9]{6,8}"
+                maxLength={8}
                 value={verificationCode}
-                onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, "").slice(0, 8))}
                 className="w-full rounded-2xl border border-white/10 bg-[#0b1120] px-3 py-3 text-center text-xl tracking-[0.35em] text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/60"
                 placeholder="123456"
                 required
