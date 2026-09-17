@@ -44,7 +44,7 @@ export async function GET(request: Request) {
     return Response.json({ books: data });
   }
 
-  return Response.json({ books: starterBooks });
+  return Response.json({ books: [], error: error?.message ?? "Library unavailable" }, { status: 503 });
 }
 
 export async function POST(request: Request) {

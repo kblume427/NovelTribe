@@ -1,9 +1,22 @@
 import { cookies } from "next/headers";
+import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 
 export async function createSupabaseServerClient(request?: Request) {
-  const cookieStore = await cookies();
   const accessToken = request?.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+
+  if (accessToken) {
+    return createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+        global: { headers: { Authorization: `Bearer ${accessToken}` } },
+      },
+    );
+  }
+
+  const cookieStore = await cookies();
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -23,7 +36,6 @@ export async function createSupabaseServerClient(request?: Request) {
           }
         },
       },
-      ...(accessToken ? { global: { headers: { Authorization: `Bearer ${accessToken}` } } } : {}),
     },
   );
 }
