@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { trackEvent } from "@/lib/analytics";
-import { fetchWithSupabaseAuth } from "@/lib/supabase/client";
+import { createSupabaseClient, fetchWithSupabaseAuth } from "@/lib/supabase/client";
 
 type Profile = { username: string; full_name: string | null; avatar_url: string | null };
 type Notification = { id: string; message: string; read_at: string | null; created_at: string };
@@ -14,14 +14,39 @@ export default function SocialInbox() {
   const [unread, setUnread] = useState(0);
 
   useEffect(() => {
-    fetchWithSupabaseAuth(`/api/social?type=${tab}`).then((response) => response.json()).then((payload) => setProfiles(payload.profiles ?? []));
+    const supabase = createSupabaseClient();
+    let active = true;
+    async function loadProfiles() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const response = await fetchWithSupabaseAuth(`/api/social?type=${tab}`);
+      const payload = await response.json();
+      if (active) setProfiles(payload.profiles ?? []);
+    }
+    void loadProfiles();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) void loadProfiles();
+    });
+    return () => { active = false; subscription.unsubscribe(); };
   }, [tab]);
 
   useEffect(() => {
-    fetchWithSupabaseAuth("/api/notifications").then((response) => response.json()).then((payload) => {
+    const supabase = createSupabaseClient();
+    let active = true;
+    async function loadNotifications() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const response = await fetchWithSupabaseAuth("/api/notifications");
+      const payload = await response.json();
+      if (!active) return;
       setNotifications(payload.notifications ?? []);
       setUnread(payload.unread ?? 0);
+    }
+    void loadNotifications();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) void loadNotifications();
     });
+    return () => { active = false; subscription.unsubscribe(); };
   }, []);
 
   const markAllRead = async () => {

@@ -122,27 +122,26 @@ export default function Home() {
   }, [form.title, form.author, editingBookId]);
 
   useEffect(() => {
-    fetchWithSupabaseAuth("/api/books")
-      .then((response) => response.json())
-      .then((payload) => {
-        if (Array.isArray(payload.books) && payload.books.length > 0) {
-          setBooks(payload.books);
-        }
-      })
-      .catch(() => {
-        setBooks(starterBooks);
-      });
-  }, []);
-
-  useEffect(() => {
     const supabase = createSupabaseClient();
     let active = true;
 
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+    async function loadAuthenticatedData() {
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user ?? null;
       if (!active) return;
       setIsSignedIn(Boolean(user));
-      if (!user) return;
+      if (!user) {
+        setBooks(starterBooks);
+        return;
+      }
+
+      fetchWithSupabaseAuth("/api/books")
+        .then((response) => response.json())
+        .then((payload) => {
+          if (Array.isArray(payload.books)) setBooks(payload.books);
+        })
+        .catch(() => undefined);
+
       const { data: profileRow } = await supabase
         .from("profiles")
         .select("feature_flags, reading_goal")
@@ -167,10 +166,16 @@ export default function Home() {
           })
           .catch(() => undefined);
       }
-    })();
+    }
+
+    void loadAuthenticatedData();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) void loadAuthenticatedData();
+    });
 
     return () => {
       active = false;
+      subscription.unsubscribe();
     };
   }, []);
 
