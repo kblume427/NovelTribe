@@ -184,8 +184,8 @@ export default function Home() {
     [books],
   );
   const availableGenres = useMemo(
-    () => Array.from(new Set([...allGenres, ...books.flatMap(getBookCategories).filter(Boolean)])),
-    [books],
+    () => allGenres,
+    [],
   );
   const allShelves = useMemo(() => {
     const set = new Set<string>();

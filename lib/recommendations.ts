@@ -44,7 +44,6 @@ export const allGenres = [
   "Science Fiction",
   "Mystery",
   "Thriller",
-  "Suspense",
   "Romance",
   "Dark Romance",
   "Romantasy",
@@ -52,7 +51,6 @@ export const allGenres = [
   "Historical Fiction",
   "Horror",
   "Nonfiction",
-  "Adventure",
 ];
 
 export const catalog: BookRecord[] = [
