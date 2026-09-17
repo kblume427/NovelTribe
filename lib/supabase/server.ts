@@ -1,8 +1,9 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 
-export async function createSupabaseServerClient() {
+export async function createSupabaseServerClient(request?: Request) {
   const cookieStore = await cookies();
+  const accessToken = request?.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,6 +23,7 @@ export async function createSupabaseServerClient() {
           }
         },
       },
+      ...(accessToken ? { global: { headers: { Authorization: `Bearer ${accessToken}` } } } : {}),
     },
   );
 }

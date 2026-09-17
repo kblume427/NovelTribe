@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
-  const supabase = await createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient(request);
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ profiles: [] }, { status: 401 });
 

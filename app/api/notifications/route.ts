@@ -2,8 +2,8 @@ import { NextRequest } from "next/server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export async function GET() {
-  const supabase = await createSupabaseServerClient();
+export async function GET(request: Request) {
+  const supabase = await createSupabaseServerClient(request);
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ notifications: [], unread: 0 }, { status: 401 });
 

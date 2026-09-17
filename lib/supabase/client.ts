@@ -14,3 +14,10 @@ export function createSupabaseClient() {
     },
   );
 }
+
+export async function fetchWithSupabaseAuth(input: RequestInfo | URL, init: RequestInit = {}) {
+  const session = (await createSupabaseClient().auth.getSession()).data.session;
+  const headers = new Headers(init.headers);
+  if (session?.access_token) headers.set("Authorization", `Bearer ${session.access_token}`);
+  return fetch(input, { ...init, headers });
+}

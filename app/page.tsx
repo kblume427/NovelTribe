@@ -9,7 +9,7 @@ import { UpdatesCta } from "@/components/updates-cta";
 import { buildAmazonBookUrl } from "@/lib/affiliate";
 import { trackEvent } from "@/lib/analytics";
 import { allGenres, getBookCategories, starterBooks, type BookRecord } from "@/lib/recommendations";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createSupabaseClient, fetchWithSupabaseAuth } from "@/lib/supabase/client";
 import { MOOD_TAGS, isFeatureEnabled, resolveFeatureFlags, type FeatureFlags } from "@/lib/featureFlags";
 import { evaluateMilestones } from "@/lib/milestones";
 
@@ -122,7 +122,7 @@ export default function Home() {
   }, [form.title, form.author, editingBookId]);
 
   useEffect(() => {
-    fetch("/api/books")
+    fetchWithSupabaseAuth("/api/books")
       .then((response) => response.json())
       .then((payload) => {
         if (Array.isArray(payload.books) && payload.books.length > 0) {

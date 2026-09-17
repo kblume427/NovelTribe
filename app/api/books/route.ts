@@ -23,8 +23,8 @@ async function recordActivity(
   });
 }
 
-export async function GET() {
-  const supabase = await createSupabaseServerClient();
+export async function GET(request: Request) {
+  const supabase = await createSupabaseServerClient(request);
   const {
     data: { user },
     error: authError,

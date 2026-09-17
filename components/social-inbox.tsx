@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { trackEvent } from "@/lib/analytics";
+import { fetchWithSupabaseAuth } from "@/lib/supabase/client";
 
 type Profile = { username: string; full_name: string | null; avatar_url: string | null };
 type Notification = { id: string; message: string; read_at: string | null; created_at: string };
@@ -13,11 +14,11 @@ export default function SocialInbox() {
   const [unread, setUnread] = useState(0);
 
   useEffect(() => {
-    fetch(`/api/social?type=${tab}`).then((response) => response.json()).then((payload) => setProfiles(payload.profiles ?? []));
+    fetchWithSupabaseAuth(`/api/social?type=${tab}`).then((response) => response.json()).then((payload) => setProfiles(payload.profiles ?? []));
   }, [tab]);
 
   useEffect(() => {
-    fetch("/api/notifications").then((response) => response.json()).then((payload) => {
+    fetchWithSupabaseAuth("/api/notifications").then((response) => response.json()).then((payload) => {
       setNotifications(payload.notifications ?? []);
       setUnread(payload.unread ?? 0);
     });
