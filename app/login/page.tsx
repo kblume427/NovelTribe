@@ -1,18 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [codeSent, setCodeSent] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("error") === "auth") {
-      setStatus("That sign-in link expired or was already used. Request a new one.");
+      setStatus("That sign-in link expired or was already used. Request a new code.");
     }
   }, []);
 
@@ -20,23 +24,56 @@ export default function LoginPage() {
     event.preventDefault();
     setLoading(true);
     setStatus(null);
-    trackEvent("sign_in_started", { method: "magic_link" });
-
     const supabase = createSupabaseClient();
-    const redirectOrigin = "https://novel-tribe.com";
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${redirectOrigin}/auth/callback`,
-      },
-    });
+    if (codeSent) {
+      trackEvent("sign_in_started", { method: "email_code" });
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token: verificationCode.trim(),
+        type: "email",
+      });
+
+      if (error) {
+        setStatus(error.message);
+        setLoading(false);
+        return;
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setStatus("The code was accepted, but your session could not be created. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      const syncResponse = await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+        }),
+      });
+
+      if (!syncResponse.ok) {
+        setStatus("Your code was accepted, but your session could not be synchronized. Please try again.");
+      } else {
+        trackEvent("sign_in_completed", { method: "email_code" });
+        router.replace("/");
+      }
+      setLoading(false);
+      return;
+    }
+
+    trackEvent("sign_in_started", { method: "email_code" });
+    const { error } = await supabase.auth.signInWithOtp({ email });
 
     if (error) {
       setStatus(error.message);
     } else {
-      setStatus("Check your email for a magic sign-in link.");
-      trackEvent("sign_in_completed", { method: "magic_link" });
+      setCodeSent(true);
+      setStatus("Check your email for the six-digit verification code.");
     }
 
     setLoading(false);
@@ -51,7 +88,7 @@ export default function LoginPage() {
           Save your books, build a reading profile, and keep your recommendations synced.
         </p>
         <div className="mt-5 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 px-3 py-3 text-xs leading-5 text-cyan-100">
-          On iPhone or iPad, open the magic link in the same Safari browser where you requested it. If the link opens inside Apple Mail, use the share menu to open it in Safari before signing in.
+          We will email you a six-digit verification code. Enter it here to finish signing in, including when you are using the NovelTribe app on iPhone or iPad.
         </div>
 
         <form onSubmit={handleLogin} className="mt-8 space-y-4">
@@ -67,14 +104,42 @@ export default function LoginPage() {
             />
           </label>
 
+          {codeSent && (
+            <label className="block">
+              <span className="mb-2 block text-sm text-zinc-300">Verification code</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6}"
+                maxLength={6}
+                value={verificationCode}
+                onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                className="w-full rounded-2xl border border-white/10 bg-[#0b1120] px-3 py-3 text-center text-xl tracking-[0.35em] text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/60"
+                placeholder="123456"
+                required
+              />
+            </label>
+          )}
+
           <button
             type="submit"
             disabled={loading}
             className="w-full rounded-full bg-gradient-to-r from-amber-300 to-orange-500 px-4 py-3 font-semibold text-[#20130d] shadow-lg shadow-amber-900/25 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading ? "Sending link..." : "Send magic link"}
+            {loading ? (codeSent ? "Verifying..." : "Sending code...") : (codeSent ? "Verify code" : "Email me a code")}
           </button>
         </form>
+
+        {codeSent && (
+          <button
+            type="button"
+            onClick={() => { setCodeSent(false); setVerificationCode(""); setStatus(null); }}
+            className="mt-4 text-xs text-cyan-200 underline"
+          >
+            Use a different email
+          </button>
+        )}
 
         {status && <p className="mt-5 text-sm text-zinc-300">{status}</p>}
       </div>

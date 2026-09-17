@@ -3,36 +3,44 @@
 import { useEffect, useRef } from "react";
 
 const bookmarkletCode = `javascript:(function(){
-  const books = [];
-  document.querySelectorAll("div").forEach((element) => {
-    const text = element.innerText || "";
-    if (!text.includes("Acquired on")) return;
-    const lines = text.split("\\n").map((line) => line.trim()).filter(Boolean);
-    const acquiredIndex = lines.findIndex((line) => line.startsWith("Acquired on"));
-    if (acquiredIndex < 2) return;
-    let title = lines[acquiredIndex - 2];
-    let author = lines[acquiredIndex - 1];
-    const acquired = lines[acquiredIndex];
-    if (title === "SAMPLE") {
-      title = author;
-      author = lines[acquiredIndex];
-    }
-    const html = element.outerHTML || "";
-    const readStatus = text.includes("Mark as Unread") || html.includes("Mark as Unread") ? "Read" : "Unread";
-    if (!books.some((book) => book.title === title && book.acquired === acquired)) {
-      books.push({ title, author, acquired, readStatus });
+  let books = [];
+  document.querySelectorAll('div').forEach(el => {
+    let text = el.innerText || "";
+    if (text.includes('Acquired on')) {
+      let lines = text.split('\\n').map(l => l.trim()).filter(l => l.length > 0);
+      let acquiredLineIndex = lines.findIndex(l => l.startsWith('Acquired on'));
+      if (acquiredLineIndex >= 2) {
+        let title = lines[acquiredLineIndex - 2];
+        let author = lines[acquiredLineIndex - 1];
+        let acquired = lines[acquiredLineIndex];
+        if (title === 'SAMPLE') {
+          title = author;
+          author = lines[acquiredLineIndex];
+        }
+        let htmlContent = el.outerHTML || "";
+        let readStatus = "Unknown";
+        if (text.includes("Mark as Read") || htmlContent.includes("Mark as Read")) {
+          readStatus = "Unread";
+        } else if (text.includes("Mark as Unread") || htmlContent.includes("Mark as Unread")) {
+          readStatus = "Read";
+        }
+        if (!books.some(b => b.title === title && b.acquired === acquired)) {
+          books.push({ title, author, acquired, readStatus });
+        }
+      }
     }
   });
-  if (!books.length) {
-    alert("No Kindle books found. Open Amazon Content and Devices, choose Books, and try again.");
+  if (books.length === 0) {
+    alert("No books found. Make sure you are on the 'Books' tab of Manage Your Content and Devices.");
     return;
   }
-  const anchor = document.createElement("a");
-  anchor.href = "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(books, null, 2));
-  anchor.download = "kindle_library.json";
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
+  let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(books, null, 2));
+  let downloadAnchor = document.createElement('a');
+  downloadAnchor.setAttribute("href", dataStr);
+  downloadAnchor.setAttribute("download", "kindle_library.json");
+  document.body.appendChild(downloadAnchor);
+  downloadAnchor.click();
+  downloadAnchor.remove();
 })();`;
 
 export default function KindleExportLink() {

@@ -42,9 +42,10 @@ export default function KindleImportPage() {
             <ol className="mt-5 space-y-4 text-sm leading-7 text-zinc-300">
               <li><span className="font-semibold text-white">1.</span> Open this page on a desktop or laptop in Chrome, Edge, Firefox, or Safari. Show the bookmarks bar if it is hidden.</li>
               <li><span className="font-semibold text-white">2.</span> Drag the button below to your bookmarks bar. It should appear as a bookmark named “Drag this to your bookmarks bar.”</li>
-              <li><span className="font-semibold text-white">3.</span> In the same browser, open Amazon&apos;s <a href="https://www.amazon.com/mycd" target="_blank" rel="noreferrer" className="text-amber-200 underline">Content and Devices page</a> and sign in to Amazon there.</li>
-              <li><span className="font-semibold text-white">4.</span> Choose <span className="font-semibold text-white">Books</span>, wait for the book list to appear, then click the NovelTribe bookmark.</li>
-              <li><span className="font-semibold text-white">5.</span> Your browser downloads <span className="font-mono text-amber-100">kindle_library.json</span>. Keep that file; it is what you will upload to NovelTribe.</li>
+              <li><span className="font-semibold text-white">3.</span> In the same browser, open Amazon&apos;s <a href="https://www.amazon.com/hz/mycd/myx?pageType=content" target="_blank" rel="noreferrer" className="text-amber-200 underline">Content and Devices Books page</a> and sign in to Amazon there. If Amazon redirects you to a Seller page, return to this step and use the direct link again while signed into your personal Amazon account.</li>
+              <li><span className="font-semibold text-white">4.</span> Choose <span className="font-semibold text-white">Books</span>, wait for the book list to appear, then click the NovelTribe bookmark. The bookmarklet exports only the page currently displayed.</li>
+              <li><span className="font-semibold text-white">5.</span> Use Amazon&apos;s page controls to go to the next page of books, then run the bookmarklet again. Repeat this for every page in your Kindle library.</li>
+              <li><span className="font-semibold text-white">6.</span> Each run downloads a <span className="font-mono text-amber-100">kindle_library.json</span> file. Keep the files and upload them to NovelTribe one at a time from Profile.</li>
             </ol>
             <div className="mt-7">
               <KindleExportLink />
