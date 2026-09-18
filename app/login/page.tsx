@@ -13,12 +13,33 @@ export default function LoginPage() {
   const [codeSent, setCodeSent] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("error") === "auth") {
       setStatus("That sign-in link expired or was already used. Request a new code.");
     }
   }, []);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timeout = window.setTimeout(() => setResendCooldown((current) => current - 1), 1000);
+    return () => window.clearTimeout(timeout);
+  }, [resendCooldown]);
+
+  async function sendCode() {
+    trackEvent("sign_in_started", { method: "email_code" });
+    const supabase = createSupabaseClient();
+    const { error } = await supabase.auth.signInWithOtp({ email });
+
+    if (error) {
+      setStatus(error.message);
+    } else {
+      setCodeSent(true);
+      setResendCooldown(30);
+      setStatus("Check your email for the six-digit verification code.");
+    }
+  }
 
   async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -60,22 +81,19 @@ export default function LoginPage() {
         setStatus("Your code was accepted, but your session could not be synchronized. Please try again.");
       } else {
         trackEvent("sign_in_completed", { method: "email_code" });
-        router.replace("/");
+        const hasOnboarded = window.localStorage.getItem("ntb_onboarded");
+        if (!hasOnboarded) {
+          window.localStorage.setItem("ntb_onboarded", "1");
+          router.replace("/getting-started");
+        } else {
+          router.replace("/");
+        }
       }
       setLoading(false);
       return;
     }
 
-    trackEvent("sign_in_started", { method: "email_code" });
-    const { error } = await supabase.auth.signInWithOtp({ email });
-
-    if (error) {
-      setStatus(error.message);
-    } else {
-      setCodeSent(true);
-      setStatus("Check your email for the six-digit verification code.");
-    }
-
+    await sendCode();
     setLoading(false);
   }
 
@@ -132,13 +150,23 @@ export default function LoginPage() {
         </form>
 
         {codeSent && (
-          <button
-            type="button"
-            onClick={() => { setCodeSent(false); setVerificationCode(""); setStatus(null); }}
-            className="mt-4 text-xs text-cyan-200 underline"
-          >
-            Use a different email
-          </button>
+          <div className="mt-4 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => { setCodeSent(false); setVerificationCode(""); setResendCooldown(0); setStatus(null); }}
+              className="text-xs text-cyan-200 underline"
+            >
+              Use a different email
+            </button>
+            <button
+              type="button"
+              disabled={resendCooldown > 0}
+              onClick={() => void sendCode()}
+              className="text-xs text-cyan-200 underline disabled:cursor-not-allowed disabled:text-zinc-500 disabled:no-underline"
+            >
+              {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Resend code"}
+            </button>
+          </div>
         )}
 
         {status && <p className="mt-5 text-sm text-zinc-300">{status}</p>}

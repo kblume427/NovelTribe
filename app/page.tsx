@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import ShareNovelTribe from "@/components/share-noveltribe";
 import GoodreadsImportAlert from "@/components/goodreads-import-alert";
+import PwaInstallBanner from "@/components/pwa-install-banner";
 import { UpdatesCta } from "@/components/updates-cta";
 import { buildAmazonBookUrl } from "@/lib/affiliate";
 import { trackEvent } from "@/lib/analytics";
@@ -74,6 +75,18 @@ export default function Home() {
   const [isFindingManualCover, setIsFindingManualCover] = useState(false);
   const [coverCandidates, setCoverCandidates] = useState<Array<{ book: Book; coverUrl: string }>>([]);
   const [isFindingMissingCovers, setIsFindingMissingCovers] = useState(false);
+  const [publicStats, setPublicStats] = useState<{ readers: number; books: number } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/public/stats")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload) => {
+        if (typeof payload?.readers === "number" && typeof payload?.books === "number") {
+          setPublicStats({ readers: payload.readers, books: payload.books });
+        }
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     const title = form.title.trim();
@@ -141,6 +154,40 @@ export default function Home() {
           if (Array.isArray(payload.books)) setBooks(payload.books);
         })
         .catch(() => undefined);
+
+      const pendingBookRaw = window.sessionStorage.getItem("ntb_pending_book");
+      if (pendingBookRaw) {
+        window.sessionStorage.removeItem("ntb_pending_book");
+        try {
+          const pendingBook = JSON.parse(pendingBookRaw) as GoogleBookResult;
+          const importedCategories = pendingBook.categories?.filter(Boolean) ?? [];
+          const importedGenre = importedCategories[0] || "Fantasy";
+          fetchWithSupabaseAuth("/api/books", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: pendingBook.title,
+              author: pendingBook.author,
+              genre: importedGenre,
+              status: "Want to Read",
+              rating: 0,
+              isbn: pendingBook.isbn ?? null,
+              cover_url: pendingBook.thumbnail ?? null,
+              categories: importedCategories.length > 0 ? importedCategories : [importedGenre],
+            }),
+          })
+            .then((response) => (response.ok ? response.json() : null))
+            .then((payload) => {
+              if (payload?.book) {
+                setBooks((current) => [payload.book, ...current]);
+                trackEvent("book_imported", { source: "google_books_post_signin", category: importedGenre });
+              }
+            })
+            .catch(() => undefined);
+        } catch {
+          // Ignore malformed pending book data.
+        }
+      }
 
       const { data: profileRow } = await supabase
         .from("profiles")
@@ -481,6 +528,13 @@ export default function Home() {
   };
 
   const handleImportFromGoogle = async (result: GoogleBookResult) => {
+    if (isSignedIn === false) {
+      trackEvent("landing_cta_clicked", { action: "sign_in_to_save_search_result" });
+      window.sessionStorage.setItem("ntb_pending_book", JSON.stringify(result));
+      window.location.href = "/login";
+      return;
+    }
+
     const importedCategories = result.categories?.filter(Boolean) ?? [];
     const importedGenre = importedCategories[0] || form.genre || "Fantasy";
 
@@ -545,6 +599,7 @@ export default function Home() {
 
         <GoodreadsImportAlert />
         <UpdatesCta />
+        {isSignedIn === true && <PwaInstallBanner />}
 
         {profileFlags && isFeatureEnabled(profileFlags, "reading_reminders") && !loggedToday && !reminderDismissed && (
           <aside aria-label="Daily reading reminder" className="mb-6 flex flex-col gap-3 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/20 via-[#251b18] to-[#16161b] p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -593,6 +648,11 @@ export default function Home() {
             <p className="mt-4 max-w-xl text-base leading-7 text-zinc-300">
               Log the books you’ve finished, keep tabs on your current reads, and let NovelTribe suggest titles based on the genres and stories you already love.
             </p>
+            {publicStats && publicStats.readers > 0 && (
+              <p className="mt-3 text-sm text-zinc-400">
+                Join <span className="font-semibold text-white">{publicStats.readers.toLocaleString()}</span> readers tracking <span className="font-semibold text-white">{publicStats.books.toLocaleString()}</span> books.
+              </p>
+            )}
             <div className="mt-6 flex flex-wrap gap-3">
               <a
                 href={isSignedIn === false ? "/login" : "#tracker"}
@@ -608,6 +668,15 @@ export default function Home() {
               >
                 {isSignedIn === false ? "See how it works" : "Bring in my Goodreads shelf"}
               </a>
+              {isSignedIn === false && (
+                <a
+                  href="/login"
+                  onClick={() => trackEvent("landing_cta_clicked", { action: "import_before_signup" })}
+                  className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-5 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/20"
+                >
+                  Import my Goodreads, Libby, or Kindle library
+                </a>
+              )}
               {isSignedIn !== false && (
                 <a
                   href="/profile"
@@ -1187,7 +1256,7 @@ export default function Home() {
                         onClick={() => void handleImportFromGoogle(result)}
                         className="self-start rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2.5 py-1.5 text-[10px] uppercase tracking-[0.2em] text-cyan-100 transition hover:bg-cyan-500/20 sm:self-auto"
                       >
-                        Add
+                        {isSignedIn === false ? "Sign in to save" : "Add"}
                       </button>
                     </div>
                   ))}
