@@ -83,6 +83,7 @@ export default function Home() {
       .then((payload) => {
         if (typeof payload?.readers === "number" && typeof payload?.books === "number") {
           setPublicStats({ readers: payload.readers, books: payload.books });
+          trackEvent("trust_stats_viewed", { readers: payload.readers, books: payload.books });
         }
       })
       .catch(() => undefined);

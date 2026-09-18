@@ -27,8 +27,8 @@ export default function LoginPage() {
     return () => window.clearTimeout(timeout);
   }, [resendCooldown]);
 
-  async function sendCode() {
-    trackEvent("sign_in_started", { method: "email_code" });
+  async function sendCode(isResend = false) {
+    trackEvent(isResend ? "verification_code_resent" : "sign_in_started", { method: "email_code" });
     const supabase = createSupabaseClient();
     const { error } = await supabase.auth.signInWithOtp({ email });
 
@@ -84,6 +84,7 @@ export default function LoginPage() {
         const hasOnboarded = window.localStorage.getItem("ntb_onboarded");
         if (!hasOnboarded) {
           window.localStorage.setItem("ntb_onboarded", "1");
+          trackEvent("first_time_onboarding_redirect");
           router.replace("/getting-started");
         } else {
           router.replace("/");
@@ -161,7 +162,7 @@ export default function LoginPage() {
             <button
               type="button"
               disabled={resendCooldown > 0}
-              onClick={() => void sendCode()}
+              onClick={() => void sendCode(true)}
               className="text-xs text-cyan-200 underline disabled:cursor-not-allowed disabled:text-zinc-500 disabled:no-underline"
             >
               {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Resend code"}

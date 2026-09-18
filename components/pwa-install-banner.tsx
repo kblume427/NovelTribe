@@ -24,6 +24,7 @@ export default function PwaInstallBanner() {
     function handleBeforeInstallPrompt(event: Event) {
       event.preventDefault();
       setInstallEvent(event as BeforeInstallPromptEvent);
+      trackEvent("pwa_install_banner_shown");
     }
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
