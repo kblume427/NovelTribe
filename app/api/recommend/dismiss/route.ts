@@ -1,7 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export async function GET() {
-  const supabase = await createSupabaseServerClient();
+export async function GET(request: Request) {
+  const supabase = await createSupabaseServerClient(request);
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ titles: [] }, { status: 401 });
 
@@ -10,7 +10,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient(request);
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: "Not authenticated" }, { status: 401 });
 

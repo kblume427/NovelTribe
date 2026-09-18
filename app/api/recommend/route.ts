@@ -172,8 +172,8 @@ async function getExternalRecommendations(books: BookRecord[], category: string,
   );
 }
 
-async function getFollowedHighRatedCategories(userGenres: string[] = []) {
-  const supabase = await createSupabaseServerClient();
+async function getFollowedHighRatedCategories(request: Request, userGenres: string[] = []) {
+  const supabase = await createSupabaseServerClient(request);
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
@@ -234,7 +234,7 @@ export async function POST(request: Request) {
   const refresh = Boolean(body.refresh);
   const refreshSeed = refresh ? body.refreshSeed ?? Date.now() : 0;
   const providerOffset = refresh ? (refreshSeed % 4) * 12 : 0;
-  const supabase = await createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient(request);
   const { data: { user } } = await supabase.auth.getUser();
   const { data: dismissalRows } = user
     ? await supabase.from("recommendation_dismissals").select("title").eq("user_id", user.id)
@@ -245,7 +245,7 @@ export async function POST(request: Request) {
     ...books.filter((b) => b.status === "Read").flatMap(getBookCategories),
   ];
   const followedCategories = exploreGenre === "For You"
-    ? await getFollowedHighRatedCategories(userKnownGenres).catch(() => [])
+    ? await getFollowedHighRatedCategories(request, userKnownGenres).catch(() => [])
     : [];
   const readCategoryCounts = new Map<string, number>();
   const highRatedCategoryCounts = new Map<string, number>();

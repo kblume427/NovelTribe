@@ -225,10 +225,6 @@ export default function ProfilePage() {
 
       if (booksData) {
         setProfileBooks(booksData as BookRecord[]);
-        const bookCategories = booksData.flatMap((book) =>
-          Array.isArray(book.categories) && book.categories.length > 0 ? book.categories : [book.genre],
-        );
-        setCategoryOptions(Array.from(new Set([...allGenres, ...bookCategories.filter(Boolean)])));
         const total = booksData.length;
         const finished = booksData.filter((book) => book.status === "Read").length;
         const ratedBooks = booksData.filter((book) => Number(book.rating) > 0);

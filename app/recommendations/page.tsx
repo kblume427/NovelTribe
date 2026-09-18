@@ -3,9 +3,9 @@
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { allGenres, getBookCategories, starterBooks, type BookRecord, type Recommendation } from "@/lib/recommendations";
+import { allGenres, starterBooks, type BookRecord, type Recommendation } from "@/lib/recommendations";
 import { buildAmazonBookUrl } from "@/lib/affiliate";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createSupabaseClient, fetchWithSupabaseAuth } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics";
 import RecommendedReaders from "@/components/recommended-readers";
 import ActivityFeed from "@/components/activity-feed";
@@ -57,12 +57,12 @@ export default function RecommendationsPage() {
   const [dismissedTitles, setDismissedTitles] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-        fetch("/api/recommend/dismiss").then((response) => response.json()).then((payload) => setDismissedTitles(new Set(payload.titles ?? []))).catch(() => undefined);
+        fetchWithSupabaseAuth("/api/recommend/dismiss").then((response) => response.json()).then((payload) => setDismissedTitles(new Set(payload.titles ?? []))).catch(() => undefined);
       }, []);
 
       useEffect(() => {
       setRecommendations([]);
-    fetch("/api/books")
+    fetchWithSupabaseAuth("/api/books")
       .then((response) => response.json())
       .then((payload) => {
         if (Array.isArray(payload.books) && payload.books.length > 0) {
@@ -94,7 +94,7 @@ export default function RecommendationsPage() {
       setError(null);
 
       try {
-        const response = await fetch("/api/recommend", {
+        const response = await fetchWithSupabaseAuth("/api/recommend", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -144,15 +144,15 @@ export default function RecommendationsPage() {
   }, [fetchRecommendations]);
 
   const availableGenres = useMemo(
-    () => Array.from(new Set([...allGenres, ...books.flatMap(getBookCategories).filter(Boolean)])),
-    [books],
+    () => allGenres,
+    [],
   );
   const recommendationFilters = ["For You", ...availableGenres];
 
   const addRecommendationToLibrary = async (book: Recommendation, status: "Read" | "Want to Read") => {
     const bookKey = `${book.id}-${book.title}`;
     setSavingBookKey(bookKey);
-    const response = await fetch("/api/books", {
+    const response = await fetchWithSupabaseAuth("/api/books", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -174,7 +174,7 @@ export default function RecommendationsPage() {
   };
 
   const dismissRecommendation = async (book: Recommendation) => {
-    await fetch("/api/recommend/dismiss", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: book.title }) });
+    await fetchWithSupabaseAuth("/api/recommend/dismiss", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: book.title }) });
     setDismissedTitles((current) => new Set([...current, book.title]));
     setRecommendations((current) => current.filter((item) => item.title !== book.title));
     trackEvent("recommendation_dismissed", { category: book.genre });

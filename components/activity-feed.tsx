@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fetchWithSupabaseAuth } from "@/lib/supabase/client";
 
 type Activity = {
   id: string;
@@ -16,7 +17,7 @@ export default function ActivityFeed() {
   const [activity, setActivity] = useState<Activity[]>([]);
 
   useEffect(() => {
-    fetch("/api/activity/feed")
+    fetchWithSupabaseAuth("/api/activity/feed")
       .then((response) => (response.ok ? response.json() : { activity: [] }))
       .then((payload) => setActivity(Array.isArray(payload.activity) ? payload.activity : []))
       .catch(() => setActivity([]));
