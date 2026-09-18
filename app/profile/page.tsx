@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { allGenres, getBookCategories, type BookRecord } from "@/lib/recommendations";
 import { trackEvent } from "@/lib/analytics";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createSupabaseClient, fetchWithSupabaseAuth } from "@/lib/supabase/client";
 import SocialInbox from "@/components/social-inbox";
 import GoodreadsImportAlert from "@/components/goodreads-import-alert";
 import { UpdatesCta } from "@/components/updates-cta";
@@ -504,7 +504,7 @@ export default function ProfilePage() {
             }
           }
 
-          const res = await fetch("/api/books", {
+          const res = await fetchWithSupabaseAuth("/api/books", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ...importBook, upsert: true }),

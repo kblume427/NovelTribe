@@ -264,7 +264,7 @@ export default function Home() {
   };
 
   const approveMissingCover = async (candidate: { book: Book; coverUrl: string }) => {
-    const response = await fetch("/api/books", {
+    const response = await fetchWithSupabaseAuth("/api/books", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...candidate.book, cover_url: candidate.coverUrl }),
@@ -282,7 +282,7 @@ export default function Home() {
     trackEvent("missing_covers_approved_all", { count: toApprove.length });
     for (const candidate of toApprove) {
       try {
-        const response = await fetch("/api/books", {
+        const response = await fetchWithSupabaseAuth("/api/books", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...candidate.book, cover_url: candidate.coverUrl }),
@@ -336,7 +336,7 @@ export default function Home() {
     let saveSucceeded = false;
 
     if (editingBookId !== null) {
-      const response = await fetch("/api/books", {
+      const response = await fetchWithSupabaseAuth("/api/books", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(bookPayload),
@@ -361,7 +361,7 @@ export default function Home() {
         setBookError(payload?.error ?? "The book could not be saved. Please try again.");
       }
     } else {
-      const response = await fetch("/api/books", {
+      const response = await fetchWithSupabaseAuth("/api/books", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(bookPayload),
@@ -417,7 +417,7 @@ export default function Home() {
 
   const handleDelete = async (bookId: string | number) => {
     const targetBook = books.find((b) => b.id === bookId);
-    const response = await fetch("/api/books", {
+    const response = await fetchWithSupabaseAuth("/api/books", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: bookId }),
@@ -505,7 +505,7 @@ export default function Home() {
     setSearchResults([]);
     setSearchError(null);
 
-    const response = await fetch("/api/books", {
+    const response = await fetchWithSupabaseAuth("/api/books", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(importedBook),
