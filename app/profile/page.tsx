@@ -173,7 +173,7 @@ export default function ProfilePage() {
       }
 
       setEmail(user.email ?? "");
-      fetch("/api/admin/user-count")
+      fetchWithSupabaseAuth("/api/admin/user-count")
         .then((response) => (response.ok ? response.json() : null))
         .then((payload) => {
           if (typeof payload?.totalUsers === "number") setTotalUsers(payload.totalUsers);
@@ -271,7 +271,7 @@ export default function ProfilePage() {
         setActivity(activityData as ActivityItem[]);
       }
 
-      fetch("/api/sessions")
+      fetchWithSupabaseAuth("/api/sessions")
         .then((res) => (res.ok ? res.json() : null))
         .then((payload) => {
           if (!active || !payload) return;

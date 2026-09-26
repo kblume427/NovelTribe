@@ -4,7 +4,7 @@ export async function GET(request: Request) {
   const query = new URL(request.url).searchParams.get("q")?.trim() ?? "";
   if (query.length < 2) return Response.json({ profiles: [] });
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient(request);
   const { data: { user } } = await supabase.auth.getUser();
   const matchPattern = `%${query.replace(/[%_]/g, "\\$&")}%`;
 

@@ -1,8 +1,8 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/server";
 
-export async function GET() {
-  const sessionClient = await createSupabaseServerClient();
+export async function GET(request: Request) {
+  const sessionClient = await createSupabaseServerClient(request);
   const { data: { user } } = await sessionClient.auth.getUser();
   if (!user || !supabaseAdmin) return Response.json({ error: "Not available" }, { status: 404 });
 

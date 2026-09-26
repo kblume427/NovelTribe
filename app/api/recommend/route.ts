@@ -1,4 +1,5 @@
 import {
+  allGenres,
   buildHeuristicRecommendations,
   diversifyRecommendations,
   getBookCategories,
@@ -6,6 +7,7 @@ import {
   type BookRecord,
   type Recommendation,
 } from "@/lib/recommendations";
+import { normalizeImportedGenre } from "@/lib/importExport";
 import { openai } from "@/lib/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isFeatureEnabled, resolveFeatureFlags } from "@/lib/featureFlags";
@@ -14,6 +16,14 @@ import { sanitizeCoverUrl } from "@/lib/covers";
 const categoryCache = new Map<string, { expiresAt: number; recommendations: Recommendation[] }>();
 const CATEGORY_CACHE_TTL = 5 * 60 * 1000;
 const coverCache = new Map<string, string | null>();
+const curatedGenres = new Set(allGenres);
+const RESULT_LIMIT = 12;
+
+function toCuratedGenre(category: string): string | null {
+  if (curatedGenres.has(category)) return category;
+  const normalized = normalizeImportedGenre([category]);
+  return curatedGenres.has(normalized) ? normalized : null;
+}
 
 function matchesCategory(value: unknown, category: string) {
   if (typeof value !== "string") {
@@ -58,8 +68,8 @@ async function enrichCovers(recommendations: Recommendation[]) {
   }));
 }
 
-async function getGoogleBookRecommendations(books: BookRecord[], category: string, bypassCache = false, offset = 0) {
-  const cacheKey = `google:${category.toLowerCase()}`;
+async function getGoogleBookRecommendations(books: BookRecord[], category: string, bypassCache = false, offset = 0, newest = false) {
+  const cacheKey = `google:${newest ? "newest" : "relevance"}:${category.toLowerCase()}`;
   const cached = categoryCache.get(cacheKey);
   const existingTitles = new Set(books.map((book) => normalizeTitle(book.title)));
 
@@ -68,10 +78,12 @@ async function getGoogleBookRecommendations(books: BookRecord[], category: strin
   }
 
   const url = new URL("https://www.googleapis.com/books/v1/volumes");
-  url.searchParams.set("q", `subject:${category}`);
-  url.searchParams.set("maxResults", "12");
+  url.searchParams.set("q", `subject:"${category}"`);
+  url.searchParams.set("maxResults", "20");
   url.searchParams.set("startIndex", String(offset));
   url.searchParams.set("printType", "books");
+  url.searchParams.set("orderBy", newest ? "newest" : "relevance");
+  url.searchParams.set("langRestrict", "en");
 
   if (process.env.GOOGLE_BOOKS_API_KEY) {
     url.searchParams.set("key", process.env.GOOGLE_BOOKS_API_KEY);
@@ -84,9 +96,6 @@ async function getGoogleBookRecommendations(books: BookRecord[], category: strin
 
   const payload = await response.json();
   const recommendations = (payload.items ?? [])
-    .filter((item: { volumeInfo?: { categories?: string[] } }) =>
-      item.volumeInfo?.categories?.some((value) => matchesCategory(value, category)),
-    )
     .map((item: { id: string; volumeInfo?: { title?: string; authors?: string[]; categories?: string[]; imageLinks?: { thumbnail?: string; smallThumbnail?: string }; industryIdentifiers?: Array<{ identifier?: string }> } }) => {
       const title = item.volumeInfo?.title ?? "Untitled";
       const rawCover = item.volumeInfo?.imageLinks?.thumbnail ?? item.volumeInfo?.imageLinks?.smallThumbnail ?? null;
@@ -99,7 +108,7 @@ async function getGoogleBookRecommendations(books: BookRecord[], category: strin
         status: "Want to Read" as const,
         rating: 0,
         score: 5,
-        reason: `A ${category.toLowerCase()} title from Google Books`,
+        reason: newest ? `A recent ${category.toLowerCase()} release` : `A ${category.toLowerCase()} title from Google Books`,
         cover_url: sanitizeCoverUrl(rawCover),
       };
     })
@@ -109,8 +118,9 @@ async function getGoogleBookRecommendations(books: BookRecord[], category: strin
   return recommendations.filter((book: Recommendation) => !existingTitles.has(normalizeTitle(book.title)));
 }
 
-async function getOpenLibraryRecommendations(books: BookRecord[], category: string, bypassCache = false, offset = 0) {
-  const cached = categoryCache.get(`open-library:${category.toLowerCase()}`);
+async function getOpenLibraryRecommendations(books: BookRecord[], category: string, bypassCache = false, offset = 0, newest = false) {
+  const cacheKey = `open-library:${newest ? "newest" : "relevance"}:${category.toLowerCase()}`;
+  const cached = categoryCache.get(cacheKey);
   const existingTitles = new Set(books.map((book) => normalizeTitle(book.title)));
 
   if (!bypassCache && cached && cached.expiresAt > Date.now()) {
@@ -118,9 +128,11 @@ async function getOpenLibraryRecommendations(books: BookRecord[], category: stri
   }
 
   const url = new URL("https://openlibrary.org/search.json");
-  url.searchParams.set("subject", category);
-  url.searchParams.set("limit", "12");
+  url.searchParams.set("subject", category.toLowerCase());
+  url.searchParams.set("limit", "20");
   url.searchParams.set("offset", String(offset));
+  url.searchParams.set("language", "eng");
+  if (newest) url.searchParams.set("sort", "new");
   url.searchParams.set("fields", "key,title,author_name,subject,cover_i,isbn");
 
   const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(8000) });
@@ -147,13 +159,13 @@ async function getOpenLibraryRecommendations(books: BookRecord[], category: stri
         status: "Want to Read" as const,
         rating: 0,
         score: 4,
-        reason: `A ${category.toLowerCase()} title from Open Library`,
+        reason: newest ? `A recent ${category.toLowerCase()} release` : `A ${category.toLowerCase()} title from Open Library`,
         cover_url: coverUrl,
       };
     })
     .filter((book: Recommendation) => book.title !== "Untitled");
 
-  categoryCache.set(`open-library:${category.toLowerCase()}`, {
+  categoryCache.set(cacheKey, {
     expiresAt: Date.now() + CATEGORY_CACHE_TTL,
     recommendations,
   });
@@ -161,12 +173,25 @@ async function getOpenLibraryRecommendations(books: BookRecord[], category: stri
   return recommendations.filter((book: Recommendation) => !existingTitles.has(normalizeTitle(book.title)));
 }
 
+function interleave<T>(...lists: T[][]): T[] {
+  const result: T[] = [];
+  const longest = Math.max(0, ...lists.map((list) => list.length));
+  for (let index = 0; index < longest; index++) {
+    for (const list of lists) {
+      if (list[index]) result.push(list[index]);
+    }
+  }
+  return result;
+}
+
 async function getExternalRecommendations(books: BookRecord[], category: string, bypassCache = false, offset = 0) {
-  const [googleRecommendations, openLibraryRecommendations] = await Promise.all([
+  const [googleNewest, openLibraryNewest, googleRelevant, openLibraryRelevant] = await Promise.all([
+    getGoogleBookRecommendations(books, category, bypassCache, 0, true).catch(() => []),
+    getOpenLibraryRecommendations(books, category, bypassCache, 0, true).catch(() => []),
     getGoogleBookRecommendations(books, category, bypassCache, offset).catch(() => []),
     getOpenLibraryRecommendations(books, category, bypassCache, offset).catch(() => []),
   ]);
-  const combined = [...googleRecommendations, ...openLibraryRecommendations];
+  const combined = interleave<Recommendation>(googleNewest, googleRelevant, openLibraryNewest, openLibraryRelevant);
   return combined.filter(
     (book, index) => combined.findIndex((candidate) => normalizeTitle(candidate.title) === normalizeTitle(book.title)) === index,
   );
@@ -240,43 +265,57 @@ export async function POST(request: Request) {
     ? await supabase.from("recommendation_dismissals").select("title").eq("user_id", user.id)
     : { data: [] };
   const dismissedTitles = new Set((dismissalRows ?? []).map((item) => normalizeTitle(item.title)));
-  const userKnownGenres = [
-    ...preferredCategories,
-    ...books.filter((b) => b.status === "Read").flatMap(getBookCategories),
-  ];
-  const followedCategories = exploreGenre === "For You"
-    ? await getFollowedHighRatedCategories(request, userKnownGenres).catch(() => [])
-    : [];
-  const readCategoryCounts = new Map<string, number>();
-  const highRatedCategoryCounts = new Map<string, number>();
-  books.filter((book) => book.status === "Read").flatMap(getBookCategories).forEach((category) => {
-    readCategoryCounts.set(category, (readCategoryCounts.get(category) ?? 0) + 1);
-  });
-  books.filter((book) => book.status === "Read" && book.rating >= 4).flatMap(getBookCategories).forEach((category) => {
-    highRatedCategoryCounts.set(category, (highRatedCategoryCounts.get(category) ?? 0) + 1);
-  });
-  const readCategories = [...new Set([...readCategoryCounts.keys(), ...preferredCategories])]
-    .sort((a, b) => {
-      const score = (category: string) =>
-        (readCategoryCounts.get(category) ?? 0) +
-        (highRatedCategoryCounts.get(category) ?? 0) * 2 +
-        (preferredCategories.includes(category) ? 3 : 0);
-      return score(b) - score(a);
+  const excludedTitles = new Set([...dismissedTitles, ...books.map((book) => normalizeTitle(book.title))]);
+  const isAllowed = (recommendation: Recommendation) =>
+    typeof recommendation.title === "string" && !excludedTitles.has(normalizeTitle(recommendation.title));
+
+  const readBooks = books.filter((book) => book.status === "Read");
+  const curatedCategoriesFor = (book: BookRecord) =>
+    [...new Set(getBookCategories(book).map(toCuratedGenre).filter((genre): genre is string => Boolean(genre)))];
+  const curatedPreferred = [...new Set(preferredCategories.map(toCuratedGenre).filter((genre): genre is string => Boolean(genre)))];
+
+  const genreScores = new Map<string, number>();
+  readBooks.forEach((book) => {
+    curatedCategoriesFor(book).forEach((genre) => {
+      genreScores.set(genre, (genreScores.get(genre) ?? 0) + (book.rating >= 4 ? 3 : 1));
     });
+  });
+  curatedPreferred.forEach((genre) => genreScores.set(genre, (genreScores.get(genre) ?? 0) + 5));
+
+  const rankedGenres = [...genreScores.keys()].sort((a, b) => (genreScores.get(b) ?? 0) - (genreScores.get(a) ?? 0));
+  const explorationGenres = allGenres.filter((genre) => !rankedGenres.includes(genre));
+  const rotation = refreshSeed % Math.max(1, explorationGenres.length);
+  const rotatedExploration = [...explorationGenres.slice(rotation), ...explorationGenres.slice(0, rotation)];
+  const forYouGenres = [...rankedGenres.slice(0, 5), ...rotatedExploration].slice(0, 6);
+
+  const followedCategories = exploreGenre === "For You"
+    ? await getFollowedHighRatedCategories(request, rankedGenres).catch(() => [])
+    : [];
+  const withSocialProof = (recommendation: Recommendation) => ({
+    ...recommendation,
+    socialProof: followedCategories.some((category) => matchesCategory(recommendation.genre, category))
+      ? "Highly rated by a reader you follow"
+      : undefined,
+  });
 
   if (openai) {
     try {
+      const favoriteTitles = readBooks
+        .filter((book) => book.rating >= 4)
+        .slice(0, 30)
+        .map((book) => `${book.title} by ${book.author}`);
       const prompt = [
-        "You are building a reading recommendation engine for a book tracker.",
-        "Return JSON only with an array of up to 8 objects. Each object should include title, author, genre, score, and reason.",
-        `The user has read these books: ${JSON.stringify(books)}`,
-        `The user selected recommendation mode: ${exploreGenre}`,
-        `The user's preferred categories are: ${JSON.stringify(preferredCategories)}`,
-        `Readers the user follows have highly rated books in: ${JSON.stringify(followedCategories)}`,
-        refresh ? `Generate a fresh alternative set, variation ${refreshSeed}.` : "",
+        "You are a book recommendation engine.",
+        `Return a JSON array of ${RESULT_LIMIT} objects with keys: title, author, genre, reason. No prose, no code fences.`,
+        `Use only these genre labels: ${JSON.stringify(allGenres)}.`,
+        `The reader's strongest genres are: ${JSON.stringify(rankedGenres.slice(0, 6))}.`,
+        `Books they loved: ${JSON.stringify(favoriteTitles)}.`,
+        `Never recommend these titles: ${JSON.stringify([...dismissedTitles].slice(0, 60))}.`,
+        "At least half of the picks should be published in the last two years.",
         exploreGenre === "For You"
-          ? "Recommend across genres based on the user's reading history and preferences."
-          : `Return only books in the exact ${exploreGenre} genre.`,
+          ? "Spread picks across at least four different genres, favoring their strongest genres."
+          : `Every pick must be a ${exploreGenre} book.`,
+        refresh ? `Give a different set than before (variation ${refreshSeed}).` : "",
       ].join(" ");
 
       const completion = await openai.chat.completions.create({
@@ -284,76 +323,52 @@ export async function POST(request: Request) {
         messages: [{ role: "user", content: prompt }],
       });
 
-      const raw = completion.choices[0]?.message?.content ?? "[]";
-      const parsed = JSON.parse(raw);
-      const existingTitles = new Set(books.map((book) => normalizeTitle(book.title)));
-      const filteredRecommendations = (parsed as Recommendation[]).filter(
-        (recommendation) =>
-          typeof recommendation.title === "string" &&
-          !existingTitles.has(normalizeTitle(recommendation.title)) &&
-          (exploreGenre === "For You" || matchesCategory(recommendation.genre, exploreGenre)),
-      );
+      const raw = (completion.choices[0]?.message?.content ?? "[]").replace(/```(?:json)?/g, "").trim();
+      const parsed = JSON.parse(raw) as Recommendation[];
+      const filtered = parsed
+        .filter(isAllowed)
+        .filter((recommendation) => exploreGenre === "For You" || matchesCategory(recommendation.genre, exploreGenre))
+        .map((recommendation, index) => ({
+          ...recommendation,
+          id: recommendation.id ?? `ai-${refreshSeed}-${index}`,
+          genre: exploreGenre === "For You" ? recommendation.genre : exploreGenre,
+          status: "Want to Read" as const,
+          rating: 0,
+        }));
 
-      if (exploreGenre !== "For You" && filteredRecommendations.length > 0) {
-        return Response.json({
-          recommendations: await enrichCovers(filteredRecommendations.map((recommendation) => ({
-            ...recommendation,
-            genre: exploreGenre,
-            socialProof: followedCategories.some((category) => matchesCategory(recommendation.genre, category))
-              ? "Highly rated by a reader you follow"
-              : undefined,
-          }))),
-          source: "openai",
-        });
-      }
-
-      if (exploreGenre === "For You" && filteredRecommendations.length > 0) {
-        return Response.json({
-          recommendations: await enrichCovers(diversifyRecommendations(filteredRecommendations).map((recommendation) => ({
-            ...recommendation,
-            socialProof: followedCategories.some((category) => matchesCategory(recommendation.genre, category))
-              ? "Highly rated by a reader you follow"
-              : undefined,
-          }))),
-          source: "openai",
-        });
+      if (filtered.length >= 4) {
+        const shelf = exploreGenre === "For You" ? diversifyRecommendations(filtered, RESULT_LIMIT) : filtered.slice(0, RESULT_LIMIT);
+        return Response.json({ recommendations: await enrichCovers(shelf.map(withSocialProof)), source: "openai" });
       }
     } catch (error) {
-      console.warn("OpenAI recommendation fetch failed, using local fallback", error);
+      console.warn("OpenAI recommendation fetch failed, using catalog fallback", error);
     }
   }
 
   if (exploreGenre !== "For You") {
-    const externalRecommendations = await getExternalRecommendations(books, exploreGenre, refresh, providerOffset);
-    if (externalRecommendations.length > 0) {
-      return Response.json({ recommendations: await enrichCovers(externalRecommendations.slice(0, 8)), source: "google_books_open_library" });
-    }
+    const externalRecommendations = (await getExternalRecommendations(books, exploreGenre, refresh, providerOffset)).filter(isAllowed);
+    const shelf = externalRecommendations.length > 0
+      ? externalRecommendations.slice(0, RESULT_LIMIT)
+      : buildHeuristicRecommendations(books, exploreGenre, preferredCategories, refreshSeed, followedCategories).filter(isAllowed);
+    return Response.json({
+      recommendations: await enrichCovers(shelf),
+      source: externalRecommendations.length > 0 ? "google_books_open_library" : "local_fallback",
+    });
   }
 
-  if (readCategories.length > 0) {
-    const categoryRecommendations = await Promise.all(
-      readCategories.slice(0, 5).map((category, index) => getExternalRecommendations(books, category, refresh, providerOffset + index * 12)),
-    );
-    const googleRecommendations = categoryRecommendations
-      .flat()
-      .filter((book, index, allBooks) => allBooks.findIndex((candidate) => normalizeTitle(candidate.title) === normalizeTitle(book.title)) === index)
-      .slice(0, 12);
-
-    if (googleRecommendations.length > 0) {
-      return Response.json({
-        recommendations: await enrichCovers(diversifyRecommendations(googleRecommendations).map((recommendation) => ({
-          ...recommendation,
-          socialProof: followedCategories.some((category) => matchesCategory(recommendation.genre, category))
-            ? "Highly rated by a reader you follow"
-            : undefined,
-        }))),
-        source: "google_books_open_library",
-      });
-    }
+  const perGenre = await Promise.all(
+    forYouGenres.map((genre, index) => getExternalRecommendations(books, genre, refresh, providerOffset + index * 4).catch(() => [])),
+  );
+  const balanced = perGenre.flatMap((list) => list.filter(isAllowed).slice(0, 3));
+  if (balanced.length > 0) {
+    return Response.json({
+      recommendations: await enrichCovers(diversifyRecommendations(balanced, RESULT_LIMIT).map(withSocialProof)),
+      source: "google_books_open_library",
+    });
   }
 
   return Response.json({
-    recommendations: await enrichCovers(buildHeuristicRecommendations(books, exploreGenre, preferredCategories, refreshSeed, followedCategories).filter((book) => !dismissedTitles.has(normalizeTitle(book.title)))),
+    recommendations: await enrichCovers(buildHeuristicRecommendations(books, exploreGenre, preferredCategories, refreshSeed, followedCategories).filter(isAllowed)),
     source: "local_fallback",
   });
 }

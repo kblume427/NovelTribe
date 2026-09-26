@@ -51,7 +51,7 @@ export default function SocialInbox() {
 
   const markAllRead = async () => {
     const count = unread;
-    await fetch("/api/notifications", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: "{}" });
+    await fetchWithSupabaseAuth("/api/notifications", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: "{}" });
     setNotifications((current) => current.map((item) => ({ ...item, read_at: item.read_at ?? new Date().toISOString() })));
     setUnread(0);
     trackEvent("notifications_marked_read", { count });

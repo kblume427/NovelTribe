@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { trackEvent } from "@/lib/analytics";
+import { fetchWithSupabaseAuth } from "@/lib/supabase/client";
 
 export default function FollowButton({ username }: { username: string }) {
   const [following, setFollowing] = useState(false);
@@ -10,7 +11,7 @@ export default function FollowButton({ username }: { username: string }) {
   const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/follows?username=${encodeURIComponent(username)}`)
+    fetchWithSupabaseAuth(`/api/follows?username=${encodeURIComponent(username)}`)
       .then(async (response) => {
         if (!response.ok) return;
         const payload = await response.json();
@@ -22,7 +23,7 @@ export default function FollowButton({ username }: { username: string }) {
 
   const toggleFollow = async () => {
     setLoading(true);
-    const response = await fetch("/api/follows", {
+    const response = await fetchWithSupabaseAuth("/api/follows", {
       method: following ? "DELETE" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username }),

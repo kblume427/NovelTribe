@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { trackEvent } from "@/lib/analytics";
+import { fetchWithSupabaseAuth } from "@/lib/supabase/client";
 
 type CircleReview = {
   title: string;
@@ -19,7 +20,7 @@ export default function CircleReviews() {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/activity/reviews")
+    fetchWithSupabaseAuth("/api/activity/reviews")
       .then((response) => (response.ok ? response.json() : { reviews: [] }))
       .then((payload) => setReviews(Array.isArray(payload.reviews) ? payload.reviews : []))
       .catch(() => setReviews([]));

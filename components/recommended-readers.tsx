@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { trackEvent } from "@/lib/analytics";
+import { fetchWithSupabaseAuth } from "@/lib/supabase/client";
 
 import FollowButton from "@/components/follow-button";
 
@@ -21,7 +22,7 @@ export default function RecommendedReaders() {
   const [searching, setSearching] = useState(false);
 
   useEffect(() => {
-    fetch("/api/follows/recommended")
+    fetchWithSupabaseAuth("/api/follows/recommended")
       .then((response) => (response.ok ? response.json() : { profiles: [] }))
       .then((payload) => setReaders(Array.isArray(payload.profiles) ? payload.profiles : []))
       .catch(() => setReaders([]));
@@ -36,7 +37,7 @@ export default function RecommendedReaders() {
     setSubmittedQuery(trimmedQuery);
     trackEvent("public_reader_search", { query_length: trimmedQuery.length });
     try {
-      const response = await fetch(`/api/users/search?q=${encodeURIComponent(trimmedQuery)}`);
+      const response = await fetchWithSupabaseAuth(`/api/users/search?q=${encodeURIComponent(trimmedQuery)}`);
       const payload = response.ok ? await response.json() : { profiles: [] };
       setSearchResults(Array.isArray(payload.profiles) ? payload.profiles : []);
     } finally {

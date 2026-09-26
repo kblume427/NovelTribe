@@ -5,13 +5,13 @@ import { useEffect, useState } from "react";
 
 import { getBookCategories, starterBooks, type BookRecord } from "@/lib/recommendations";
 import { trackEvent } from "@/lib/analytics";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createSupabaseClient, fetchWithSupabaseAuth } from "@/lib/supabase/client";
 import { isFeatureEnabled, resolveFeatureFlags, type FeatureFlags } from "@/lib/featureFlags";
 import { calculateDailyPace, estimateBookCompletion } from "@/lib/velocity";
 import { calculateStreak, type ReadingSession } from "@/lib/sessions";
 
 export default function CurrentlyReadingPage() {
-  const [books, setBooks] = useState<BookRecord[]>(starterBooks.filter((book) => book.status === "Currently Reading"));
+  const [books, setBooks] = useState<BookRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [profileFlags, setProfileFlags] = useState<FeatureFlags | null>(null);
   const [sessions, setSessions] = useState<ReadingSession[]>([]);
@@ -34,25 +34,32 @@ export default function CurrentlyReadingPage() {
   const [isSavingPages, setIsSavingPages] = useState(false);
 
   useEffect(() => {
-    fetch("/api/books")
-      .then((response) => response.json())
-      .then((payload) => {
-        if (Array.isArray(payload.books)) {
-          const currentBooks = payload.books.filter((book: BookRecord) => book.status === "Currently Reading");
-          setBooks(currentBooks);
-          trackEvent("currently_reading_viewed", { count: currentBooks.length });
-        }
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
     const supabase = createSupabaseClient();
     let active = true;
 
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!active || !user) return;
+    async function loadReadingData() {
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user ?? null;
+      if (!active) return;
+
+      if (!user) {
+        setBooks(starterBooks.filter((book) => book.status === "Currently Reading"));
+        setLoading(false);
+        return;
+      }
+
+      fetchWithSupabaseAuth("/api/books")
+        .then((response) => response.json())
+        .then((payload) => {
+          if (!active || !Array.isArray(payload.books)) return;
+          const currentBooks = payload.books.filter((book: BookRecord) => book.status === "Currently Reading");
+          setBooks(currentBooks);
+          trackEvent("currently_reading_viewed", { count: currentBooks.length });
+        })
+        .catch(() => undefined)
+        .finally(() => {
+          if (active) setLoading(false);
+        });
 
       const { data: profileRow } = await supabase
         .from("profiles")
@@ -65,7 +72,7 @@ export default function CurrentlyReadingPage() {
       setProfileFlags(flags);
 
       if (flags.reading_sessions) {
-        fetch("/api/sessions")
+        fetchWithSupabaseAuth("/api/sessions")
           .then((res) => (res.ok ? res.json() : null))
           .then((data) => {
             if (!active || !data) return;
@@ -75,10 +82,16 @@ export default function CurrentlyReadingPage() {
           })
           .catch(() => undefined);
       }
-    })();
+    }
+
+    void loadReadingData();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) void loadReadingData();
+    });
 
     return () => {
       active = false;
+      subscription.unsubscribe();
     };
   }, []);
 
@@ -95,7 +108,7 @@ export default function CurrentlyReadingPage() {
     };
 
     try {
-      const res = await fetch("/api/sessions", {
+      const res = await fetchWithSupabaseAuth("/api/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -136,7 +149,7 @@ export default function CurrentlyReadingPage() {
     const total = tempTotalPages !== "" ? Math.max(1, parseInt(tempTotalPages, 10)) : book.total_pages ?? null;
 
     try {
-      const res = await fetch("/api/books", {
+      const res = await fetchWithSupabaseAuth("/api/books", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...book, current_page: curr, total_pages: total }),

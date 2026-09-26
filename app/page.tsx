@@ -203,7 +203,7 @@ export default function Home() {
         setReadingGoal(profileRow.reading_goal);
       }
       if (flags.reading_sessions || flags.reading_reminders) {
-        fetch("/api/sessions")
+        fetchWithSupabaseAuth("/api/sessions")
           .then((res) => (res.ok ? res.json() : null))
           .then((data) => {
             if (!active || !data) return;
@@ -1169,7 +1169,7 @@ export default function Home() {
                         {!communityApprovedCover && <button type="button" onClick={async () => {
                           setUseManualCover(true);
                           if (manualCoverIsbn) {
-                            await fetch("/api/covers/approval", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isbn: manualCoverIsbn, cover_url: manualCoverUrl }) });
+                            await fetchWithSupabaseAuth("/api/covers/approval", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isbn: manualCoverIsbn, cover_url: manualCoverUrl }) });
                             setCommunityApprovedCover(true);
                           }
                         }} className="rounded-full bg-cyan-500/20 px-3 py-1.5 text-xs font-medium text-cyan-100 hover:bg-cyan-500/30">Use this cover</button>}

@@ -1,9 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { allGenres, starterBooks, type BookRecord, type Recommendation } from "@/lib/recommendations";
+import { allGenres, normalizeTitle, starterBooks, type BookRecord, type Recommendation } from "@/lib/recommendations";
 import { buildAmazonBookUrl } from "@/lib/affiliate";
 import { createSupabaseClient, fetchWithSupabaseAuth } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics";
@@ -55,41 +55,49 @@ export default function RecommendationsPage() {
   const [savingBookKey, setSavingBookKey] = useState<string | null>(null);
   const [savedBookKeys, setSavedBookKeys] = useState<Record<string, string>>({});
   const [dismissedTitles, setDismissedTitles] = useState<Set<string>>(new Set());
+  const [libraryReady, setLibraryReady] = useState(false);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
-        fetchWithSupabaseAuth("/api/recommend/dismiss").then((response) => response.json()).then((payload) => setDismissedTitles(new Set(payload.titles ?? []))).catch(() => undefined);
-      }, []);
-
-      useEffect(() => {
-      setRecommendations([]);
-    fetchWithSupabaseAuth("/api/books")
-      .then((response) => response.json())
-      .then((payload) => {
-        if (Array.isArray(payload.books) && payload.books.length > 0) {
-          setBooks(payload.books);
-        }
-      })
-      .catch(() => setBooks(starterBooks));
+    fetchWithSupabaseAuth("/api/recommend/dismiss")
+      .then((response) => (response.ok ? response.json() : { titles: [] }))
+      .then((payload) => setDismissedTitles(new Set((payload.titles ?? []).map((title: string) => normalizeTitle(title)))))
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
-    createSupabaseClient()
-      .from("profiles")
-      .select("preferred_categories")
-      .maybeSingle()
-      .then(({ data }) => {
-        if (Array.isArray(data?.preferred_categories)) {
-          setPreferredCategories(data.preferred_categories);
-        }
-      });
+    const supabase = createSupabaseClient();
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("preferred_categories")
+          .eq("id", session.user.id)
+          .maybeSingle();
+        if (Array.isArray(data?.preferred_categories)) setPreferredCategories(data.preferred_categories);
+      }
+
+      try {
+        const response = await fetchWithSupabaseAuth("/api/books");
+        const payload = await response.json();
+        if (Array.isArray(payload.books) && payload.books.length > 0) setBooks(payload.books);
+      } catch {
+        setBooks(starterBooks);
+      } finally {
+        setLibraryReady(true);
+      }
+    })();
   }, []);
 
   const fetchRecommendations = useCallback(
     async (bypassCache = false) => {
+      const requestId = ++requestIdRef.current;
       if (bypassCache) {
         setIsRefreshing(true);
       } else {
         setLoading(true);
+        setRecommendations([]);
       }
       setError(null);
 
@@ -98,7 +106,7 @@ export default function RecommendationsPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            books,
+            books: books.map(({ title, author, genre, categories, status, rating }) => ({ title, author, genre, categories, status, rating })),
             exploreGenre,
             preferredCategories,
             refresh: bypassCache,
@@ -107,6 +115,7 @@ export default function RecommendationsPage() {
         });
 
         const payload = (await response.json()) as RecommendationResponse & { error?: string };
+        if (requestId !== requestIdRef.current) return;
         if (!response.ok) {
           throw new Error(payload.error ?? "Recommendations are unavailable right now.");
         }
@@ -129,19 +138,27 @@ export default function RecommendationsPage() {
           }
         }
       } catch (requestError: unknown) {
+        if (requestId !== requestIdRef.current) return;
         const message = requestError instanceof Error ? requestError.message : "Failed to load recommendations.";
         setError(message);
       } finally {
-        setLoading(false);
-        setIsRefreshing(false);
+        if (requestId === requestIdRef.current) {
+          setLoading(false);
+          setIsRefreshing(false);
+        }
       }
     },
     [books, exploreGenre, preferredCategories],
   );
 
   useEffect(() => {
-    fetchRecommendations(false);
-  }, [fetchRecommendations]);
+    if (libraryReady) void fetchRecommendations(false);
+  }, [fetchRecommendations, libraryReady]);
+
+  const visibleRecommendations = useMemo(
+    () => recommendations.filter((book) => !dismissedTitles.has(normalizeTitle(book.title))),
+    [recommendations, dismissedTitles],
+  );
 
   const availableGenres = useMemo(
     () => allGenres,
@@ -174,10 +191,9 @@ export default function RecommendationsPage() {
   };
 
   const dismissRecommendation = async (book: Recommendation) => {
-    await fetchWithSupabaseAuth("/api/recommend/dismiss", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: book.title }) });
-    setDismissedTitles((current) => new Set([...current, book.title]));
-    setRecommendations((current) => current.filter((item) => item.title !== book.title));
+    setDismissedTitles((current) => new Set([...current, normalizeTitle(book.title)]));
     trackEvent("recommendation_dismissed", { category: book.genre });
+    await fetchWithSupabaseAuth("/api/recommend/dismiss", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: book.title }) }).catch(() => undefined);
   };
 
   return (
@@ -297,7 +313,7 @@ export default function RecommendationsPage() {
               </div>
             </div>
           )}
-          {!loading && !error && recommendations.length === 0 && (
+          {!loading && !error && visibleRecommendations.length === 0 && (
             <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-zinc-300">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <span>No recommendations found for this category yet.</span>
@@ -313,7 +329,7 @@ export default function RecommendationsPage() {
           )}
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {recommendations.map((book) => (
+            {visibleRecommendations.map((book) => (
               <article key={`${book.id}-${book.title}`} className="rounded-[26px] border border-white/10 bg-[#121a2b] p-4">
                 {book.cover_url ? (
                   <img src={book.cover_url} alt="" className="mb-4 h-40 w-full rounded-2xl bg-[#0b1120] object-contain" />
