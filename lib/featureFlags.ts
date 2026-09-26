@@ -15,6 +15,8 @@ export const FEATURE_FLAG_KEYS = [
   "strict_peer_genre_match",
   "reading_goals",
   "custom_shelves",
+  "release_alerts",
+  "release_email_digest",
 ] as const;
 
 export type FeatureFlagKey = (typeof FEATURE_FLAG_KEYS)[number];
@@ -35,6 +37,8 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   strict_peer_genre_match: false,
   reading_goals: false,
   custom_shelves: false,
+  release_alerts: false,
+  release_email_digest: false,
 };
 
 export const MOOD_TAGS = [

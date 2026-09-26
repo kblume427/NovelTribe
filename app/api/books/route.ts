@@ -34,6 +34,13 @@ export async function GET(request: Request) {
     return Response.json({ books: starterBooks });
   }
 
+  const activityCutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  await supabase
+    .from("profiles")
+    .update({ last_active_at: new Date().toISOString() })
+    .eq("id", user.id)
+    .or(`last_active_at.is.null,last_active_at.lt.${activityCutoff}`);
+
   const { data, error } = await supabase
     .from("books")
     .select("*")

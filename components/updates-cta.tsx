@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { trackEvent } from "@/lib/analytics";
 
-export const LATEST_UPDATES_VERSION = "2026-09-15";
+export const LATEST_UPDATES_VERSION = "2026-09-26";
 const LAST_SEEN_UPDATES_KEY = "noveltribe_last_seen_updates";
 
 export function UpdatesCta() {

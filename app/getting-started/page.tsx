@@ -106,7 +106,7 @@ export default function GettingStartedPage() {
             <ul className="mt-5 space-y-3 text-sm leading-6 text-zinc-300">
               <li><span className="font-semibold text-white">Reading habits:</span> enable sessions, reminders, streaks, goals, and finish-date estimates.</li>
               <li><span className="font-semibold text-white">Book details:</span> enable moods, quotes, custom shelves, and format or audiobook tracking.</li>
-              <li><span className="font-semibold text-white">Discovery:</span> enable personalized recommendations and strict peer genre matching.</li>
+              <li><span className="font-semibold text-white">Discovery:</span> enable personalized recommendations, strict peer genre matching, and new release alerts for your series and favorite authors.</li>
               <li><span className="font-semibold text-white">Dashboard:</span> show or hide progress widgets, milestones, and session timelines.</li>
             </ul>
             <p className="mt-5 rounded-xl border border-amber-300/30 bg-amber-300/10 px-3 py-2.5 text-sm font-bold leading-6 text-amber-100">

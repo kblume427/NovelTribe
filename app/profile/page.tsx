@@ -37,6 +37,13 @@ const FEATURE_TOGGLE_GROUPS: Array<{ heading: string; items: Array<[FeatureFlagK
     ],
   },
   {
+    heading: "New release alerts",
+    items: [
+      ["release_alerts", "New release alerts", "Get notified when the next book in a series you're reading or a new book from an author you love comes out."],
+      ["release_email_digest", "Weekly release email", "Also receive a weekly email summarizing new releases. Requires New release alerts."],
+    ],
+  },
+  {
     heading: "Reading habit tracking",
     items: [
       ["reading_sessions", "Reading sessions & streaks", "Log daily reading sessions and track a streak counter."],

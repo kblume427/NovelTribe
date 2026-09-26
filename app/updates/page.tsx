@@ -11,6 +11,20 @@ export const metadata: Metadata = {
 
 const updates = [
   {
+    date: "September 26, 2026",
+    label: "New release alerts",
+    title: "Know when your next read comes out",
+    summary: "Turn on New release alerts in Profile to get notified when the next book in a series you're reading, or a new book from an author you rate highly, is released. Add it to Want to Read straight from the notification.",
+    details: ["Series continuations and favorite-author releases", "Optional weekly email digest", "Off by default; enable in Profile under New release alerts"],
+  },
+  {
+    date: "September 26, 2026",
+    label: "Recommendations",
+    title: "Smarter, more varied For You picks",
+    summary: "For You now suggests the next book in series you're reading and more from authors you love, spreads picks across more genres, includes recent releases, and genre filters show that genre only.",
+    details: ["Series continuations and favorite-author picks", "Not Interested removes a book everywhere", "Recent releases mixed in"],
+  },
+  {
     date: "September 15, 2026",
     label: "Libby imports",
     title: "Timeline activity now maps correctly",

@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ notifications: [], unread: 0 }, { status: 401 });
 
-  const { data } = await supabase.from("notifications").select("id, type, actor_username, message, read_at, created_at").eq("recipient_id", user.id).order("created_at", { ascending: false }).limit(20);
+  const { data } = await supabase.from("notifications").select("id, type, actor_username, message, metadata, read_at, created_at").eq("recipient_id", user.id).order("created_at", { ascending: false }).limit(20);
   return Response.json({ notifications: data ?? [], unread: (data ?? []).filter((item) => !item.read_at).length });
 }
 

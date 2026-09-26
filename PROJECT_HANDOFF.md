@@ -42,6 +42,8 @@ SUPABASE_SERVICE_ROLE_KEY=...
 OPENAI_API_KEY=...
 GOOGLE_BOOKS_API_KEY=...
 NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG=...
+RESEND_API_KEY=...
+CRON_SECRET=...
 ```
 
 Rules:
@@ -190,6 +192,17 @@ Rules:
 - Manual book entry looks up and previews an official Google Books cover when a title/author match is found
 - Manual cover previews require explicit Use/Skip approval; approved covers are shared by ISBN through `cover_approvals`
 - Library offers a conditional Find missing covers workflow with per-book approval
+- For You leads with the next unread book in series the reader is partway through (parsed from `(Series, #N)` / `(Series Book N)` title suffixes) and up to three books from highly rated authors, then genre-balanced picks
+
+### New Release Alerts
+
+- Opt-in flags `release_alerts` (in-app) and `release_email_digest` (weekly email); both off by default
+- `/api/cron/release-alerts` (daily, 13:00 UTC) checks up to 25 active, opted-in users per run for books published in the last 30 days that continue a series in progress or come from a favorite author; writes `release_alerts` (dedupe) and `notifications` (type `release`, with `metadata` for the inbox Add to Want to Read action)
+- `/api/cron/release-digest` (Mondays, 14:00 UTC) emails un-emailed alerts via Resend and marks them `emailed_at` only after a successful send
+- Only users active in the last 30 days are checked; `last_active_at` is updated at most hourly from `GET /api/books`
+- Google Books lookups are capped at 80 per run and shared across users; a 429 stops the run without marking remaining users as checked
+- Cron routes authenticate with `CRON_SECRET` (Vercel sends it as a Bearer token) and are exempt from the canonical-host redirect in `proxy.ts`, because Vercel Cron does not follow redirects
+- Setup: run `supabase-release-alerts.sql` in the Supabase SQL editor, add `CRON_SECRET` in Vercel, then redeploy
 
 ### Private Activity And Reviews
 

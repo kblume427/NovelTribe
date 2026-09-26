@@ -4,6 +4,11 @@ import { NextResponse, type NextRequest } from "next/server";
 const CANONICAL_HOST = "novel-tribe.com";
 
 export async function proxy(request: NextRequest) {
+  // Vercel Cron calls the deployment URL and does not follow redirects; these routes authenticate via CRON_SECRET.
+  if (request.nextUrl.pathname.startsWith("/api/cron/")) {
+    return NextResponse.next();
+  }
+
   const host = request.headers.get("host") ?? "";
 
   if (host.endsWith(".vercel.app") || host === `www.${CANONICAL_HOST}`) {

@@ -5,13 +5,15 @@ import { trackEvent } from "@/lib/analytics";
 import { createSupabaseClient, fetchWithSupabaseAuth } from "@/lib/supabase/client";
 
 type Profile = { username: string; full_name: string | null; avatar_url: string | null };
-type Notification = { id: string; message: string; read_at: string | null; created_at: string };
+type ReleaseMetadata = { title?: string; author?: string; isbn?: string | null; cover_url?: string | null };
+type Notification = { id: string; type?: string; message: string; metadata?: ReleaseMetadata | null; read_at: string | null; created_at: string };
 
 export default function SocialInbox() {
   const [tab, setTab] = useState<"followers" | "following">("followers");
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unread, setUnread] = useState(0);
+  const [savedReleaseIds, setSavedReleaseIds] = useState<Record<string, "saving" | "saved" | "failed">>({});
 
   useEffect(() => {
     const supabase = createSupabaseClient();
@@ -62,6 +64,27 @@ export default function SocialInbox() {
     trackEvent("social_tab_changed", { tab: nextTab });
   };
 
+  const saveRelease = async (item: Notification) => {
+    if (!item.metadata?.title || !item.metadata.author) return;
+    setSavedReleaseIds((current) => ({ ...current, [item.id]: "saving" }));
+    const response = await fetchWithSupabaseAuth("/api/books", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: item.metadata.title,
+        author: item.metadata.author,
+        isbn: item.metadata.isbn ?? null,
+        cover_url: item.metadata.cover_url ?? null,
+        genre: "General Fiction",
+        status: "Want to Read",
+        rating: 0,
+        upsert: true,
+      }),
+    }).catch(() => null);
+    setSavedReleaseIds((current) => ({ ...current, [item.id]: response?.ok ? "saved" : "failed" }));
+    if (response?.ok) trackEvent("release_alert_saved");
+  };
+
   return (
     <section className="mb-8 rounded-[24px] border border-white/10 bg-[#151922] p-5 shadow-lg shadow-black/10 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -73,7 +96,17 @@ export default function SocialInbox() {
           <div className="flex gap-2"><button type="button" onClick={() => handleTabChange("followers")} className={`rounded-full px-3 py-1.5 text-sm ${tab === "followers" ? "bg-cyan-500/20 text-cyan-100" : "bg-white/5 text-zinc-400"}`}>Followers</button><button type="button" onClick={() => handleTabChange("following")} className={`rounded-full px-3 py-1.5 text-sm ${tab === "following" ? "bg-cyan-500/20 text-cyan-100" : "bg-white/5 text-zinc-400"}`}>Following</button></div>
           <div className="mt-3 max-h-64 space-y-2 overflow-y-auto pr-1">{profiles.length === 0 ? <p className="rounded-xl border border-dashed border-white/10 p-4 text-sm text-zinc-500">No {tab} yet.</p> : profiles.map((profile) => <a key={profile.username} href={`/u/${encodeURIComponent(profile.username)}`} className="block rounded-xl border border-white/10 bg-[#0b1120] p-3 text-sm text-white hover:border-cyan-400/40">{profile.full_name || `@${profile.username}`} <span className="text-zinc-500">@{profile.username}</span></a>)}</div>
         </div>
-        <div><div className="text-sm font-semibold text-white">Notifications</div><div className="mt-3 max-h-48 space-y-2 overflow-y-auto">{notifications.length === 0 ? <p className="rounded-xl border border-dashed border-white/10 p-4 text-sm text-zinc-500">No notifications yet.</p> : notifications.map((item) => <div key={item.id} className={`rounded-xl border p-3 text-sm ${item.read_at ? "border-white/10 bg-[#0b1120] text-zinc-400" : "border-cyan-400/30 bg-cyan-500/10 text-cyan-50"}`}>{item.message}<div className="mt-1 text-xs text-zinc-500">{new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(item.created_at))}</div></div>)}</div></div>
+        <div><div className="text-sm font-semibold text-white">Notifications</div><div className="mt-3 max-h-48 space-y-2 overflow-y-auto">{notifications.length === 0 ? <p className="rounded-xl border border-dashed border-white/10 p-4 text-sm text-zinc-500">No notifications yet.</p> : notifications.map((item) => <div key={item.id} className={`rounded-xl border p-3 text-sm ${item.read_at ? "border-white/10 bg-[#0b1120] text-zinc-400" : "border-cyan-400/30 bg-cyan-500/10 text-cyan-50"}`}>{item.message}{item.type === "release" && item.metadata?.title && (
+                <div className="mt-2">
+                  {savedReleaseIds[item.id] === "saved" ? (
+                    <span className="text-xs text-emerald-200">Added to Want to Read</span>
+                  ) : (
+                    <button type="button" disabled={savedReleaseIds[item.id] === "saving"} onClick={() => void saveRelease(item)} className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-medium text-cyan-100 hover:bg-cyan-500/20 disabled:opacity-60">
+                      {savedReleaseIds[item.id] === "failed" ? "Try again" : "Add to Want to Read"}
+                    </button>
+                  )}
+                </div>
+              )}<div className="mt-1 text-xs text-zinc-500">{new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(item.created_at))}</div></div>)}</div></div>
       </div>
     </section>
   );
