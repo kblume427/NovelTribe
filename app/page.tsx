@@ -17,6 +17,7 @@ import { evaluateMilestones } from "@/lib/milestones";
 type BookStatus = "Read" | "Currently Reading" | "Want to Read";
 
 type Book = BookRecord;
+const LIBRARY_PAGE_SIZE = 20;
 
 type GoogleBookResult = {
   id: string;
@@ -68,6 +69,7 @@ export default function Home() {
   const [isSearching, setIsSearching] = useState(false);
   const [libraryQuery, setLibraryQuery] = useState("");
   const [librarySort, setLibrarySort] = useState("newest");
+  const [libraryPage, setLibraryPage] = useState(1);
   const [manualCoverUrl, setManualCoverUrl] = useState<string | null>(null);
   const [manualCoverIsbn, setManualCoverIsbn] = useState<string | null>(null);
   const [useManualCover, setUseManualCover] = useState(false);
@@ -282,6 +284,17 @@ export default function Home() {
       return (second.created_at ?? "").localeCompare(first.created_at ?? "");
     });
   }, [books, libraryQuery, librarySort]);
+
+  const libraryPageCount = Math.max(1, Math.ceil(visibleBooks.length / LIBRARY_PAGE_SIZE));
+  const currentLibraryPage = Math.min(libraryPage, libraryPageCount);
+  const paginatedBooks = visibleBooks.slice(
+    (currentLibraryPage - 1) * LIBRARY_PAGE_SIZE,
+    currentLibraryPage * LIBRARY_PAGE_SIZE,
+  );
+
+  useEffect(() => {
+    setLibraryPage(1);
+  }, [libraryQuery, librarySort, selectedShelfFilter]);
 
   const totalBooks = books.length;
   const finishedBooks = books.filter((book) => book.status === "Read").length;
@@ -1337,6 +1350,33 @@ export default function Home() {
                 <span>{visibleBooks.length} books · {readGenres.length} genres tracked</span>
                 {missingCoverBooks.length > 0 && <button type="button" onClick={() => void findMissingCovers()} disabled={isFindingMissingCovers} className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-xs font-medium text-cyan-100 hover:bg-cyan-500/20 disabled:opacity-60">{isFindingMissingCovers ? "Finding covers..." : `Find ${missingCoverBooks.length} missing cover${missingCoverBooks.length === 1 ? "" : "s"}`}</button>}
               </div>
+
+              {visibleBooks.length > LIBRARY_PAGE_SIZE && (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/3 px-3 py-2">
+                  <span className="text-xs text-zinc-400">
+                    Showing {(currentLibraryPage - 1) * LIBRARY_PAGE_SIZE + 1}–{Math.min(currentLibraryPage * LIBRARY_PAGE_SIZE, visibleBooks.length)} of {visibleBooks.length}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setLibraryPage((page) => Math.max(1, page - 1))}
+                      disabled={currentLibraryPage === 1}
+                      className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Previous
+                    </button>
+                    <span className="min-w-14 text-center text-xs text-zinc-400">Page {currentLibraryPage} of {libraryPageCount}</span>
+                    <button
+                      type="button"
+                      onClick={() => setLibraryPage((page) => Math.min(libraryPageCount, page + 1))}
+                      disabled={currentLibraryPage === libraryPageCount}
+                      className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {coverCandidates.length > 0 && (
@@ -1384,7 +1424,7 @@ export default function Home() {
             )}
 
             <div className="space-y-4">
-              {visibleBooks.map((book) => (
+              {paginatedBooks.map((book) => (
                 <div key={book.id} className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.25)]">
                   <div>
                     <div className="font-semibold text-white">{book.title}</div>
@@ -1489,6 +1529,29 @@ export default function Home() {
               {visibleBooks.length === 0 && (
                 <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-5 text-sm text-zinc-400">
                   No books match that search.
+                </div>
+              )}
+              {visibleBooks.length > LIBRARY_PAGE_SIZE && (
+                <div className="flex items-center justify-between gap-3 pt-2">
+                  <span className="text-xs text-zinc-500">Page {currentLibraryPage} of {libraryPageCount}</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setLibraryPage((page) => Math.max(1, page - 1))}
+                      disabled={currentLibraryPage === 1}
+                      className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLibraryPage((page) => Math.min(libraryPageCount, page + 1))}
+                      disabled={currentLibraryPage === libraryPageCount}
+                      className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Next
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
