@@ -81,6 +81,94 @@ export function normalizeTitle(title: string) {
   return title.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+// Matches "(Series, #3)", "(Series #1-7)", "(Series Book 2)", "(Series, Vol. 4)" at the end of a title.
+const SERIES_SUFFIX = /\s*\(([^()]*?)[,:]?\s*(?:#|book\s+|vol\.?\s*|volume\s+)(\d+(?:\.\d+)?)(?:\s*-\s*(\d+(?:\.\d+)?))?\)\s*$/i;
+
+export function extractSeries(title: string): { series: string; number: number } | null {
+  const match = title.match(SERIES_SUFFIX);
+  if (!match) return null;
+  const series = match[1].replace(/[,:]\s*$/, "").trim();
+  if (series.length < 2) return null;
+  return { series, number: Number(match[3] ?? match[2]) };
+}
+
+export function stripSeriesSuffix(title: string) {
+  return title.replace(SERIES_SUFFIX, "").trim();
+}
+
+export type SeriesProgress = {
+  series: string;
+  author: string;
+  highestNumber: number;
+  booksRead: number;
+  genre: string;
+};
+
+export function getSeriesInProgress(books: BookRecord[], limit = 4): SeriesProgress[] {
+  const progress = new Map<string, SeriesProgress & { ratingTotal: number }>();
+
+  books
+    .filter((book) => book.status === "Read" || book.status === "Currently Reading")
+    .forEach((book) => {
+      const parsed = extractSeries(book.title);
+      if (!parsed) return;
+      const key = normalizeTitle(parsed.series);
+      const existing = progress.get(key);
+      if (existing) {
+        existing.highestNumber = Math.max(existing.highestNumber, parsed.number);
+        existing.booksRead += 1;
+        existing.ratingTotal += book.rating ?? 0;
+      } else {
+        progress.set(key, {
+          series: parsed.series,
+          author: book.author,
+          highestNumber: parsed.number,
+          booksRead: 1,
+          ratingTotal: book.rating ?? 0,
+          genre: book.genre,
+        });
+      }
+    });
+
+  return [...progress.values()]
+    .sort((a, b) => b.ratingTotal / b.booksRead - a.ratingTotal / a.booksRead || b.booksRead - a.booksRead)
+    .slice(0, limit)
+    .map(({ ratingTotal: _ratingTotal, ...rest }) => rest);
+}
+
+export type FavoriteAuthor = {
+  author: string;
+  highlyRatedCount: number;
+  averageRating: number;
+  genre: string;
+};
+
+export function getFavoriteAuthors(books: BookRecord[], limit = 4): FavoriteAuthor[] {
+  const authors = new Map<string, { author: string; ratings: number[]; genre: string }>();
+
+  books
+    .filter((book) => book.status === "Read" && book.rating >= 4)
+    .forEach((book) => {
+      // Co-authored entries like "A, B" credit the lead author.
+      const author = book.author.split(/,|&| and /)[0].trim();
+      if (!author || /^unknown/i.test(author)) return;
+      const key = author.toLowerCase();
+      const existing = authors.get(key);
+      if (existing) existing.ratings.push(book.rating);
+      else authors.set(key, { author, ratings: [book.rating], genre: book.genre });
+    });
+
+  return [...authors.values()]
+    .map(({ author, ratings, genre }) => ({
+      author,
+      genre,
+      highlyRatedCount: ratings.length,
+      averageRating: ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length,
+    }))
+    .sort((a, b) => b.highlyRatedCount - a.highlyRatedCount || b.averageRating - a.averageRating)
+    .slice(0, limit);
+}
+
 export function getBookCategories(book: BookRecord) {
   return book.categories?.length ? book.categories : [book.genre];
 }

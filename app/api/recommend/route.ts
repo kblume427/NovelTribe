@@ -2,10 +2,16 @@ import {
   allGenres,
   buildHeuristicRecommendations,
   diversifyRecommendations,
+  extractSeries,
   getBookCategories,
+  getFavoriteAuthors,
+  getSeriesInProgress,
   normalizeTitle,
+  stripSeriesSuffix,
   type BookRecord,
+  type FavoriteAuthor,
   type Recommendation,
+  type SeriesProgress,
 } from "@/lib/recommendations";
 import { normalizeImportedGenre } from "@/lib/importExport";
 import { openai } from "@/lib/server";
@@ -197,6 +203,117 @@ async function getExternalRecommendations(books: BookRecord[], category: string,
   );
 }
 
+async function getSeriesContinuations(progress: SeriesProgress, bypassCache: boolean) {
+  const cacheKey = `series:${normalizeTitle(progress.series)}:${progress.highestNumber}`;
+  const cached = categoryCache.get(cacheKey);
+  if (!bypassCache && cached && cached.expiresAt > Date.now()) return cached.recommendations;
+
+  const authorSurname = progress.author.split(/[\s,]+/).filter(Boolean).pop() ?? progress.author;
+  const url = new URL("https://www.googleapis.com/books/v1/volumes");
+  url.searchParams.set("q", `intitle:"${progress.series}" inauthor:${authorSurname}`);
+  url.searchParams.set("maxResults", "20");
+  url.searchParams.set("printType", "books");
+  url.searchParams.set("langRestrict", "en");
+  if (process.env.GOOGLE_BOOKS_API_KEY) url.searchParams.set("key", process.env.GOOGLE_BOOKS_API_KEY);
+
+  const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(8000) });
+  if (!response.ok) return [];
+  const payload = await response.json();
+  const genre = toCuratedGenre(progress.genre) ?? progress.genre;
+
+  type SeriesVolume = {
+    id: string;
+    volumeInfo?: {
+      title?: string;
+      subtitle?: string;
+      authors?: string[];
+      imageLinks?: { thumbnail?: string; smallThumbnail?: string };
+      industryIdentifiers?: Array<{ identifier?: string }>;
+      seriesInfo?: { bookDisplayNumber?: string };
+    };
+  };
+
+  const candidates = ((payload.items ?? []) as SeriesVolume[])
+    .filter((item) => item.volumeInfo?.title && item.volumeInfo.authors?.some((author) => author.toLowerCase().includes(authorSurname.toLowerCase())))
+    .filter((item) => !/box(ed)? set|collection|omnibus|books? \d+\s*[-–]\s*\d+/i.test(`${item.volumeInfo?.title} ${item.volumeInfo?.subtitle ?? ""}`))
+    .map((item) => {
+      const info = item.volumeInfo!;
+      const displayNumber = Number(info.seriesInfo?.bookDisplayNumber);
+      const number = Number.isFinite(displayNumber) && displayNumber > 0 ? displayNumber : extractSeries(info.title!)?.number ?? null;
+      const recommendation: Recommendation = {
+        id: `series-${item.id}`,
+        title: info.title!,
+        author: info.authors!.join(", "),
+        isbn: info.industryIdentifiers?.find((identifier) => identifier.identifier)?.identifier ?? null,
+        genre,
+        status: "Want to Read",
+        rating: 0,
+        score: 10,
+        reason: number ? `Book ${number} in the ${progress.series} series` : `More from the ${progress.series} series`,
+        socialProof: "Continues a series you're reading",
+        cover_url: sanitizeCoverUrl(info.imageLinks?.thumbnail ?? info.imageLinks?.smallThumbnail ?? null),
+      };
+      return { recommendation, number };
+    })
+    .filter(({ number }) => number === null || number > progress.highestNumber)
+    .sort((a, b) => (a.number ?? Number.MAX_SAFE_INTEGER) - (b.number ?? Number.MAX_SAFE_INTEGER))
+    .map(({ recommendation }) => recommendation);
+
+  categoryCache.set(cacheKey, { expiresAt: Date.now() + CATEGORY_CACHE_TTL, recommendations: candidates });
+  return candidates;
+}
+
+async function getAuthorPicks(favorite: FavoriteAuthor, bypassCache: boolean, offset: number) {
+  const cacheKey = `author:${favorite.author.toLowerCase()}:${offset}`;
+  const cached = categoryCache.get(cacheKey);
+  if (!bypassCache && cached && cached.expiresAt > Date.now()) return cached.recommendations;
+
+  const url = new URL("https://www.googleapis.com/books/v1/volumes");
+  url.searchParams.set("q", `inauthor:"${favorite.author}"`);
+  url.searchParams.set("maxResults", "20");
+  url.searchParams.set("startIndex", String(offset));
+  url.searchParams.set("printType", "books");
+  url.searchParams.set("langRestrict", "en");
+  if (process.env.GOOGLE_BOOKS_API_KEY) url.searchParams.set("key", process.env.GOOGLE_BOOKS_API_KEY);
+
+  const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(8000) });
+  if (!response.ok) return [];
+  const payload = await response.json();
+  const authorName = favorite.author.toLowerCase();
+  const genre = toCuratedGenre(favorite.genre) ?? favorite.genre;
+
+  type AuthorVolume = {
+    id: string;
+    volumeInfo?: {
+      title?: string;
+      subtitle?: string;
+      authors?: string[];
+      imageLinks?: { thumbnail?: string; smallThumbnail?: string };
+      industryIdentifiers?: Array<{ identifier?: string }>;
+    };
+  };
+
+  const recommendations: Recommendation[] = ((payload.items ?? []) as AuthorVolume[])
+    .filter((item) => item.volumeInfo?.title && item.volumeInfo.authors?.some((author) => author.toLowerCase() === authorName))
+    .filter((item) => !/box(ed)? set|collection|omnibus|sampler|books? \d+\s*[-–]\s*\d+/i.test(`${item.volumeInfo?.title} ${item.volumeInfo?.subtitle ?? ""}`))
+    .map((item) => ({
+      id: `author-${item.id}`,
+      title: item.volumeInfo!.title!,
+      author: item.volumeInfo!.authors!.join(", "),
+      isbn: item.volumeInfo!.industryIdentifiers?.find((identifier) => identifier.identifier)?.identifier ?? null,
+      genre,
+      status: "Want to Read" as const,
+      rating: 0,
+      score: 8,
+      reason: `You've rated ${favorite.author} highly`,
+      socialProof: "From an author you love",
+      cover_url: sanitizeCoverUrl(item.volumeInfo!.imageLinks?.thumbnail ?? item.volumeInfo!.imageLinks?.smallThumbnail ?? null),
+    }));
+
+  categoryCache.set(cacheKey, { expiresAt: Date.now() + CATEGORY_CACHE_TTL, recommendations });
+  return recommendations;
+}
+
 async function getFollowedHighRatedCategories(request: Request, userGenres: string[] = []) {
   const supabase = await createSupabaseServerClient(request);
   const { data: { user } } = await supabase.auth.getUser();
@@ -265,9 +382,10 @@ export async function POST(request: Request) {
     ? await supabase.from("recommendation_dismissals").select("title").eq("user_id", user.id)
     : { data: [] };
   const dismissedTitles = new Set((dismissalRows ?? []).map((item) => normalizeTitle(item.title)));
-  const excludedTitles = new Set([...dismissedTitles, ...books.map((book) => normalizeTitle(book.title))]);
+  const titleKeys = (title: string) => [normalizeTitle(title), normalizeTitle(stripSeriesSuffix(title))];
+  const excludedTitles = new Set([...dismissedTitles, ...books.flatMap((book) => titleKeys(book.title))]);
   const isAllowed = (recommendation: Recommendation) =>
-    typeof recommendation.title === "string" && !excludedTitles.has(normalizeTitle(recommendation.title));
+    typeof recommendation.title === "string" && !titleKeys(recommendation.title).some((key) => excludedTitles.has(key));
 
   const readBooks = books.filter((book) => book.status === "Read");
   const curatedCategoriesFor = (book: BookRecord) =>
@@ -288,15 +406,37 @@ export async function POST(request: Request) {
   const rotatedExploration = [...explorationGenres.slice(rotation), ...explorationGenres.slice(0, rotation)];
   const forYouGenres = [...rankedGenres.slice(0, 5), ...rotatedExploration].slice(0, 6);
 
-  const followedCategories = exploreGenre === "For You"
-    ? await getFollowedHighRatedCategories(request, rankedGenres).catch(() => [])
-    : [];
+  const seriesInProgress = exploreGenre === "For You" ? getSeriesInProgress(books) : [];
+  const favoriteAuthors = exploreGenre === "For You" ? getFavoriteAuthors(books) : [];
+  const [followedCategories, seriesResults, authorResults] = await Promise.all([
+    exploreGenre === "For You" ? getFollowedHighRatedCategories(request, rankedGenres).catch(() => []) : Promise.resolve([]),
+    Promise.all(seriesInProgress.map((progress) => getSeriesContinuations(progress, refresh).catch(() => []))),
+    Promise.all(favoriteAuthors.map((favorite) => getAuthorPicks(favorite, refresh, refresh ? (refreshSeed % 3) * 10 : 0).catch(() => []))),
+  ]);
+  // One pick per series so a single long series can't crowd out everything else.
+  const seriesPicks = seriesResults.map((list) => list.find(isAllowed)).filter((pick): pick is Recommendation => Boolean(pick));
+  const seriesPickKeys = new Set(seriesPicks.map((pick) => normalizeTitle(stripSeriesSuffix(pick.title))));
+  const authorPicks = authorResults
+    .map((list) => list.find((pick) => isAllowed(pick) && !seriesPickKeys.has(normalizeTitle(stripSeriesSuffix(pick.title)))))
+    .filter((pick): pick is Recommendation => Boolean(pick))
+    .slice(0, 3);
   const withSocialProof = (recommendation: Recommendation) => ({
     ...recommendation,
     socialProof: followedCategories.some((category) => matchesCategory(recommendation.genre, category))
       ? "Highly rated by a reader you follow"
       : undefined,
   });
+  const withPersonalPicksFirst = (shelf: Recommendation[]) => {
+    const seen = new Set<string>();
+    return [...seriesPicks, ...authorPicks, ...shelf.map(withSocialProof)]
+      .filter((recommendation) => {
+        const key = normalizeTitle(stripSeriesSuffix(recommendation.title));
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, RESULT_LIMIT);
+  };
 
   if (openai) {
     try {
@@ -311,6 +451,12 @@ export async function POST(request: Request) {
         `The reader's strongest genres are: ${JSON.stringify(rankedGenres.slice(0, 6))}.`,
         `Books they loved: ${JSON.stringify(favoriteTitles)}.`,
         `Never recommend these titles: ${JSON.stringify([...dismissedTitles].slice(0, 60))}.`,
+        seriesInProgress.length > 0 && exploreGenre === "For You"
+          ? `The reader is partway through these series; include the next unread book of each: ${JSON.stringify(seriesInProgress.map((progress) => `${progress.series} by ${progress.author} (read through #${progress.highestNumber})`))}.`
+          : "",
+        favoriteAuthors.length > 0 && exploreGenre === "For You"
+          ? `The reader rates these authors highly; include a few of their other books: ${JSON.stringify(favoriteAuthors.map((favorite) => favorite.author))}.`
+          : "",
         "At least half of the picks should be published in the last two years.",
         exploreGenre === "For You"
           ? "Spread picks across at least four different genres, favoring their strongest genres."
@@ -337,8 +483,10 @@ export async function POST(request: Request) {
         }));
 
       if (filtered.length >= 4) {
-        const shelf = exploreGenre === "For You" ? diversifyRecommendations(filtered, RESULT_LIMIT) : filtered.slice(0, RESULT_LIMIT);
-        return Response.json({ recommendations: await enrichCovers(shelf.map(withSocialProof)), source: "openai" });
+        if (exploreGenre === "For You") {
+          return Response.json({ recommendations: await enrichCovers(withPersonalPicksFirst(diversifyRecommendations(filtered, RESULT_LIMIT))), source: "openai" });
+        }
+        return Response.json({ recommendations: await enrichCovers(filtered.slice(0, RESULT_LIMIT).map(withSocialProof)), source: "openai" });
       }
     } catch (error) {
       console.warn("OpenAI recommendation fetch failed, using catalog fallback", error);
@@ -360,15 +508,15 @@ export async function POST(request: Request) {
     forYouGenres.map((genre, index) => getExternalRecommendations(books, genre, refresh, providerOffset + index * 4).catch(() => [])),
   );
   const balanced = perGenre.flatMap((list) => list.filter(isAllowed).slice(0, 3));
-  if (balanced.length > 0) {
+  if (balanced.length > 0 || seriesPicks.length > 0 || authorPicks.length > 0) {
     return Response.json({
-      recommendations: await enrichCovers(diversifyRecommendations(balanced, RESULT_LIMIT).map(withSocialProof)),
+      recommendations: await enrichCovers(withPersonalPicksFirst(diversifyRecommendations(balanced, RESULT_LIMIT))),
       source: "google_books_open_library",
     });
   }
 
   return Response.json({
-    recommendations: await enrichCovers(buildHeuristicRecommendations(books, exploreGenre, preferredCategories, refreshSeed, followedCategories).filter(isAllowed)),
+    recommendations: await enrichCovers(withPersonalPicksFirst(buildHeuristicRecommendations(books, exploreGenre, preferredCategories, refreshSeed, followedCategories).filter(isAllowed))),
     source: "local_fallback",
   });
 }
