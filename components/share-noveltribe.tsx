@@ -3,8 +3,34 @@
 import { useState } from "react";
 import { trackEvent } from "@/lib/analytics";
 
+const shareMessages = [
+  {
+    id: "reader",
+    label: "For a fellow reader",
+    text: "Found a cozy home for my reading life: NovelTribe helps me track books and find my next read.",
+  },
+  {
+    id: "discovery",
+    label: "For finding your next read",
+    text: "Need your next book? NovelTribe tracks what you love and helps you discover what to read next.",
+  },
+  {
+    id: "library",
+    label: "For organizing a library",
+    text: "I’m organizing my books on NovelTribe: a free reading tracker with Goodreads, Libby, and Kindle imports.",
+  },
+  {
+    id: "simple",
+    label: "Keep it simple",
+    text: "I’ve been using NovelTribe to keep track of my reading. Thought you might like it too.",
+  },
+] as const;
+
 export default function ShareNovelTribe() {
   const [copied, setCopied] = useState(false);
+  const [messageId, setMessageId] = useState<(typeof shareMessages)[number]["id"]>("reader");
+
+  const selectedMessage = shareMessages.find((message) => message.id === messageId) ?? shareMessages[0];
 
   const trackShare = (method: string) => {
     trackEvent("share_completed", {
@@ -16,10 +42,10 @@ export default function ShareNovelTribe() {
 
   const handleShare = async () => {
     const supportsNativeShare = typeof navigator.share === "function";
-    trackEvent("share_clicked", { method: supportsNativeShare ? "native" : "copy" });
+    trackEvent("share_clicked", { method: supportsNativeShare ? "native" : "copy", variant: selectedMessage.id });
     const shareData = {
       title: "NovelTribe",
-      text: "Track your reading and discover your next obsession with NovelTribe.",
+      text: selectedMessage.text,
       url: "https://novel-tribe.com",
     };
 
@@ -33,9 +59,9 @@ export default function ShareNovelTribe() {
       return;
     }
 
-    await navigator.clipboard.writeText(shareData.url);
+    await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
     setCopied(true);
-    trackEvent("share_link_copied", { method: "copy" });
+    trackEvent("share_link_copied", { method: "copy", variant: selectedMessage.id });
     trackShare("copy");
     window.setTimeout(() => setCopied(false), 2200);
   };
@@ -50,13 +76,28 @@ export default function ShareNovelTribe() {
             Share NovelTribe with a fellow reader and help keep the free reading community growing.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void handleShare()}
-          className="shrink-0 rounded-full bg-gradient-to-r from-cyan-400 to-violet-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:brightness-110"
-        >
-          {copied ? "Link copied" : "Share NovelTribe"}
-        </button>
+        <div className="flex shrink-0 flex-col gap-3 sm:min-w-64">
+          <label className="text-xs font-medium text-zinc-300">
+            Message
+            <select
+              value={messageId}
+              onChange={(event) => setMessageId(event.target.value as typeof messageId)}
+              className="mt-1.5 block w-full rounded-xl border border-white/10 bg-[#101827] px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/60"
+            >
+              {shareMessages.map((message) => (
+                <option key={message.id} value={message.id}>{message.label}</option>
+              ))}
+            </select>
+          </label>
+          <p className="max-w-sm text-xs leading-5 text-zinc-400">{selectedMessage.text}</p>
+          <button
+            type="button"
+            onClick={() => void handleShare()}
+            className="rounded-full bg-gradient-to-r from-cyan-400 to-violet-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:brightness-110"
+          >
+            {copied ? "Message and link copied" : "Share NovelTribe"}
+          </button>
+        </div>
       </div>
     </section>
   );

@@ -542,6 +542,41 @@ The SEO enhancements and initial handoff documentation were verified, committed,
 
 The core application, privacy controls, social follows, reading habits, and full opt-in feature set are complete. Future post-launch roadmap candidates include:
 
+### Future Reader Experience & Engagement Ideas (Not Started)
+
+These are product candidates for future prioritization only. None is approved or in progress. Prioritize using reader feedback, GA4 funnel/retention data, implementation cost, and privacy impact.
+
+#### Next Up: High Reader Value
+- [ ] **Reading year in review**: Private, shareable recap of books finished, pages/minutes read, favorite genres/authors, and reading streaks, with granular sharing controls and no public-by-default data.
+- [ ] **Next-read picker**: Help a reader choose from their own Want to Read list using optional mood, available time, format, and length filters; explain why each pick fits.
+- [ ] **Recommendation feedback controls**: Add "More like this" and "Less like this" alongside "Not Interested"; let readers inspect why a pick appeared and tune author, genre, and mood signals without losing existing library data.
+- [ ] **Import preview and recovery**: Preview detected books, statuses, genres, and duplicates before syncing; show per-row failures and support retrying only failed rows after interrupted large imports.
+- [ ] **Import source and confidence labels**: Show which values came from the source file versus catalog enrichment, flag uncertain title/author/category matches, and let readers correct them before saving.
+- [ ] **Reading calendar**: Private calendar/heatmap of reading sessions and finish dates, with month/year summaries and optional goal progress.
+- [ ] **Session timer**: Start and stop a reading session from a Currently Reading book, with a clear save/edit step so accidental timers don't silently alter stats.
+
+#### Then: Reduce Everyday Friction
+- [ ] **Bulk library actions**: Select multiple books to change status, add/remove a shelf, or export a subset; include undo for destructive actions.
+- [ ] **Richer library filters**: Combine status, genre, format, rating, shelf, and date filters; save named filter views without expanding the default genre vocabulary.
+- [ ] **Series shelf and progress**: Show detected series together, their reading order, owned/read status, and the next unread installment; allow manual correction when title metadata is ambiguous.
+- [ ] **Release-alert controls**: Let readers pause alerts, choose a release window and maximum cadence, and manage or undo individual alerts; monitor duplicate rate and provider quota before expanding lookup volume.
+- [ ] **Flexible personal challenges**: Let readers create private monthly, seasonal, or custom reading goals (including minutes, pages, or books) alongside the existing annual-books goal.
+
+#### Later: Sharing Loops & Optional Community
+- [ ] **Curated shareable shelves**: Let readers publish named, selected lists (e.g. "comfort reads" or "start here") without exposing their full library; each shelf gets its own visibility control and revocable link.
+- [ ] **Invite a reading buddy**: Create a share link that opens a low-friction signup and then returns the invitee to the inviter's public card or selected shelf; measure invite-to-signup without uploading contacts.
+- [ ] **Share cards for books, quotes, and milestones**: Generate privacy-safe images sized for messaging/social apps; preview exactly what will be included and exclude private notes, reviews, and reading history unless separately selected.
+- [ ] **Optional shared reading challenge**: Allow an invited group to join a time-bounded challenge and share progress totals, with per-reader opt-in and no public leaderboard by default.
+- [ ] **Referral attribution and thank-you loop**: Attribute signups to an invite or share link and thank the inviter/invitee; only consider rewards after defining abuse limits and a non-monetary default.
+- [ ] **Book-club reading spaces**: Private, invitation-only reading groups with a shared current book, discussion prompts, and spoiler controls; keep membership and posts private by default.
+- [ ] **Reading nudges with scheduling controls**: Optional quiet hours, preferred days, and frequency limits for reminders; avoid email/push until consent and delivery preferences are explicit.
+- [ ] **Public-profile sharing improvements**: Add previewable profile/share layouts and per-field visibility explanations; preserve the existing opt-in defaults and provide a single place to revoke public exposure.
+
+#### Validation Before Building
+- [ ] Interview readers and collect feedback through the existing feedback form before selecting a candidate.
+- [ ] Establish a baseline and success metric for the target funnel/retention step; instrument only privacy-safe events.
+- [ ] Ship one small candidate at a time behind an opt-in flag where appropriate, and review adoption, errors, and opt-outs before widening availability.
+
 ### Future Social Enhancements (Opt-In Only)
 - [ ] Community likes & reactions on public activity items
 - [ ] Spoiler masking/tagging on public book reviews
